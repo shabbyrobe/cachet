@@ -1,0 +1,21 @@
+<phpunit bootstrap="test/config.php"
+   backupGlobals="false"
+   backupStaticAttributes="false"
+   convertErrorsToExceptions="true"
+   convertNoticesToExceptions="true"
+   convertWarningsToExceptions="true"
+   forceCoversAnnotation="false"
+   strict="true" 
+   verbose="true">
+ <testsuites>
+  <testsuite name="Test">
+    <directory>test/lib</directory>
+  </testsuite>
+ </testsuites>
+
+ <filter>
+  <whitelist addUncoveredFilesFromWhitelist="true">
+    <directory suffix=".php">src</directory>
+  </whitelist>
+ </filter>
+</phpunit>
