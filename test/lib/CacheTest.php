@@ -235,6 +235,18 @@ class CacheTest extends \CachetTestCase
         $this->assertTrue($item->dependency instanceof Dependency);
     }
     
+    public function testWrapKeyTTLCallback()
+    {
+        $called = false;
+        
+        $this->cache->wrap('foo', 100, function() use (&$called) {
+            $called = true;
+        });
+        
+        $item = $this->backend->get('cache', 'foo');
+        $this->assertTrue($item->dependency instanceof Dependency\TTL);
+    }
+    
     /**
      * @expectedException PHPUnit_Framework_Error_Warning
      */

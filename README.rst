@@ -75,12 +75,23 @@ Dependencies <dependencies>:
     $cache->get('foo') == 'bar';   // false
 
 
-Cache wrapper method. 
+Cache wrapper method - pass a callback that is called if the key is not found in the cache. The
+returned value is stored in the cache:
 
 .. code-block:: php
 
     <?php
     $value = $cache->wrap('foo', function() use ($db) {
+        return $db->query("SELECT * FROM table")->fetchAll();
+    });
+
+    // With a TTL
+    $value = $cache->wrap('foo', 300, function() use ($db) {
+        return $db->query("SELECT * FROM table")->fetchAll();
+    });
+    
+    // With a Dependency
+    $value = $cache->wrap('foo', new Cachet\Dependency\Permanent(), function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
     });
 
@@ -138,7 +149,7 @@ cache, do some performance crunching to see if it's actually any faster than no 
 Memcached
 ~~~~~~~~~
 
- Requires ``memcached`` PHP extension.
+Requires ``memcached`` PHP extension.
  
 .. code-block:: php
 
@@ -285,14 +296,16 @@ Custom
 Custom backends are a snap to write - simply implement ``Cachet\Backend``. Please make sure you
 follow these guidelines:
 
-- Don't use backends by themselves
+- Backends aren't meant to be used by themselves - they should be used by an instance of
+  ``Cachet\Cache``
 
 - It must be possible to use the same backend with more than one instance of ``Cachet\Cache``.
 
 - ``get()`` must return an instance of ``Cachet\Item``. You are not required to check whether it
   is valid, ``Cachet\Cache`` does this for you.
 
-- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum.
+- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is
+  not strictly necessary.
 
 - ``set()`` must store enough information so that ``get()`` can return a fully populated instance
   of ``Cachet\Item``. This usually means that if your backend can't support PHP objects directly,
@@ -416,6 +429,7 @@ registered with the primary cache as a service.
 
 .. code-block:: php
 
+    <?php
     $valueCache = new Cachet\Cache('value', new Cachet\Backend\APC());
     $tagCache = new Cachet\Cache('value', new Cachet\Backend\APC());
     
