@@ -9,7 +9,7 @@ Cachet - Pluggable Caching for PHP
 
 
 .. contents::
-    :depth: 2
+    :depth: 3
 
 
 Usage
@@ -24,7 +24,7 @@ Optional autoloader. **Cachet** is compatible with any PSR-0 autoloader.
     Cachet::register();
 
 
-Instantiate a :ref:`backend` and a cache:
+Instantiate a backend and a cache:
 
 .. code-block:: php
     
@@ -60,7 +60,7 @@ was actually found:
     var_dump($found);
 
 
-:ref:`Dependencies <dependencies>`:
+Dependencies <dependencies>:
     
 .. code-block:: php
     
@@ -75,6 +75,16 @@ was actually found:
     $cache->get('foo') == 'bar';   // false
 
 
+Cache wrapper method. 
+
+.. code-block:: php
+
+    <?php
+    $value = $cache->wrap('foo', function() use ($db) {
+        return $db->query("SELECT * FROM table")->fetchAll();
+    });
+
+
 Cache options and their defaults:
 
 .. code-block:: php
@@ -83,8 +93,6 @@ Cache options and their defaults:
     // delete items if they are in an invalid format
     $cache->deleteIfInvalid = true;
 
-
-.. _backend:
 
 Backends
 --------
@@ -295,8 +303,6 @@ and ``Cachet\Item::uncompact()``. This strips much of the redundant information 
 YMMV - I was surprised to find that using ``Cachet\Item->compact()`` had the effect of *increasing*
 the memory used in APCU.
 
-
-.. _dependencies:
 
 Dependencies
 ------------
