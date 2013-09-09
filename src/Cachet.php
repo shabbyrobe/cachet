@@ -10,6 +10,7 @@ class Cachet
         'Cachet\Backend\Memory'=>'Cachet/Backend/Memory.php',
         'Cachet\Backend\PDO'=>'Cachet/Backend/PDO.php',
         'Cachet\Backend\PHPRedis'=>'Cachet/Backend/PHPRedis.php',
+        'Cachet\Backend\Session'=>'Cachet/Backend/Session.php',
         'Cachet\Backend\Sharding'=>'Cachet/Backend/Sharding.php',
         'Cachet\Backend\XCache'=>'Cachet/Backend/XCache.php',
         'Cachet\Cache'=>'Cachet/Cache.php',

@@ -218,6 +218,19 @@ Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
     $backend = new Cachet\Backend\PHPRedis($redis, "myprefix");
 
 
+Session
+~~~~~~~
+
+Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked growth. 
+``session_start()`` will be called automatically if it hasn't yet been called, so if you would
+like to customise the session startup, call ``session_start()`` yourself beforehand.
+
+.. code-block:: php
+
+    <?php
+    $session = new Cachet\Backend\Session();
+
+
 XCache
 ~~~~~~
 
