@@ -153,6 +153,12 @@ abstract class BackendTestCase extends CachetTestCase
 $GLOBALS['settings'] = [
     'redis'=>[
         'server'=>null,
+        'port'=>null,
+        'database'=>15,
+    ],
+    'memcached'=>[
+        'server'=>null,
+        'port'=>null,
     ],
 ];
 
