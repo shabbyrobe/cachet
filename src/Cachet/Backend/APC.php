@@ -6,7 +6,7 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class APC implements Backend, Iteration\Iterable
+class APC implements Backend, Iterable
 {
     public $iteratorChunkSize = 100;
     

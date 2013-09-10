@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class Session implements Backend, Iteration\Iterable
+class Session implements Backend, Iterable
 {
     private $baseKey;
     
@@ -66,7 +66,7 @@ class Session implements Backend, Iteration\Iterable
             session_start();
         
         if (isset($_SESSION[$this->baseKey][$cacheId]))
-            return $_SESSION[$this->baseKey][$cacheId];
+            return array_values($_SESSION[$this->baseKey][$cacheId]);
         else
             return [];
     }

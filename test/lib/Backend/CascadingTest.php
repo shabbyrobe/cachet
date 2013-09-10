@@ -5,8 +5,16 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class CascadingTest extends \PHPUnit_Framework_TestCase
+class CascadingTest extends \BackendTestCase
 {
+    public function getBackend()
+    {   
+        $backend1 = new Backend\Memory();
+        $backend2 = new Backend\Memory();
+        $backend3 = new Backend\Memory();
+        return new Backend\Cascading([$backend1, $backend2, $backend3]);
+    }
+    
     public function testGetFromFirst()
     {
         $first = $this->getMockBuilder('Cachet\Backend\Memory')->setMethods(array('get'))->getMock();
@@ -83,7 +91,7 @@ class CascadingTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($newItem, $backend3->get('cache', 'key'));
     }
     
-    public function testDelete()
+    public function testDeleteInternal()
     {
         $item = new Item('cache', 'key', 'value');
         $backend1 = new Backend\Memory();
@@ -98,7 +106,7 @@ class CascadingTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($backend2->get('cache', 'key'));
     }
     
-    public function testFlush()
+    public function testFlushInternal()
     {
         $item = new Item('cache', 'key', 'value');
         $backend1 = new Backend\Memory();

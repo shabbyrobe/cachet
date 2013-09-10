@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PDO implements Backend, Iteration\Iterable
+class PDO implements Backend, Iterable
 {
     private $tableName;
     private $engine;
@@ -189,8 +189,11 @@ class PDO implements Backend, Iteration\Iterable
     
     function items($cacheId)
     {
-        $keys = $this->keys($cacheId);
-        return new Iteration\BackendFetcher($this, $cacheId, $keys);
+        foreach ($this->keys($cacheId) as $key) {
+            $item = $this->get($cacheId, $key);
+            if ($item)
+                yield $item;
+        }
     }
     
     private function ensureTable($cacheId)

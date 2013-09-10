@@ -1,6 +1,9 @@
 <?php
 namespace Cachet;
 
+use Cachet\Backend\Iterable;
+use Cachet\Backend\IterationAdapter;
+
 class Cache implements \ArrayAccess
 {
     public $id;
@@ -21,8 +24,6 @@ class Cache implements \ArrayAccess
      */
     public $services = array();
     
-    public $deleteInvalid = true;
-    
     public function __construct($id, Backend $backend, Dependency $dependency=null)
     {
         $this->id = $id;
@@ -37,7 +38,7 @@ class Cache implements \ArrayAccess
         $found = false;
         
         if ($item) {
-            $found = $this->validateItem($key, $item);
+            $found = $this->validateItem($item);
             if ($found)
                 $value = $item->value;
         }
@@ -105,6 +106,17 @@ class Cache implements \ArrayAccess
         return $data;
     }
     
+    function removeInvalid()
+    {
+        $this->ensureIterable();
+        foreach ($this->backend->items($this->id) as $key=>$item) {
+            $valid = $this->validateItem($item);
+            if (!$valid) {
+                $this->delete($item->key);
+            }
+        }
+    }
+    
     function keys()
     {
         $this->ensureIterable();
@@ -121,42 +133,37 @@ class Cache implements \ArrayAccess
         }
     }
     
-    function items()
+    function items($all=false)
     {
         $this->ensureIterable();
         foreach ($this->backend->items($this->id) as $key=>$item) {
-            $valid = $this->validateItem($key, $item);
+            $valid = $all || $this->validateItem($item);
             if ($valid) {
                 yield $item->key => $item;
             }
         }
     }
     
-    private function validateItem($key, $item)
+    private function validateItem($item)
     {
+        if (!$item instanceof Item)
+            return false;
+        
         $valid = false;
-        if (!$item instanceof Item) {
-            if ($this->deleteInvalid)
-                $this->delete($key);
+        
+        $dependency = $item->dependency ?: $this->dependency;
+        if (!$dependency || ($dependency instanceof Dependency && $dependency->valid($this, $item))) {
+            $valid = true;
         }
-        else {
-            $dependency = $item->dependency ?: $this->dependency;
-            if (!$dependency || ($dependency instanceof Dependency && $dependency->valid($this, $item))) {
-                $valid = true;
-            }
-            else {
-                if ($this->deleteInvalid)
-                    $this->delete($item->key);
-            }
-        }
+        
         return $valid;
     }
 
     private function ensureIterable()
     {   
-        if (!$this->backend instanceof Backend\Iteration\Iterable)
+        if (!$this->backend instanceof Iterable)
             throw new \RuntimeException("This backend does not support iteration");
-        elseif ($this->backend instanceof Backend\Iteration\Adapter && !$this->backend->iterable())
+        elseif ($this->backend instanceof IterationAdapter && !$this->backend->iterable())
             throw new \RuntimeException("This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.");
     }
     

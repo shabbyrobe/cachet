@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class File implements Backend, Iteration\Iterable
+class File implements Backend, Iterable
 {
     public $user;
     public $group;
@@ -82,6 +82,8 @@ class File implements Backend, Iteration\Iterable
     function flush($cacheId)
     {
         $iter = $this->getIterator($cacheId);
+        if (!$iter)
+            return;
         
         $lastDir = null;
         foreach ($iter as $item) {

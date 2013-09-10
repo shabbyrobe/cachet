@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class Cascading implements Backend, Iteration\Iterable
+class Cascading implements Backend, Iterable
 {
     private $backends;
     private $reverseBackends;
@@ -61,13 +61,13 @@ class Cascading implements Backend, Iteration\Iterable
     
     function keys($cacheId)
     {
-        foreach ($this->reverseBackends[0]->keys() as $key)
+        foreach ($this->reverseBackends[0]->keys($cacheId) as $key)
             yield $key;
     }
     
     function items($cacheId)
     {
-        foreach ($this->reverseBackends[0]->items() as $item)
+        foreach ($this->reverseBackends[0]->items($cacheId) as $item)
             yield $item;
     }
 }

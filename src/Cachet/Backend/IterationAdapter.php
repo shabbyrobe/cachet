@@ -1,5 +1,5 @@
 <?php
-namespace Cachet\Backend\Iteration;
+namespace Cachet\Backend;
 
 use Cachet\Item;
 use Cachet\Backend;
@@ -11,7 +11,7 @@ use Cachet\Backend;
  * This can slow down cache set and delete operations significantly, but has
  * no bearing on get operations.
  */
-abstract class Adapter implements Backend, Iterable
+abstract class IterationAdapter implements Backend, Iterable
 {
     protected $keyBackend;
     
@@ -22,7 +22,7 @@ abstract class Adapter implements Backend, Iterable
     
     public function setKeyBackend(Iterable $backend)
     {
-        if ($backend instanceof Adapter)
+        if ($backend instanceof static)
             throw new \InvalidArgumentException("Key backend must not be an iteration adapter backend");
         
         $this->keyBackend = $backend;
@@ -30,13 +30,18 @@ abstract class Adapter implements Backend, Iterable
     
     function keys($cacheId)
     {
-        return new Key($this->keyBackend->items($cacheId));
+        foreach ($this->keyBackend->items($cacheId) as $key) {
+            yield $key;
+        }
     }
     
     function items($cacheId)
     {
-        $keys = $this->keys($cacheId);
-        return new BackendFetcher($this, $cacheId, $keys);
+        foreach ($this->keys($cacheId) as $key) {
+            $item = $this->get($cacheId, $key);
+            if ($item)
+                yield $key=>$item;
+        }
     }
     
     function set(Item $item)

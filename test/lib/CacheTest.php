@@ -23,13 +23,106 @@ class CacheTest extends \CachetTestCase
         $this->assertTrue($found);
     }
     
-    public function testGetWithBorkedItemDeletesInvalid()
+    /**
+     * @covers Cachet\Cache::removeInvalid
+     */
+    public function testRemoveInvalid()
     {
-        $this->backend->data['cache']['key'] = 'Not an item';
-        $item = $this->cache->get('key', $found);
-        $this->assertNull($item);
-        $this->assertFalse($found);
-        $this->assertFalse(isset($this->backend->data['cache']['key']));
+        $this->cache->set('1', 1);
+        $this->cache->set('2', 2, new Dependency\Dummy(false));
+        $this->cache->set('3', 3, new Dependency\Dummy(false));
+        $this->cache->set('4', 4);
+        
+        $this->cache->removeInvalid();
+        $this->assertTrue(isset($this->backend->data['cache']['1']));
+        $this->assertFalse(isset($this->backend->data['cache']['2']));
+        $this->assertFalse(isset($this->backend->data['cache']['3']));
+        $this->assertTrue(isset($this->backend->data['cache']['4']));
+    }
+    
+    /**
+     * @covers Cachet\Cache::keys
+     */
+    public function testKeysGenerator()
+    {
+        $this->cache->set('1', 'one');
+        $this->cache->set('2', 'two');
+        $this->cache->set('3', 'three');
+        
+        $keys = $this->cache->keys();
+        $found = [];
+        foreach ($keys as $key) {
+            $found[] = $key;
+        }
+        $this->assertEquals(['1', '2', '3'], $found);
+    }
+    
+    /**
+     * @covers Cachet\Cache::keys
+     */
+    public function testKeysGeneratorIgnoresInvalid()
+    {
+        $this->cache->set('1', 'one');
+        $this->cache->set('2', 'two');
+        $this->cache->set('3', 'three', new Dependency\Dummy(false));
+        
+        $keys = $this->cache->keys();
+        $found = [];
+        foreach ($keys as $key) {
+            $found[] = $key;
+        }
+        $this->assertEquals(['1', '2'], $found);
+    }
+    
+    /**
+     * @covers Cachet\Cache::values
+     */
+    public function testValuesGenerator()
+    {
+        $this->cache->set('1', 'one');
+        $this->cache->set('2', 'two');
+        $this->cache->set('3', 'three');
+        
+        $values = $this->cache->values();
+        $found = [];
+        foreach ($values as $value) {
+            $found[] = $value;
+        }
+        $this->assertEquals(['one', 'two', 'three'], $found);
+    }
+    
+    /**
+     * @covers Cachet\Cache::values
+     */
+    public function testValuesGeneratorIgnoresInvalid()
+    {
+        $this->cache->set('1', 'one');
+        $this->cache->set('2', 'two', new Dependency\Dummy(false));
+        $this->cache->set('3', 'three');
+        
+        $values = $this->cache->values();
+        $found = [];
+        foreach ($values as $value) {
+            $found[] = $value;
+        }
+        $this->assertEquals(['one', 'three'], $found);
+    }
+    
+    /**
+     * @covers Cachet\Cache::items
+     */
+    public function testItemsGeneratorIgnoresInvalid()
+    {
+        $this->cache->set('1', 'one');
+        $this->cache->set('2', 'two', new Dependency\Dummy(false));
+        $this->cache->set('3', 'three');
+        
+        $items = $this->cache->items();
+        $found = [];
+        foreach ($items as $item) {
+            $found[] = $item->value;
+        }
+        $this->assertEquals(['one', 'three'], $found);
     }
     
     public function testGetWithBorkedItemLeavesInvalid()
@@ -40,17 +133,6 @@ class CacheTest extends \CachetTestCase
         $this->assertNull($item);
         $this->assertFalse($found);
         $this->assertTrue(isset($this->backend->data['cache']['key']));
-    }
-    
-    public function testGetWithBorkedDependencyDeletesInvalid()
-    {
-        $item = new Item('cache', 'key', 'value', 'Not a dependency');
-        $this->backend->set($item);
-        
-        $item = $this->cache->get('key', $found);
-        $this->assertNull($item);
-        $this->assertFalse($found);
-        $this->assertFalse(isset($this->backend->data['cache']['key']));
     }
     
     public function testGetWithBorkedDependencyLeavesInvalid()

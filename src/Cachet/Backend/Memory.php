@@ -7,7 +7,7 @@ use Cachet\Item;
 /**
  * Ephemeral memory-backed cache implementation
  */
-class Memory implements Backend, Iteration\Iterable
+class Memory implements Backend, Iterable
 {   
     public $data = array();
     
@@ -45,6 +45,6 @@ class Memory implements Backend, Iteration\Iterable
     
     function items($cacheId)
     {
-        return $this->data[$cacheId];
+        return array_values($this->data[$cacheId]);
     }
 }

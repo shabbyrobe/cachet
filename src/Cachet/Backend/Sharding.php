@@ -10,7 +10,7 @@ use Cachet\Item;
  * need to flush the entire cache if you do unless you want unpredictable
  * results.
  */
-class Sharding implements Backend, Iteration\Iterable
+class Sharding implements Backend, Iterable
 {
     private $backends;
     private $backendCount;

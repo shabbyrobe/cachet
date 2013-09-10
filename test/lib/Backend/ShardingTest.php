@@ -5,9 +5,18 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class ShardingTest extends \PHPUnit_Framework_TestCase
+class ShardingTest extends \BackendTestCase
 {
-    public function testSetGet()
+    public function getBackend()
+    {
+        $backend1 = new Backend\Memory();
+        $backend2 = new Backend\Memory();
+        $backend3 = new Backend\Memory();
+        $sharding = new Backend\Sharding(array($backend1, $backend2, $backend3));
+        return $sharding;
+    }
+    
+    public function testSetGetInternal()
     {
         $backend1 = new Backend\Memory();
         $backend2 = new Backend\Memory();
@@ -41,7 +50,7 @@ class ShardingTest extends \PHPUnit_Framework_TestCase
         $this->assertNotNull($sharding->get('cache', 'nnn'));
     }
     
-    public function testSetDelete()
+    public function testSetDeleteInternal()
     {
         $backend1 = new Backend\Memory();
         $backend2 = new Backend\Memory();
@@ -57,7 +66,7 @@ class ShardingTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($backend2->get('cache', 'foo'));
     }
     
-    public function testFlush()
+    public function testFlushInternal()
     {
         $backend1 = new Backend\Memory();
         $backend1->set(new Item('cache', 'foo', 'bar'));

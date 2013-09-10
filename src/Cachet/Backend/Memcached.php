@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class Memcached extends Iteration\Adapter
+class Memcached extends IterationAdapter
 {
     public $memcached;
     

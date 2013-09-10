@@ -5,12 +5,17 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class FileTest extends \PHPUnit_Framework_TestCase
+class FileTest extends \BackendTestCase
 {
     public function setUp()
     {
         $this->path = sys_get_temp_dir()."/".uniqid('', true);
         mkdir($this->path);
+    }
+
+    function getBackend()
+    {
+        return new Backend\File($this->path);
     }
     
     public function tearDown()
@@ -31,7 +36,7 @@ class FileTest extends \PHPUnit_Framework_TestCase
         rmdir($this->path);
     }
     
-    public function testSet()
+    public function testSetFilePath()
     {
         $file = new Backend\File($this->path);
         $cache = new Cache('cache', $file);

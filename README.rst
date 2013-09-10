@@ -133,15 +133,6 @@ detail:
     // outputs "foo: bar" only.
 
 
-Cache options and their defaults:
-
-.. code-block:: php
-    
-    <?php
-    // delete items if they are in an invalid format
-    $cache->deleteIfInvalid = true;
-
-
 Iteration
 ---------
 
@@ -568,7 +559,7 @@ follow these guidelines:
 
 - It must be possible to use the same backend with more than one instance of ``Cachet\Cache``.
 
-- ``get()`` must return an instance of ``Cachet\Item``. You are not required to check whether it
+- ``get()`` must return an instance of ``Cachet\Item``. The backend must not check whether an item
   is valid, ``Cachet\Cache`` does this for you.
 
 - Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is

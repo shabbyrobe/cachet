@@ -6,7 +6,7 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class PHPRedis implements Backend, Iteration\Iterable
+class PHPRedis implements Backend, Iterable
 {
     private $redis;
     
@@ -87,10 +87,13 @@ class PHPRedis implements Backend, Iteration\Iterable
     
     function items($cacheId)
     {
-        $keys = $this->keys($cacheId);
-        return new Iteration\BackendFetcher($this, $cacheId, $keys);
+        foreach ($this->keys($cacheId) as $key) {
+            $item = $this->get($cacheId, $key);
+            if ($item)
+                yield $item;
+        }
     }
-
+    
     function decode($data)
     {
         $itemData = @unserialize($data);
