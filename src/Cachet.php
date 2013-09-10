@@ -35,5 +35,9 @@ class Cachet
             require __DIR__.'/'.static::$classes[$class];
             return true;
         }
+        elseif (strpos($class, 'Cachet\\')===0) {
+            require __DIR__.'/'.str_replace('\\', '/', str_replace('../', '', $class)).'.php';
+            return true;
+        }
     }
 }

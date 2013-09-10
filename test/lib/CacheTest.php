@@ -263,6 +263,64 @@ class CacheTest extends \CachetTestCase
         $this->cache->wrap('nope', 'nope', 'nope', 'nope');
     }
     
+    /**
+     * @covers Cachet\Cache::offsetGet
+     */
+    public function testArrayAccessGet()
+    {
+        $cache = $this->getMockBuilder('Cachet\Cache')
+            ->setMethods(array('get'))
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $cache->expects($this->once())->method('get')->will($this->returnValue('yep'));
+        $result = $cache['test'];
+        $this->assertEquals('yep', $result);
+    }
+    
+    /**
+     * @covers Cachet\Cache::offsetExists
+     */
+    public function testArrayAccessIsset()
+    {
+        $cache = $this->getMockBuilder('Cachet\Cache')
+            ->setMethods(array('has'))
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $cache->expects($this->once())->method('has')->will($this->returnValue(true));
+        $result = isset($cache['test']);
+        $this->assertTrue($result);
+    }
+    
+    /**
+     * @covers Cachet\Cache::offsetSet
+     */
+    public function testArrayAccessSet()
+    {
+        $cache = $this->getMockBuilder('Cachet\Cache')
+            ->setMethods(array('set'))
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $cache->expects($this->once())->method('set')->with($this->equalTo('test'), $this->equalTo('yep'));
+        $cache['test'] = 'yep';
+    }
+    
+    /**
+     * @covers Cachet\Cache::offsetUnset
+     */
+    public function testArrayAccessUnset()
+    {
+        $cache = $this->getMockBuilder('Cachet\Cache')
+            ->setMethods(array('delete'))
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $cache->expects($this->once())->method('delete')->with($this->equalTo('test'));
+        unset($cache['test']);
+    }
+    
     private function getInvalidDependency()
     {
         $dependency = $this->getMockBuilder('Cachet\Dependency')

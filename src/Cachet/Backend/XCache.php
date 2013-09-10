@@ -5,8 +5,8 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class XCache implements Backend
-{
+class Memcached extends Iteration\Adapter
+{   
     public $prefix;
     
     function __construct($prefix=null)
@@ -26,8 +26,8 @@ class XCache implements Backend
         return $item;
     }
     
-    function set(Item $item)
-    {
+    protected function setInStore(Item $item)
+    {   
         $ttl = null;
         $formattedKey = $this->formatKey($item->cacheId, $item->key);
         if (isset($item->dependency) && $item->dependency instanceof Dependency\TTL) {
@@ -35,15 +35,15 @@ class XCache implements Backend
             unset($item->dependency);
         }
         
-        return xcache_set($formattedKey, serialize($item), $ttl);
+        xcache_set($formattedKey, serialize($item), $ttl);
     }
     
-    function delete($cacheId, $key)
+    protected function deleteFromStore($cacheId, $key)
     {
         xcache_unset($this->formatKey($cacheId, $key));
     }
     
-    function flush($cacheId)
+    protected function flushStore($cacheId)
     {
         $prefix = $this->formatKey($cacheId, "");
         xcache_unset_by_prefix($prefix);

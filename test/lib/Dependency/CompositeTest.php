@@ -9,9 +9,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAllModeValid()
     {
         $composite = new Dependency\Composite('all', array(
-            new \DummyDependency(true),
-            new \DummyDependency(true),
-            new \DummyDependency(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(true),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -25,9 +25,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAllModeInvalidWhenOneInvalid()
     {
         $composite = new Dependency\Composite('all', array(
-            new \DummyDependency(true),
-            new \DummyDependency(false),
-            new \DummyDependency(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(true),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -41,9 +41,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAllModeInvalidWhenAllInvalid()
     {
         $composite = new Dependency\Composite('all', array(
-            new \DummyDependency(false),
-            new \DummyDependency(false),
-            new \DummyDependency(false),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(false),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -57,9 +57,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAnyModeValidWhenAllValid()
     {
         $composite = new Dependency\Composite('any', array(
-            new \DummyDependency(true),
-            new \DummyDependency(true),
-            new \DummyDependency(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(true),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -73,9 +73,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAnyModeValidWhenOneInvalid()
     {
         $composite = new Dependency\Composite('any', array(
-            new \DummyDependency(true),
-            new \DummyDependency(false),
-            new \DummyDependency(true),
+            new Dependency\Dummy(true),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(true),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -89,9 +89,9 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     public function testAnyModeInvalidWhenAllInvalid()
     {
         $composite = new Dependency\Composite('any', array(
-            new \DummyDependency(false),
-            new \DummyDependency(false),
-            new \DummyDependency(false),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(false),
+            new Dependency\Dummy(false),
         ));
         
         $cache = $this->getMockBuilder('Cachet\Cache')
@@ -104,14 +104,14 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
     
     public function testInit()
     {
-        $d1 = $this->getMockBuilder('DummyDependency')
+        $d1 = $this->getMockBuilder('Cachet\Dependency\Dummy')
             ->setConstructorArgs(array(true))
             ->setMethods(array('init'))
             ->getMock()
         ;
         $d1->expects($this->once())->method('init');
         
-        $d2 = $this->getMockBuilder('DummyDependency')
+        $d2 = $this->getMockBuilder('Cachet\Dependency\Dummy')
             ->setConstructorArgs(array(true))
             ->setMethods(array('init'))
             ->getMock()

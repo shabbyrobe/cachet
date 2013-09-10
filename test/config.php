@@ -12,24 +12,6 @@ Cachet::register();
 if (!class_exists('PHPUnit_Framework_Exception'))
     require_once 'PHPUnit/Autoload.php';
 
-class DummyDependency implements \Cachet\Dependency
-{
-    public $valid;
-    
-    public function __construct($valid)
-    {
-        $this->valid = $valid;
-    }
-    
-    function valid(\Cachet\Cache $cache, \Cachet\Item $item)
-    {
-        return $this->valid;
-    }
-    
-    function init(\Cachet\Cache $cache, \Cachet\Item $item)
-    {}
-}
-
 abstract class CachetTestCase extends \PHPUnit_Framework_TestCase
 {
     public function dataValidValues()

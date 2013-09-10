@@ -6,7 +6,7 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class PHPRedis implements Backend
+class PHPRedis implements Backend, Iteration\Iterable
 {
     private $redis;
     
@@ -20,7 +20,7 @@ class PHPRedis implements Backend
     
     public function set(Item $item)
     {
-        $formattedItem = serialize($item);
+        $formattedItem = serialize($item->compact());
         $formattedKey = $this->formatKey($item->cacheId, $item->key);
         
         $query = $this->redis->multi(\Redis::PIPELINE);
@@ -34,6 +34,8 @@ class PHPRedis implements Backend
             $query->set($formattedKey, $formattedItem);
             if ($item->dependency instanceof Dependency\Time)
                 $query->expireAt($formattedKey, $expiration->time);
+            elseif ($item->dependency instanceof Dependency\Permanent)
+                $query->persist($formattedKey);
         }
         $query->exec();
     }
@@ -42,10 +44,9 @@ class PHPRedis implements Backend
     {
         $key = $this->formatKey($cacheId, $key);
         $result = $this->redis->get($key);
+        
         if ($result) {
-            $itemData = @unserialize($result);
-            if ($itemData)
-                return Item::uncompact($itemData);
+            return $this->decode($result);
         }
     }
     
@@ -67,6 +68,36 @@ class PHPRedis implements Backend
         $query->exec();
     }
     
+    function keys($cacheId)
+    {
+        // WARNING: if the formatKey method ever changes, this will break!
+        
+        $prefix = $this->formatKey($cacheId, "");
+        $len = strlen($prefix);
+        $redisKeys = $this->redis->keys("$prefix*");
+        
+        $keys = [];
+        foreach ($redisKeys as $key) {
+            $keys[] = substr($key, $len);
+        }
+        
+        sort($keys);
+        return $keys;
+    }
+    
+    function items($cacheId)
+    {
+        $keys = $this->keys($cacheId);
+        return new Iteration\BackendFetcher($this, $cacheId, $keys);
+    }
+
+    function decode($data)
+    {
+        $itemData = @unserialize($data);
+        if ($itemData)
+            return Item::uncompact($itemData);
+    }
+
     private function formatKey($cacheId, $key)
     {
         return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";

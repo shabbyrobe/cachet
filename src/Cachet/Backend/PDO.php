@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PDO implements Backend
+class PDO implements Backend, Iteration\Iterable
 {
     private $tableName;
     private $engine;
@@ -173,6 +173,24 @@ class PDO implements Backend
         
         if ($result === false)
             throw new \UnexpectedValueException("Cache $cacheId flush query failed: ".implode(' ', $this->pdo->errorInfo()));
+    }
+    
+    function keys($cacheId)
+    {
+        if (!$this->pdo)
+            $this->connect();
+        
+        if (!$this->tableName)
+            $this->ensureTable($cacheId);
+        
+        $stmt = $this->pdo->query("SELECT cacheKey FROM `{$this->tableName}` ORDER BY cacheKey");
+        return $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
+    }
+    
+    function items($cacheId)
+    {
+        $keys = $this->keys($cacheId);
+        return new Iteration\BackendFetcher($this, $cacheId, $keys);
     }
     
     private function ensureTable($cacheId)

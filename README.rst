@@ -12,6 +12,25 @@ Cachet - Pluggable Caching for PHP
     :depth: 3
 
 
+Install
+-------
+
+Download **Cachet** directly from GitHub, or use the `Composer <http://getcomposer.org>`_
+repository at ``k3jw.com`` with the following ``composer.json``::
+
+    {
+        "repositories": {
+            "k3jw": {
+                "type": "composer",
+                "url": "http://k3jw.com/code/composer/"
+            }
+        },
+        "require": {
+            "k3jw/amiss": "1.0.*"
+        }
+    }
+
+
 Usage
 -----
 

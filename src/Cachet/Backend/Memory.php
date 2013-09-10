@@ -7,8 +7,8 @@ use Cachet\Item;
 /**
  * Ephemeral memory-backed cache implementation
  */
-class Memory implements Backend
-{
+class Memory implements Backend, Iteration\Iterable
+{   
     public $data = array();
     
     function get($cacheId, $key)
@@ -36,5 +36,15 @@ class Memory implements Backend
     function flush($cacheId)
     {
         unset($this->data[$cacheId]);
+    }
+    
+    function keys($cacheId)
+    {
+        return array_keys($this->data[$cacheId]);
+    }
+    
+    function items($cacheId)
+    {
+        return $this->data[$cacheId];
     }
 }

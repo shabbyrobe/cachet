@@ -41,16 +41,16 @@ class File implements Backend
     
     function get($cacheId, $key)
     {
-        list ($fileName, $fullFileName) = $this->getFileName($cacheId, $key);
+        list ($fileName, $fullFileName) = $this->getFilePath($cacheId, $key);
         
         if (file_exists($fullFileName)) {
-            return @unserialize(file_get_contents($fullFileName));
+            return $this->decode(file_get_contents($fullFileName));
         }
     }
     
     function set(Item $item)
     {
-        list ($fileName, $fullFileName) = $this->getFileName($item->cacheId, $item->key);
+        list ($fileName, $fullFileName) = $this->getFilePath($item->cacheId, $item->key);
         
         $fullDir = dirname($fullFileName);
         if (!file_exists($fullDir)) {
@@ -74,7 +74,7 @@ class File implements Backend
     
     function delete($cacheId, $key)
     {
-        list ($fileName, $fullFileName) = $this->getFileName($cacheId, $key);
+        list ($fileName, $fullFileName) = $this->getFilePath($cacheId, $key);
         if (file_exists($fullFileName))
             unlink($fullFileName);
     }
@@ -115,6 +115,23 @@ class File implements Backend
         }
     }
     
+    function decode($fileContents)
+    {
+        return @unserialize($fileContents);
+    }
+    
+    function keys($cacheId)
+    {
+        list ($fileName, $fullFileName) = $this->getFilePath($cacheId);
+        return new Iteration\File($fullFileName, $this, 'key');
+    }
+    
+    function items($cacheId)
+    {
+        list ($fileName, $fullFileName) = $this->getFilePath($cacheId);
+        return new Iteration\File($fullFileName, $this, 'item');
+    }
+    
     private function applySettings($name, $file=true)
     {
         if ($this->user)
@@ -132,16 +149,19 @@ class File implements Backend
         }
     }
     
-    private function getFileName($cacheId, $key)
+    private function getFilePath($cacheId, $key=null)
     {
         $hashedCache = $this->createSafeKey($cacheId);
-        $hashedKey = $this->createSafeKey($key);
-        
         $keyPath = "$hashedCache/";
-        for ($i=0; $i<$this->keySplit; $i++) {
-            $keyPath .= "{$hashedKey[$i]}/";
+        
+        if ($key) {
+            $hashedKey = $this->createSafeKey($key);
+            
+            for ($i=0; $i<$this->keySplit; $i++) {
+                $keyPath .= "{$hashedKey[$i]}/";
+            }
+            $keyPath .= $hashedKey;
         }
-        $keyPath .= $hashedKey;
         
         return array($keyPath, "{$this->basePath}/$keyPath");
     }

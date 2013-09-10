@@ -6,9 +6,9 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class APC implements Backend
+class APC implements Backend, Iteration\Iterable
 {
-    public $flushIteratorChunkSize = 100;
+    public $iteratorChunkSize = 100;
     
     public $prefix;
     
@@ -48,8 +48,27 @@ class APC implements Backend
     function flush($cacheId)
     {
         $fullPrefix = $this->formatKey($cacheId, "");
-        $iter = new \APCIterator('user', "~^".preg_quote($fullPrefix, "~")."~", APC_ITER_VALUE, $this->flushIteratorChunkSize);
+        $iter = new \APCIterator('user', "~^".preg_quote($fullPrefix, "~")."~", APC_ITER_VALUE, $this->iteratorChunkSize);
         apc_delete($iter);
+    }
+    
+    function keys($cacheId)
+    {
+        $fullPrefix = $this->formatKey($cacheId, "");
+        $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
+        /*
+        foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
+            yield $item['value']->key;
+        }
+        */
+        return new Iteration\APC($keyRegex, $this->iteratorChunkSize, 'key');
+    }
+    
+    function items($cacheId)
+    {
+        $fullPrefix = $this->formatKey($cacheId, "");
+        $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
+        return new Iteration\APC($keyRegex, $this->iteratorChunkSize, 'item');
     }
     
     private function formatKey($cacheId, $key)

@@ -5,11 +5,13 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class Memcached implements Backend
+class Memcached extends Iteration\Adapter
 {
     public $memcached;
     
-    public $iUnderstandThatFlushingDeletesAbsolutelyEverythingFromMemcache = false;
+    public $unsafeFlush = false;
+    
+    public $prefix;
     
     public function __construct($memcached=null)
     {
@@ -17,45 +19,54 @@ class Memcached implements Backend
             $this->memcached = $memcached;
         }
         else {
-            $this->memcached = new \Memcached($memcached);
+            $this->memcached = new \Memcached();
             if ($memcached)
                 $this->memcached->addServers($memcached);
         }
     }
-
-    function delete($cacheId, $key)
-    {
-        return $this->memcached->delete($key);
-    }
     
     function get($cacheId, $key)
     {
-        return @unserialize($this->memcached->get($key));
+        $formattedKey = $this->formatKey($cacheId, $key);
+        return @unserialize($this->memcached->get($formattedKey));
     }
     
-    function set(Item $item)
+    protected function setInStore(Item $item)
     {
         $ttl = 0;
         
-        $formattedKey = $item->key;
+        $formattedKey = $this->formatKey($item->cacheId, $item->key);
         $formattedItem = serialize($item);
         if ($item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
         }
-        return $this->memcached->set($formattedKey, $formattedItem, $ttl);
+        
+        $this->memcached->set($formattedKey, $formattedItem, $ttl);
     }
     
-    function flush($cacheId)
+    protected function deleteFromStore($cacheId, $key)
     {
-        if (!$this->iUnderstandThatFlushingDeletesAbsolutelyEverythingFromMemcache) {
-            throw new \RuntimeException("Memcache doesn't support key listing. It's not "
-                ."possible to flush without completely flushing memcache. Please set the"
-                ."``iUnderstandThatFlushingDeletesAbsolutelyEverythingFromMemcache`` variable"
-                ."to enable this behaviour"
-            );
+        $formattedKey = $this->formatKey($cacheId, $key);
+        return $this->memcached->delete($formattedKey);
+    }
+    
+    protected function flushStore($cacheId)
+    {
+        if ($this->keyBackend) {
+            foreach ($this->keys($cacheId) as $key) {
+                $this->delete($cacheId, $key);
+            }
+        }
+        elseif (!$this->unsafeFlush) {
+                throw new \RuntimeException("Memcache is not iterable by default. Please either call setKeyBackend or unsafeFlush.");
         }
         else {
             $this->memcached->flush();
         }
+    }
+    
+    private function formatKey($cacheId, $key)
+    {
+        return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";
     }
 }
