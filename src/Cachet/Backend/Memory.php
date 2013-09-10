@@ -40,11 +40,17 @@ class Memory implements Backend, Iterable
     
     function keys($cacheId)
     {
-        return array_keys($this->data[$cacheId]);
+        if (isset($this->data[$cacheId]))
+            return array_keys($this->data[$cacheId]);
+        else
+            return[];
     }
     
     function items($cacheId)
     {
-        return array_values($this->data[$cacheId]);
+        if (isset($this->data[$cacheId]))
+            return array_values($this->data[$cacheId]);
+        else
+            return [];
     }
 }
