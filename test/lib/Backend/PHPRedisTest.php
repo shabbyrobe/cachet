@@ -7,7 +7,22 @@ use Cachet\Item;
 
 class PHPRedisTest extends \BackendTestCase
 {
+    public function setUp()
+    {
+        $redis = $this->getRedis();
+        $redis->flushDb();
+        $count = $redis->dbSize();
+        if ($count != 0)
+            throw new \Exception();
+    }
+    
     public function getBackend()
+    {
+        $redis = $this->getRedis();
+        return new \Cachet\Backend\PHPRedis($redis);
+    }
+    
+    protected function getRedis()
     {
         if (!extension_loaded('redis'))
             $this->markTestSkipped("phpredis extension not found");
@@ -20,6 +35,7 @@ class PHPRedisTest extends \BackendTestCase
             $GLOBALS['settings']['redis']['server'], 
             isset($GLOBALS['settings']['redis']['port']) ? $GLOBALS['settings']['redis']['port'] : 6379
         );
-        return new \Cachet\Backend\PHPRedis($redis);
+        $redis->select($GLOBALS['settings']['redis']['database']);
+        return $redis;
     }
 }
