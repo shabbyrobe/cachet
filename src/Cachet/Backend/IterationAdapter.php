@@ -30,8 +30,11 @@ abstract class IterationAdapter implements Backend, Iterable
     
     function keys($cacheId)
     {
-        foreach ($this->keyBackend->items($cacheId) as $key) {
-            yield $key;
+        if (!$this->keyBackend)
+            throw new \RuntimeException("Please call setKeyBackend() if you wish to iterate by key");
+        
+        foreach ($this->keyBackend->items($cacheId) as $item) {
+            yield $item->value;
         }
     }
     
