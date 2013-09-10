@@ -28,7 +28,13 @@ class Memcached extends IterationAdapter
     function get($cacheId, $key)
     {
         $formattedKey = $this->formatKey($cacheId, $key);
-        return @unserialize($this->memcached->get($formattedKey));
+        $encoded = $this->memcached->get($formattedKey);
+        
+        $item = null;
+        if ($encoded)
+            $item = @unserialize($encoded);
+        
+        return $item ?: null;
     }
     
     protected function setInStore(Item $item)
