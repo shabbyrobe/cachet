@@ -10,7 +10,7 @@ use Cachet\Item;
  * need to flush the entire cache if you do unless you want unpredictable
  * results.
  */
-class Sharding implements Backend
+class Sharding implements Backend, Iteration\Iterable
 {
     private $backends;
     private $backendCount;
@@ -47,6 +47,22 @@ class Sharding implements Backend
     {
         foreach ($this->backends as $backend)
             $backend->flush($cacheId);
+    }
+    
+    function keys($cacheId)
+    {
+        foreach ($this->backends as $backend) {
+            foreach ($backend->keys($cacheId) as $key)
+                yield $key;
+        }
+    }
+    
+    function items($cacheId)
+    {
+        foreach ($this->backends as $backend) {
+            foreach ($backend->items($cacheId) as $item)
+                yield $item;
+        }
     }
     
     private function selectBackend($cacheId, $key)

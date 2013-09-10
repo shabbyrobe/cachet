@@ -1,5 +1,5 @@
-Cachet - Pluggable Caching for PHP
-==================================
+Cachet - Pluggable Caching for PHP 5.5
+======================================
 
 ::
 
@@ -115,6 +115,24 @@ returned value is stored in the cache:
     });
 
 
+Iteration - this is tricky and loaded with caveats. See the section below that describes them in
+detail:
+
+.. code-block:: php
+
+    $cache = new Cachet\Cache($id, new Cachet\Backend\Memory());
+    $cache->set('foo', 'bar');
+    
+    // this dependency is just for demonstration/testing purposes.
+    // iteration will not return this value as the dependency is invalid 
+    $cache->set('baz', 'qux' new Cachet\Dependency\Dummy(false));
+    
+    foreach ($cache->values() as $key=>$value) {
+        echo "$key: $value\n";
+    }
+    // outputs "foo: bar" only.
+
+
 Cache options and their defaults:
 
 .. code-block:: php
@@ -124,6 +142,43 @@ Cache options and their defaults:
     $cache->deleteIfInvalid = true;
 
 
+Iteration
+---------
+
+Iteration support is patchy. If the underlying backend supports listing keys, iteration is usually
+efficient. The **Cachet** APC backend makes use of the ``APCIterator`` class and is very efficient.
+XCache sends the browser a HTTP authentication dialog when you try to list keys, and Memcached
+provides no means to iterate over keys at all.
+
+If a backend doesn't support iteration, it usually supports using a secondary backend which does
+support iteration for the keys. This slows down insertion, deletion and flushing, but has no impact
+on retrieval.
+
+The different types of iteration support are:
+
+**generator**
+  Iteration is implemented efficiently using a generator. Keys/items are only retrieved and yielded
+  as necessary. There should be no memory issues with generator-based iteration.
+
+**fetcher**
+  All keys are retrieved in one hit. Items are retrieved one at a time directly from the backend.
+  Millions of keys may cause memory issues.
+
+**all data**
+  Everything is returned in one hit. This is only applied to the in-memory cache or session
+  cache, where no other option is possible. Thousands of keys may cause memory issues.
+
+**key backend**
+  Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower
+  as these operations need to be performed on both the backend and the key backend. Memory issues
+  are inherited from the key backend, so you should try to use a generator-based key backend
+  wherever possible.
+  
+  Key backend iteration is optional. If no key backend is supplied, iteration will fail.
+
+Iteration is a requirement for garbage collection.
+
+
 Backends
 --------
 
@@ -131,6 +186,8 @@ APC
 ~~~
 
 Works with ``apc`` and ``apcu``.
+
+Iteration support: **generator**.
 
 .. code-block:: php
 
@@ -147,8 +204,13 @@ File
 Filesystem-backed cache. This has only been tested on OS X and Linux but may work on Windows (and
 probably should).
 
-The cache is not particularly fast, and flushing can be very, very slow indeed. If you use this
-cache, do some performance crunching to see if it's actually any faster than no cache at all.
+The cache is not particularly fast. Flushing and iteration can be very, very slow indeed, but should
+not suffer from memory issues.
+
+If you use this cache, do some performance crunching to see if it's actually any faster than no
+cache at all.
+
+Iteration support: **generator**.
 
 .. code-block:: php
 
@@ -169,7 +231,9 @@ Memcached
 ~~~~~~~~~
 
 Requires ``memcached`` PHP extension.
- 
+
+Iteration support: **key backend**.
+
 .. code-block:: php
 
     <?php
@@ -182,10 +246,13 @@ Requires ``memcached`` PHP extension.
     $backend = new Cachet\Backend\Memcached($memcached);
 
 
+
 Memory
 ~~~~~~
 
 In-memory cache for the duration of the request or CLI run.
+
+Iteration support: **all data**.
 
 .. code-block:: php
 
@@ -197,6 +264,8 @@ PDO
 ~~~
 
 Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
+
+Iteration support: **fetcher**
 
 .. code-block:: php
     
@@ -226,6 +295,8 @@ PHPRedis
 
 Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
 
+Iteration support: **fetcher**
+
 .. code-block:: php
     
     <?php
@@ -244,6 +315,8 @@ Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked
 ``session_start()`` will be called automatically if it hasn't yet been called, so if you would
 like to customise the session startup, call ``session_start()`` yourself beforehand.
 
+Iteration support: **all data**
+
 .. code-block:: php
 
     <?php
@@ -252,6 +325,8 @@ like to customise the session startup, call ``session_start()`` yourself beforeh
 
 XCache
 ~~~~~~
+
+Iteration support: **key backend**
 
 .. code-block:: php
 
@@ -271,6 +346,8 @@ backend, it is inserted into every backend above it in the list.
 This works best when the fastest backend has the highest priority (earlier in the list).
 
 Values are set in all caches in reverse priority order.
+
+Iteration support: whatever is supported by the lowest priority cache
 
 .. code-block:: php
     
@@ -302,6 +379,8 @@ Sharding
 Allows the cache to choose one of several backends for each key. The same backend is guaranteed to
 be chosen for the same key, provided the list of backends is always the same.
 
+Iteration support: each backend is iterated fully.
+
 .. code-block:: php
 
     <?php
@@ -320,33 +399,6 @@ be chosen for the same key, provided the list of backends is always the same.
     var_dump(count($memory1->data));  // 1
     var_dump(count($memory2->data));  // 1
     var_dump(count($memory3->data));  // 2
-
-
-Custom
-~~~~~~
-
-Custom backends are a snap to write - simply implement ``Cachet\Backend``. Please make sure you
-follow these guidelines:
-
-- Backends aren't meant to be used by themselves - they should be used by an instance of
-  ``Cachet\Cache``
-
-- It must be possible to use the same backend with more than one instance of ``Cachet\Cache``.
-
-- ``get()`` must return an instance of ``Cachet\Item``. You are not required to check whether it
-  is valid, ``Cachet\Cache`` does this for you.
-
-- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is
-  not strictly necessary.
-
-- ``set()`` must store enough information so that ``get()`` can return a fully populated instance
-  of ``Cachet\Item``. This usually means that if your backend can't support PHP objects directly,
-  you should just ``serialize()`` the ``Cachet\Item`` directly.
-
-You can reduce the size of the data placed into the backend by using ``Cachet\Item->compact()``
-and ``Cachet\Item::uncompact()``. This strips much of the redundant information from the cache item.
-YMMV - I was surprised to find that using ``Cachet\Item->compact()`` had the effect of *increasing*
-the memory used in APCU.
 
 
 Dependencies
@@ -500,7 +552,47 @@ The following will be considered valid only if the item is less than 5 minutes o
         new Cachet\Dependency\Mtime('/path/to/file'),
         new Cachet\Dependency\TTL(300),
     ));
-    
+
+
+Extending
+---------
+
+Backends
+~~~~~~~~
+
+Custom backends are a snap to write - simply implement ``Cachet\Backend``. Please make sure you
+follow these guidelines:
+
+- Backends aren't meant to be used by themselves - they should be used by an instance of
+  ``Cachet\Cache``
+
+- It must be possible to use the same backend with more than one instance of ``Cachet\Cache``.
+
+- ``get()`` must return an instance of ``Cachet\Item``. You are not required to check whether it
+  is valid, ``Cachet\Cache`` does this for you.
+
+- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is
+  not strictly necessary.
+
+- ``set()`` must store enough information so that ``get()`` can return a fully populated instance
+  of ``Cachet\Item``. This usually means that if your backend can't support PHP objects directly,
+  you should just ``serialize()`` the ``Cachet\Item`` directly.
+
+You can reduce the size of the data placed into the backend by using ``Cachet\Item->compact()``
+and ``Cachet\Item::uncompact()``. This strips much of the redundant information from the cache item.
+YMMV - I was surprised to find that using ``Cachet\Item->compact()`` had the effect of *increasing*
+the memory used in APCU.
+
+
+Dependencies
+~~~~~~~~~~~~
+
+Dependencies are created by implementing ``Cachet\Dependency``. Dependencies are serialised and
+stored in the cacne alongside the value. A dependency is always passed a reference to the current
+cache when it is used, and care should be taken never to hold a reference to it, or any other
+objects that don't directly relate to the dependency's data as they will also be shoved into the
+cache, and trust me - you don't want that.
+
 
 License
 -------
