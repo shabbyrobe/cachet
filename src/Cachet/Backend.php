@@ -4,10 +4,11 @@ namespace Cachet;
 interface Backend
 {
     /**
-     * Retrieves a cache item from the cache. This does not check
-     * whether the item has expired - this is up to the outer cache.
+     * Retrieves an item from the backend. This does not check
+     * whether the item has expired - this is up to the Cachet\Cache.
+     * This must return null if the item is not found
      * @param string key to look up
-     * @return Cachet\Item
+     * @return Cachet\Item|null
      */
     function get($cacheId, $key);
     
@@ -24,5 +25,8 @@ interface Backend
      */
     function delete($cacheId, $key);
     
+    /**
+     * @return void
+     */
     function flush($cacheId);
 }
