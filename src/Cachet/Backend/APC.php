@@ -19,7 +19,8 @@ class APC implements Backend, Iterable
     
     function get($cacheId, $key)
     {
-        return apc_fetch($this->formatKey($cacheId, $key));
+        $item = apc_fetch($this->formatKey($cacheId, $key));
+        return $item ?: null;
     }
     
     function set(Item $item)
