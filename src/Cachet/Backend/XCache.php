@@ -20,10 +20,8 @@ class Memcached extends IterationAdapter
         $item = xcache_get($formattedKey);
         if ($item) {
             $item = @unserialize($item);
-            if (!$item)
-                $this->delete($cacheId, $key);
         }
-        return $item;
+        return $item ?: null;
     }
     
     protected function setInStore(Item $item)
