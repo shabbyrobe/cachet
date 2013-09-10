@@ -56,19 +56,18 @@ class APC implements Backend, Iteration\Iterable
     {
         $fullPrefix = $this->formatKey($cacheId, "");
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        /*
         foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
             yield $item['value']->key;
         }
-        */
-        return new Iteration\APC($keyRegex, $this->iteratorChunkSize, 'key');
     }
     
     function items($cacheId)
     {
         $fullPrefix = $this->formatKey($cacheId, "");
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        return new Iteration\APC($keyRegex, $this->iteratorChunkSize, 'item');
+        foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
+            yield $item['value'];
+        }
     }
     
     private function formatKey($cacheId, $key)

@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class File implements Backend
+class File implements Backend, Iteration\Iterable
 {
     public $user;
     public $group;
@@ -81,18 +81,10 @@ class File implements Backend
     
     function flush($cacheId)
     {
-        $hashedCache = $this->createSafeKey($cacheId);
-        $path = "{$this->basePath}/$hashedCache";
-        if (!file_exists($path))
-            return;
-        
-        $dir = new \RecursiveDirectoryIterator(
-            $path,
-            \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO | \FilesystemIterator::SKIP_DOTS
-        );
+        $iter = $this->getIterator($cacheId);
         
         $lastDir = null;
-        foreach (new \RecursiveIteratorIterator($dir, \RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+        foreach ($iter as $item) {
             if ($item->isFile()) {
                 $currentDir = dirname($item);
                 unlink($item);
@@ -122,14 +114,48 @@ class File implements Backend
     
     function keys($cacheId)
     {
-        list ($fileName, $fullFileName) = $this->getFilePath($cacheId);
-        return new Iteration\File($fullFileName, $this, 'key');
+        $iter = $this->getIterator($cacheId);
+        foreach ($iter as $cacheFile) {
+            if (!file_exists($cacheFile))
+                continue;
+            
+            $item = $this->decode(file_get_contents($cacheFile));
+            if (!$item)
+                throw new \UnexpectedValueException();
+            
+            yield $item->key;
+        }
     }
     
     function items($cacheId)
     {
+        $iter = $this->getIterator($cacheId);
+        foreach ($iter as $cacheFile) {
+            if (!file_exists($cacheFile))
+                continue;
+            
+            $item = $this->decode(file_get_contents($cacheFile));
+            if (!$item)
+                throw new \UnexpectedValueException();
+            
+            yield $item;
+        }
+    }
+    
+    private function getIterator($cacheId, $iteratorMode=\RecursiveIteratorIterator::LEAVES_ONLY)
+    {
+        $hashedCache = $this->createSafeKey($cacheId);
+        $path = "{$this->basePath}/$hashedCache";
+        if (!file_exists($path))
+            return;
+        
         list ($fileName, $fullFileName) = $this->getFilePath($cacheId);
-        return new Iteration\File($fullFileName, $this, 'item');
+        $dir = new \RecursiveDirectoryIterator(
+            $path,
+            \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO | \FilesystemIterator::SKIP_DOTS
+        );
+        $iter = new \RecursiveIteratorIterator($dir, $iteratorMode);
+        return $iter;
     }
     
     private function applySettings($name, $file=true)
