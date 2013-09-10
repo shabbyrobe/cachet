@@ -159,7 +159,7 @@ The different types of iteration support are:
   Everything is returned in one hit. This is only applied to the in-memory cache or session
   cache, where no other option is possible. Thousands of keys may cause memory issues.
 
-**key backend**
+**optional key backend**
   Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower
   as these operations need to be performed on both the backend and the key backend. Memory issues
   are inherited from the key backend, so you should try to use a generator-based key backend
@@ -223,19 +223,51 @@ Memcached
 
 Requires ``memcached`` PHP extension.
 
-Iteration support: **key backend**.
+Iteration support: **optional key backend**.
 
 .. code-block:: php
 
     <?php
-    // Connect on demand:
-    $backend = new Cachet\Backend\Memcached(array('127.0.0.1'));
+    // Connect on demand. Constructor accepts the same argument as Memcached->addServers()
+    $backend = new Cachet\Backend\Memcached(array(array('127.0.0.1', 11211)));
     
     // Use existing Memcached instance:
     $memcached = new Memcached();
     $memcached->addServer('127.0.0.1');
     $backend = new Cachet\Backend\Memcached($memcached);
 
+
+Flushing is not supported by default, but works properly when a key backend is provided. If you 
+don't wish to use a key backend, you can activate unsafe flush mode, which will simply flush your
+entire memcache instance regardless of which cache it was called against.
+
+.. code-block:: php
+
+    <?php
+    // using a key backend, no surprises
+    $backend = new Cachet\Backend\Memcached($servers);
+    $backend->setKeyBackend($keyBackend);
+    
+    $cache1 = new Cachet\Cache('cache1', $backend);
+    $cache2 = new Cachet\Cache('cache2', $backend);
+    $cache1->set('foo', 'bar');
+    $cache2->set('baz', 'qux');
+    
+    $cache1->flush();
+    var_dump($cache2->has('baz'));  // returns true
+    
+    
+    // using unsafe flush
+    $backend = new Cachet\Backend\Memcached($servers);
+    $backend->unsafeFlush = true;
+    
+    $cache1 = new Cachet\Cache('cache1', $backend);
+    $cache2 = new Cachet\Cache('cache2', $backend);
+    $cache1->set('foo', 'bar');
+    $cache2->set('baz', 'qux');
+    
+    $cache1->flush();
+    var_dump($cache2->has('baz'));  // returns false!
 
 
 Memory
@@ -317,7 +349,7 @@ Iteration support: **all data**
 XCache
 ~~~~~~
 
-Iteration support: **key backend**
+Iteration support: **optional key backend**
 
 .. code-block:: php
 

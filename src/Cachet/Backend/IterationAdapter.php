@@ -17,7 +17,7 @@ abstract class IterationAdapter implements Backend, Iterable
     
     public function iterable()
     {
-        return $this->keyBackend;
+        return !!$this->keyBackend;
     }
     
     public function setKeyBackend(Iterable $backend)

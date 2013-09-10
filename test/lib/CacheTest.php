@@ -23,9 +23,6 @@ class CacheTest extends \CachetTestCase
         $this->assertTrue($found);
     }
     
-    /**
-     * @covers Cachet\Cache::removeInvalid
-     */
     public function testRemoveInvalid()
     {
         $this->cache->set('1', 1);
@@ -40,9 +37,6 @@ class CacheTest extends \CachetTestCase
         $this->assertTrue(isset($this->backend->data['cache']['4']));
     }
     
-    /**
-     * @covers Cachet\Cache::keys
-     */
     public function testKeysGenerator()
     {
         $this->cache->set('1', 'one');
@@ -57,9 +51,28 @@ class CacheTest extends \CachetTestCase
         $this->assertEquals(['1', '2', '3'], $found);
     }
     
-    /**
-     * @covers Cachet\Cache::keys
-     */
+    public function testKeysGeneratorFailsWhenIterationAdapterNotIterable()
+    {
+        $backend = $this->getMockBuilder('Cachet\Backend\IterationAdapter')
+            ->setMethods(['iterable'])
+            ->getMockForAbstractClass()
+        ;
+        $backend->expects($this->any())->method('iterable')->will($this->returnValue(false));
+        $cache = new \Cachet\Cache('cache', $backend);
+        $this->setExpectedException('RuntimeException', "This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.");
+        $keys = iterator_to_array($cache->keys());
+    }
+    
+    public function testKeysGeneratorFailsWhenNotIterable()
+    {
+        $backend = $this->getMockBuilder('Cachet\Backend')
+            ->getMockForAbstractClass()
+        ;
+        $cache = new \Cachet\Cache('cache', $backend);
+        $this->setExpectedException('RuntimeException', "This backend does not support iteration");
+        $keys = iterator_to_array($cache->keys());
+    }
+    
     public function testKeysGeneratorIgnoresInvalid()
     {
         $this->cache->set('1', 'one');
@@ -74,9 +87,6 @@ class CacheTest extends \CachetTestCase
         $this->assertEquals(['1', '2'], $found);
     }
     
-    /**
-     * @covers Cachet\Cache::values
-     */
     public function testValuesGenerator()
     {
         $this->cache->set('1', 'one');
@@ -91,9 +101,6 @@ class CacheTest extends \CachetTestCase
         $this->assertEquals(['one', 'two', 'three'], $found);
     }
     
-    /**
-     * @covers Cachet\Cache::values
-     */
     public function testValuesGeneratorIgnoresInvalid()
     {
         $this->cache->set('1', 'one');
@@ -108,9 +115,6 @@ class CacheTest extends \CachetTestCase
         $this->assertEquals(['one', 'three'], $found);
     }
     
-    /**
-     * @covers Cachet\Cache::items
-     */
     public function testItemsGeneratorIgnoresInvalid()
     {
         $this->cache->set('1', 'one');
