@@ -50,7 +50,7 @@ class SessionHandler implements \SessionHandlerInterface
         if ($this->ttl <= 0)
             $this->ttl = null;
         
-        $this->prefix = "$savePath/$name";
+        $this->prefix = ($savePath ? "$savePath/" : "")."$name";
         return true;
     }
     
@@ -61,7 +61,7 @@ class SessionHandler implements \SessionHandlerInterface
     
     public function write($sessionId, $sessionData)
     {
-        $this->cache->set("{$this->prefix}/{$sessionId}", $sessionData);
+        $this->cache->set("{$this->prefix}/{$sessionId}", $sessionData, $this->ttl);
         return true;
     }
 }
