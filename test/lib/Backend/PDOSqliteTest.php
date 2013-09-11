@@ -2,8 +2,6 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
-use Cachet\Dependency;
-use Cachet\Item;
 use Cachet\Cache;
 
 class PDOSqliteTest extends \CachetTestCase

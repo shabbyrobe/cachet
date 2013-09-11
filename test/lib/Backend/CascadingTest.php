@@ -2,7 +2,6 @@
 namespace Cachet\Test;
 
 use Cachet\Backend;
-use Cachet\Dependency;
 use Cachet\Item;
 
 class CascadingTest extends \BackendTestCase

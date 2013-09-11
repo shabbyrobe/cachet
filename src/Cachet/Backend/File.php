@@ -2,7 +2,6 @@
 namespace Cachet\Backend;
 
 use Cachet\Backend;
-use Cachet\Dependency;
 use Cachet\Item;
 
 class File implements Backend, Iterable

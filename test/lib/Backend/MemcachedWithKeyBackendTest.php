@@ -2,8 +2,6 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
-use Cachet\Cache;
-use Cachet\Item;
 
 class MemcachedTest extends \BackendTestCase
 {

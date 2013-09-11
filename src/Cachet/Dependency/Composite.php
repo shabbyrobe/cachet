@@ -10,8 +10,8 @@ class Composite implements Dependency
     const MODE_ALL = 'all';
     const MODE_ANY = 'any';
     
-	public $dependencies = array();
-	
+    public $dependencies = array();
+    
     private $all = false;
     
     public function __construct($mode, $dependencies)
@@ -23,22 +23,22 @@ class Composite implements Dependency
         
         $this->dependencies = $dependencies;
     }
-	
-	function valid(Cache $cache, Item $item)
-	{
-		foreach ($this->dependencies as $dep) {
-			$valid = $dep->valid($cache, $item);
-			if (($this->all && !$valid) || (!$this->all && $valid)) {
-				return !$this->all;
-			}
-		}
-		return $this->all;
-	}
-	
-	function init(Cache $cache, Item $item)
-	{
-		foreach ($this->dependencies as $dep) {
-			$dep->init($cache, $item);
-		}
-	}
+    
+    function valid(Cache $cache, Item $item)
+    {
+        foreach ($this->dependencies as $dep) {
+            $valid = $dep->valid($cache, $item);
+            if (($this->all && !$valid) || (!$this->all && $valid)) {
+                return !$this->all;
+            }
+        }
+        return $this->all;
+    }
+    
+    function init(Cache $cache, Item $item)
+    {
+        foreach ($this->dependencies as $dep) {
+            $dep->init($cache, $item);
+        }
+    }
 }

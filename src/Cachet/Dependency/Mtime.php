@@ -31,24 +31,24 @@ use Cachet\Item;
  */
 class Mtime implements Dependency
 {
-	public $file;
-	public $time;
-	
-	public function __construct($file)
-	{
-		$this->file = $file;
-	}
-	
-	function valid(Cache $cache, Item $item)
-	{
-		if (!file_exists($this->file))
-			return false;
-		return filemtime($this->file) <= $this->time; 
-	}
-	
-	function init(Cache $cache, Item $item)
-	{
-		if (file_exists($this->file))
-			$this->time = filemtime($this->file);
-	}
+    public $file;
+    public $time;
+    
+    public function __construct($file)
+    {
+        $this->file = $file;
+    }
+    
+    function valid(Cache $cache, Item $item)
+    {
+        if (!file_exists($this->file))
+            return false;
+        return filemtime($this->file) <= $this->time; 
+    }
+    
+    function init(Cache $cache, Item $item)
+    {
+        if (file_exists($this->file))
+            $this->time = filemtime($this->file);
+    }
 }

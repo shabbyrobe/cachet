@@ -1,7 +1,6 @@
 <?php
 namespace Cachet\Test\Backend;
 
-use Cachet\Dependency;
 
 class MemoryTest extends \BackendTestCase
 {

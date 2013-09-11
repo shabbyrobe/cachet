@@ -2,7 +2,6 @@
 namespace Cachet\Backend;
 
 use Cachet\Backend;
-use Cachet\Cache;
 use Cachet\Item;
 
 class Memcached extends IterationAdapter

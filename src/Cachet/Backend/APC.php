@@ -3,7 +3,6 @@ namespace Cachet\Backend;
 
 use Cachet\Dependency;
 use Cachet\Backend;
-use Cachet\Cache;
 use Cachet\Item;
 
 class APC implements Backend, Iterable

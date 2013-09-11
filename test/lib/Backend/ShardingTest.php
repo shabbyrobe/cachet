@@ -2,7 +2,6 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
-use Cachet\Dependency;
 use Cachet\Item;
 
 class ShardingTest extends \BackendTestCase
