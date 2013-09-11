@@ -29,15 +29,27 @@ class MemcachedTest extends \BackendTestCase
     protected function getMemcached()
     {
         if (!extension_loaded('memcached'))
-            $this->markTestSkipped("memcached extension not found");
+            return $this->markTestSkipped("memcached extension not found");
         
         if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['memcached']['server'])
-            $this->markTestSkipped("Please supply a memcached server in .cachettestrc");
+            return $this->markTestSkipped("Please supply a memcached server in .cachettestrc");
+        
+        $sock = fsockopen(
+            $GLOBALS['settings']['memcached']['server'], 
+            $GLOBALS['settings']['memcached']['port'],
+            $errno,
+            $errstr,
+            1
+        );
+        if ($sock === false)
+            $this->markTestSkipped("Memcache server not running");
+        
+        fclose($sock);
         
         $memcached = new \Memcached();
         $memcached->addServer(
             $GLOBALS['settings']['memcached']['server'], 
-            isset($GLOBALS['settings']['memcached']['port']) ? $GLOBALS['settings']['memcached']['port'] : 11211
+            $GLOBALS['settings']['memcached']['port']
         );
         return $memcached;
     }
