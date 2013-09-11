@@ -6,7 +6,7 @@ interface Dependency
     /**
      * WARNING: Do not save the value of $cache into the dependency
      */
-    function valid(Cache $cache, Item $item);
+    function valid(\Cachet\Cache $cache, \Cachet\Item $item);
     
     /**
      * Initialise the dependency for the cache item
@@ -16,5 +16,5 @@ interface Dependency
      * 
      * WARNING: Do not save the value of $cache into the dependency
      */
-    function init(Cache $cache, Item $item);
+    function init(\Cachet\Cache $cache, \Cachet\Item $item);
 }
