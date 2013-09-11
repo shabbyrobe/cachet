@@ -1,5 +1,7 @@
 <?php
 $base = realpath(__DIR__.'/../');
+define("BASE_PATH", $base);
+
 spl_autoload_register(function($class) use ($base) {
     if (strpos($class, 'Cachet\Test')===0) {
         require $base.'/test/lib/'.str_replace('\\', '/', substr($class, 11)).'.php';
@@ -41,16 +43,16 @@ abstract class BackendTestCase extends CachetTestCase
     public function testGetNonexistent()
     {
         $backend = $this->getBackend();
-        $item = $backend->get('cache', 'doesNotExist');
+        $item = $backend->get('cache1', 'doesNotExist');
         $this->assertNull($item);
     }
     
     public function testSetGet()
     {
         $backend = $this->getBackend();
-        $backend->set(new \Cachet\Item('cache', 'key', 'value'));
+        $backend->set(new \Cachet\Item('cache1', 'key', 'value'));
         
-        $item = $backend->get('cache', 'key');
+        $item = $backend->get('cache1', 'key');
         $this->assertNotNull($item);
         $this->assertTrue($item instanceof \Cachet\Item);
         $this->assertEquals('key', $item->key);
@@ -70,7 +72,7 @@ abstract class BackendTestCase extends CachetTestCase
     public function testDeleteNonexistent()
     {
         $backend = $this->getBackend();
-        $backend->delete('cache', 'doesNotExist');
+        $backend->delete('cache1', 'doesNotExist');
         
         // assert that we made it this far!
         $this->assertTrue(true);
@@ -79,12 +81,12 @@ abstract class BackendTestCase extends CachetTestCase
     public function testSetDelete()
     {
         $backend = $this->getBackend();
-        $backend->set(new \Cachet\Item('cache', 'key1', 'value'));
-        $backend->set(new \Cachet\Item('cache', 'key2', 'value'));
+        $backend->set(new \Cachet\Item('cache1', 'key1', 'value'));
+        $backend->set(new \Cachet\Item('cache1', 'key2', 'value'));
         
-        $backend->delete('cache', 'key1');
-        $this->assertNull($backend->get('cache', 'key1'));
-        $this->assertNotNull($backend->get('cache', 'key2'));
+        $backend->delete('cache1', 'key1');
+        $this->assertNull($backend->get('cache1', 'key1'));
+        $this->assertNotNull($backend->get('cache1', 'key2'));
     }
     
     public function testFlush()
@@ -103,7 +105,7 @@ abstract class BackendTestCase extends CachetTestCase
     public function testFlushEmpty()
     {
         $backend = $this->getBackend();
-        $backend->flush('foo');
+        $backend->flush('cache1');
         
         // assert that we made it this far!
         $this->assertTrue(true);
@@ -160,6 +162,7 @@ $GLOBALS['settings'] = [
         'server'=>null,
         'port'=>11211,
     ],
+    'mysql'=>[],
 ];
 
 if (file_exists($base.'/.cachettestrc')) {

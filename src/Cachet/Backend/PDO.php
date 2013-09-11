@@ -6,7 +6,7 @@ use Cachet\Item;
 
 class PDO implements Backend, Iterable
 {
-    private $tableName;
+    private $tables;
     private $engine;
     private $pdo;
     private $params;
@@ -100,12 +100,12 @@ class PDO implements Backend, Iterable
         if (!$this->pdo)
             $this->connect();
         
-        if (!$this->tableName)
-            $this->ensureTable($cacheId);
+        $tableName = $this->ensureTable($cacheId);
+        $keyHash = $this->hashKey($key);
         
-        $sql = "SELECT itemData, creationTimestamp FROM `{$this->tableName}` WHERE cacheKey=?";
+        $sql = "SELECT itemData, creationTimestamp FROM `{$tableName}` WHERE keyHash=?";
         $stmt = $this->pdo->prepare($sql);
-        if ($stmt->execute(array($key)) === false)
+        if ($stmt->execute(array($keyHash)) === false)
             throw new \UnexpectedValueException("Cache $cacheId get query failed: ".implode(' ', $stmt->errorInfo()));
         
         $record = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -125,8 +125,7 @@ class PDO implements Backend, Iterable
         if (!$this->pdo)
             $this->connect();
         
-        if (!$this->tableName)
-            $this->ensureTable($item->cacheId);
+        $tableName = $this->ensureTable($item->cacheId);
         
         $expiryTimestamp = null;
         if ($item->dependency && method_exists($item->dependency, 'getExpiryTimestamp'))
@@ -136,10 +135,11 @@ class PDO implements Backend, Iterable
         unset($itemData[Item::COMPACT_CACHE_ID]);
         unset($itemData[Item::COMPACT_TIMESTAMP]);
         
-        $sql = "REPLACE INTO `{$this->tableName}` (cacheKey, itemData, creationTimestamp, expiryTimestamp) VALUES(?, ?, ?, ?)";
+        $sql = "REPLACE INTO `{$tableName}` (cacheKey, keyHash, itemData, creationTimestamp, expiryTimestamp) VALUES(?, ?, ?, ?, ?)";
         $stmt = $this->pdo->prepare($sql);
         
-        if ($stmt->execute(array($item->key, serialize($itemData), $item->timestamp, $expiryTimestamp)) === false)
+        $keyHash = $this->hashKey($item->key);
+        if ($stmt->execute(array($item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp)) === false)
             throw new \UnexpectedValueException("Cache $cacheId set query failed: ".implode(' ', $stmt->errorInfo()));
     }
     
@@ -148,13 +148,13 @@ class PDO implements Backend, Iterable
         if (!$this->pdo)
             $this->connect();
         
-        if (!$this->tableName)
-            $this->ensureTable($cacheId);
+        $tableName = $this->ensureTable($cacheId);
         
-        $sql = "DELETE FROM `{$this->tableName}` WHERE cacheKey=?";
+        $keyHash = $this->hashKey($key);
+        $sql = "DELETE FROM `{$tableName}` WHERE keyHash=?";
         $stmt = $this->pdo->prepare($sql);
         
-        if ($stmt->execute(array($key)) === false)
+        if ($stmt->execute(array($keyHash)) === false)
             throw new \UnexpectedValueException("Cache $cacheId delete query failed: ".implode(' ', $stmt->errorInfo()));
     }
     
@@ -163,13 +163,12 @@ class PDO implements Backend, Iterable
         if (!$this->pdo)
             $this->connect();
         
-        if (!$this->tableName)
-            $this->ensureTable($cacheId);
+        $tableName = $this->ensureTable($cacheId);
         
         if ($this->engine == 'mysql')
-            $result = $this->pdo->exec("TRUNCATE TABLE `{$this->tableName}`");
+            $result = $this->pdo->exec("TRUNCATE TABLE `{$tableName}`");
         else
-            $result = $this->pdo->exec("DELETE FROM `{$this->tableName}`");
+            $result = $this->pdo->exec("DELETE FROM `{$tableName}`");
         
         if ($result === false)
             throw new \UnexpectedValueException("Cache $cacheId flush query failed: ".implode(' ', $this->pdo->errorInfo()));
@@ -180,10 +179,9 @@ class PDO implements Backend, Iterable
         if (!$this->pdo)
             $this->connect();
         
-        if (!$this->tableName)
-            $this->ensureTable($cacheId);
+        $tableName = $this->ensureTable($cacheId);
         
-        $stmt = $this->pdo->query("SELECT cacheKey FROM `{$this->tableName}` ORDER BY cacheKey");
+        $stmt = $this->pdo->query("SELECT cacheKey FROM `{$tableName}` ORDER BY cacheKey");
         return $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
     }
     
@@ -196,27 +194,53 @@ class PDO implements Backend, Iterable
         }
     }
     
+    private function hashKey($key)
+    {
+        return hash('sha256', $key);
+    }
+    
     private function ensureTable($cacheId)
     {
-        $this->tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
-        
-        if ($this->engine == 'sqlite') {
-            $result = $this->pdo->exec("
-                CREATE TABLE IF NOT EXISTS `{$this->tableName}` (
-                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    cacheKey TEXT,
-                    itemData BLOB,
-                    creationTimestamp INTEGER,
-                    expiryTimestamp INTEGER NULL,
-                    UNIQUE (cacheKey)
-                );
-            ");
+        if (!isset($this->tables[$cacheId])) {
+            $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
+            $this->tables[$cacheId] = $tableName;
             
-            if ($result === false)
-                throw new \UnexpectedValueException("Cache $cacheId create table query failed: ".implode(' ', $this->pdo->errorInfo()));
+            if ($this->engine == 'sqlite') {
+                $result = $this->pdo->exec("
+                    CREATE TABLE IF NOT EXISTS `{$tableName}` (
+                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        keyHash TEXT,
+                        cacheKey TEXT,
+                        itemData BLOB,
+                        creationTimestamp INTEGER,
+                        expiryTimestamp INTEGER NULL,
+                        UNIQUE (keyHash)
+                    );
+                ");
+                
+                if ($result === false)
+                    throw new \UnexpectedValueException("Cache $cacheId create table query failed: ".implode(' ', $this->pdo->errorInfo()));
+            }
         }
-        else {
-            throw new \RuntimeException("Dynamic table creation only works with sqlite");
-        }
+        
+        return $this->tables[$cacheId];
+    }
+    
+    public static function createMySQLTable($pdo, $cacheId)
+    {
+        $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
+        
+        $sql = "
+            CREATE TABLE IF NOT EXISTS `{$tableName}` (
+                id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                keyHash VARCHAR(64),
+                cacheKey TEXT,
+                itemData LONGBLOB,
+                creationTimestamp INT,
+                expiryTimestamp INT NULL,
+                UNIQUE (keyHash)
+            ) ENGINE=InnoDB;
+        ";
+        $pdo->exec($sql);
     }
 }
