@@ -1,7 +1,7 @@
 <?php
 namespace Cachet;
 
-class Session implements \SessionHandlerInterface
+class SessionHandler implements \SessionHandlerInterface
 {
     private $cache;
     private $prefix;
