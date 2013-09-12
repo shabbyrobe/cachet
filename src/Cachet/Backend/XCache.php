@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class Memcached extends IterationAdapter
+class XCache extends IterationAdapter
 {   
     public $prefix;
     
@@ -29,7 +29,7 @@ class Memcached extends IterationAdapter
         $formattedKey = $this->formatKey($item->cacheId, $item->key);
         if (isset($item->dependency) && $item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
-            unset($item->dependency);
+            $item->dependency = null;
         }
         
         xcache_set($formattedKey, serialize($item), $ttl);
