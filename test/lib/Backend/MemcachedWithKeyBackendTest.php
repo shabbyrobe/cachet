@@ -34,7 +34,7 @@ class MemcachedTest extends \BackendTestCase
         if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['memcached']['server'])
             return $this->markTestSkipped("Please supply a memcached server in .cachettestrc");
         
-        $sock = fsockopen(
+        $sock = @fsockopen(
             $GLOBALS['settings']['memcached']['server'], 
             $GLOBALS['settings']['memcached']['port'],
             $errno,

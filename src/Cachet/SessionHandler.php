@@ -20,7 +20,7 @@ class SessionHandler implements \SessionHandlerInterface
     {
         if (!static::$instance) {
             static::$instance = new static($cache);
-            session_set_save_handler(static::$instance);
+            session_set_save_handler(static::$instance, true);
         }
     }
     
