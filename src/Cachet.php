@@ -6,6 +6,8 @@ class Cachet
         'Cachet\Backend\APC'=>'Cachet/Backend/APC.php',
         'Cachet\Backend\Cascading'=>'Cachet/Backend/Cascading.php',
         'Cachet\Backend\File'=>'Cachet/Backend/File.php',
+        'Cachet\Backend\Iterable'=>'Cachet/Backend/Iterable.php',
+        'Cachet\Backend\IterationAdapter'=>'Cachet/Backend/IterationAdapter.php',
         'Cachet\Backend\Memcached'=>'Cachet/Backend/Memcached.php',
         'Cachet\Backend\Memory'=>'Cachet/Backend/Memory.php',
         'Cachet\Backend\PDO'=>'Cachet/Backend/PDO.php',
@@ -17,11 +19,13 @@ class Cachet
         'Cachet\Dependency'=>'Cachet/Dependency.php',
         'Cachet\Dependency\CachedTag'=>'Cachet/Dependency/CachedTag.php',
         'Cachet\Dependency\Composite'=>'Cachet/Dependency/Composite.php',
+        'Cachet\Dependency\Dummy'=>'Cachet/Dependency/Dummy.php',
         'Cachet\Dependency\Mtime'=>'Cachet/Dependency/Mtime.php',
         'Cachet\Dependency\Permanent'=>'Cachet/Dependency/Permanent.php',
         'Cachet\Dependency\TTL'=>'Cachet/Dependency/TTL.php',
         'Cachet\Dependency\Time'=>'Cachet/Dependency/Time.php',
         'Cachet\Item'=>'Cachet/Item.php',
+        'Cachet\SessionHandler'=>'Cachet/SessionHandler.php',
     );
     
     public static function register()
