@@ -559,6 +559,20 @@ registered with the primary cache as a service.
     $valueCache->get('baz');  // returns null
     
 
+Equality comparison is done in loose mode by default (``==``). You can enable strict mode
+comparison by passing a third boolean argument to the constructor:
+
+.. code-block:: php
+
+    <?php
+    $dependency = new Cachet\Dependency\CachedTag('tagCache', 'tag', !!'strict');
+
+Strict mode uses ``===`` for everything except objects, for which it uses ``==``. This is because
+``===`` will never match ``true`` for objects as it compares references only; the values to be
+compared have each been retrieved from separate caches so they are highly unlikely to ever share a
+reference.
+
+
 Composite
 ~~~~~~~~~
 
@@ -575,6 +589,59 @@ The following will be considered valid only if the item is less than 5 minutes o
         new Cachet\Dependency\Mtime('/path/to/file'),
         new Cachet\Dependency\TTL(300),
     ));
+
+
+Session Handler
+---------------
+
+``Cachet\Cache`` can be registered to handle PHP's ``$_SESSION`` superglobal:
+
+.. code-block:: php
+
+    <?php
+    $backend = new Cachet\Backend\PDO(['dsn'=>'sqlite:/path/to/sessions.sqlite']);
+    $cache = new Cachet\Cache('session', $backend);
+    
+    // this must be called before session_start()
+    Cachet\SessionHandler::register($cache);
+    
+    session_start();
+    $_SESSION['foo'] = 'bar';
+
+
+By default, ``Cachet\SessionHandler`` does nothing when the ``gc`` (garbage collect) method is
+called. This is because cache iteration can't be relied upon to be performant - this is a backend
+specific characteristic and can vary wildly (see the **Iteration** section for more details) and it
+is up to the developer to be aware of this when selecting a backend. 
+
+You can activate automatic garbage collection like so:
+
+.. code-block:: php
+
+    <?php
+    Cachet\SessionHandler::register($cache, ['runGc'=>true]);
+    
+    // or...
+    Cachet\SessionHandler::register($cache);
+    Cachet\SessionHandler::$instance->runGc = true;
+
+
+For backends that don't use a generator for iteration, it is **strongly** recommended that you 
+implement garbage collection using a separate process rather than using PHP's gc probability
+mechanism.
+
+The following backends should **not** be used with the ``SessionHandler``:
+
+``Cachet\Backend\File``
+    This will raise a warning. I can't see any way that PHP's default file session mechanism isn't
+    superior to this backend - they essentially do the same thing only one is implemented in C and
+    seriously battle tested, and the other is not.
+
+``Cachet\Backend\Session``
+    This will raise an exception. You can't use the session for storing sessions.
+
+``Cachet\Backend\Memory``
+    This can't possibly work either - the data will disappear when the request is complete.
 
 
 Extending
