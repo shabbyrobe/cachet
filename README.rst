@@ -26,7 +26,7 @@ repository at ``k3jw.com`` with the following ``composer.json``::
             }
         },
         "require": {
-            "k3jw/amiss": "1.0.*"
+            "k3jw/cachet": "1.2.*"
         }
     }
 
