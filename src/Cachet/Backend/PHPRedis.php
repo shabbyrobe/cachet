@@ -19,24 +19,48 @@ class PHPRedis implements Backend, Iterable
     
     public function set(Item $item)
     {
-        $formattedItem = serialize($item->compact());
-        $formattedKey = $this->formatKey($item->cacheId, $item->key);
-        
-        $query = $this->redis->multi(\Redis::PIPELINE);
-        $ttl = null;
         if ($item->dependency instanceof Dependency\TTL) {
-            $ttl = $item->dependency->ttlSeconds;
-            unset($item->dependency);
-            $query->setEx($formattedKey, $ttl, $formattedItem);
+            $this->setWithTTL($item);
+        }
+        elseif ($item->dependency instanceof Dependency\Time) {
+            $this->setWithExpireTime($item);
         }
         else {
-            $query->set($formattedKey, $formattedItem);
-            if ($item->dependency instanceof Dependency\Time)
-                $query->expireAt($formattedKey, $expiration->time);
-            elseif ($item->dependency instanceof Dependency\Permanent)
-                $query->persist($formattedKey);
+            $this->redis->set(
+                $this->formatKey($item->cacheId, $item->key),
+                $this->formatItem($item)
+            );
         }
+    }
+    
+    private function setWithTTL($item)
+    {
+        $formattedKey = $this->formatKey($item->cacheId, $item->key);
+        $ttl = $item->dependency->ttlSeconds;
+        $item->dependency = null;
+        $formattedItem = $this->formatItem($item);
+        
+        $query = $this->redis->multi(\Redis::PIPELINE);
+        $query->setEx($formattedKey, $ttl, $formattedItem);
         $query->exec();
+    }
+    
+    private function setWithExpireTime($item)
+    {
+        $formattedKey = $this->formatKey($item->cacheId, $item->key);
+        $time = $item->dependency->time;
+        $item->dependency = null;
+        $formattedItem = $this->formatItem($item);
+        
+        $query = $this->redis->multi(\Redis::PIPELINE);
+        $query->set($formattedKey, $formattedItem);
+        $query->expireAt($formattedKey, $time);
+        $query->exec();
+    }
+    
+    private function formatItem($item)
+    {
+        return serialize($item->compact());
     }
     
     public function get($cacheId, $key)
@@ -69,8 +93,6 @@ class PHPRedis implements Backend, Iterable
     
     function keys($cacheId)
     {
-        // WARNING: if the formatKey method ever changes, this will break!
-        
         $prefix = $this->formatKey($cacheId, "");
         $len = strlen($prefix);
         $redisKeys = $this->redis->keys("$prefix*");
@@ -102,6 +124,7 @@ class PHPRedis implements Backend, Iterable
 
     private function formatKey($cacheId, $key)
     {
+        // WARNING: if this changes, key iteration and flushing will break.
         return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";
     }
 }

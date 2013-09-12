@@ -2,22 +2,23 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
+use Cachet\Item;
+use Cachet\Dependency;
 
 class PHPRedisTest extends \BackendTestCase
 {
     public function setUp()
     {
-        $redis = $this->getRedis();
-        $redis->flushDb();
-        $count = $redis->dbSize();
+        $this->redis = $this->getRedis();
+        $this->redis->flushDb();
+        $count = $this->redis->dbSize();
         if ($count != 0)
             throw new \Exception();
     }
     
     public function getBackend()
     {
-        $redis = $this->getRedis();
-        return new \Cachet\Backend\PHPRedis($redis);
+        return new \Cachet\Backend\PHPRedis($this->redis);
     }
     
     protected function getRedis()
@@ -35,5 +36,62 @@ class PHPRedisTest extends \BackendTestCase
         );
         $redis->select($GLOBALS['settings']['redis']['database']);
         return $redis;
+    }
+    
+    public function testWithTTLDependency()
+    {
+        $backend = $this->getBackend();
+        $item = new Item('cache1', 'a', 'b', new Dependency\TTL(600));
+        $backend->set($item);
+        
+        $ttl = $this->redis->ttl('cache1/a');
+        $this->assertLessThanOrEqual(600, $ttl);
+        $this->assertGreaterThan(595, $ttl);
+        
+        $item = $backend->get('cache1', 'a');
+        $this->assertNull($item->dependency);
+    }
+    
+    public function testWithTimeDependency()
+    {
+        $backend = $this->getBackend();
+        $time = time() + 600;
+        $item = new Item('cache1', 'a', 'b', new Dependency\Time($time));
+        $backend->set($item);
+        
+        $ttl = $this->redis->ttl('cache1/a');
+        $this->assertLessThanOrEqual(600, $ttl);
+        $this->assertGreaterThan(595, $ttl);
+        
+        $item = $backend->get('cache1', 'a');
+        $this->assertNull($item->dependency);
+    }
+    
+    public function testWithPermanentDependency()
+    {
+        // we used to call $redis->persist() with these keys. let's keep permanent 
+        // around for now as it acts as a useful tag for garbage collection strategies
+        $backend = $this->getBackend();
+        $item = new Item('cache1', 'a', 'b', new Dependency\Permanent);
+        $backend->set($item);
+        
+        $ttl = $this->redis->ttl('cache1/a');
+        $this->assertEquals(-1, $ttl);
+    }
+    
+    public function testWithPermanentDependencyOverwritesTTL()
+    {
+        $backend = $this->getBackend();
+        $time = time() + 600;
+        $item = new Item('cache1', 'a', 'b', new Dependency\Time($time));
+        $backend->set($item);
+        $ttl = $this->redis->ttl('cache1/a');
+        $this->assertGreaterThan(0, $ttl);
+        
+        $item = new Item('cache1', 'a', 'c', new Dependency\Permanent);
+        $backend->set($item);
+        
+        $ttl = $this->redis->ttl('cache1/a');
+        $this->assertEquals(-1, $ttl);
     }
 }
