@@ -45,6 +45,7 @@ class Memcached extends IterationAdapter
         $formattedItem = serialize($item);
         if ($item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
+            $item->dependency = null;
         }
         
         $this->memcached->set($formattedKey, $formattedItem, $ttl);
