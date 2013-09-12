@@ -10,11 +10,13 @@ class CachedTag implements Dependency
     public $tagValue;
     public $tag;
     public $cacheService;
+    public $strict;
     
-    function __construct($cacheService, $tag)
+    function __construct($cacheService, $tag, $strict=null)
     {
         $this->cacheService = $cacheService;
         $this->tag = $tag;
+        $this->strict = $strict ?: false;
     }
     
     function init(Cache $cache, Item $item)
@@ -34,6 +36,19 @@ class CachedTag implements Dependency
            
         $currentValue = $cache->services[$this->cacheService]->get($this->tag);
         
-        return $currentValue === $this->tagValue;
+        if (!$this->strict) {
+            return $currentValue == $this->tagValue;
+        }
+        else {
+            $currentType = gettype($currentValue);
+            $tagValueType = gettype($this->tagValue);
+            
+            if ($currentType != $tagValueType)
+                return false;
+            elseif ($currentType == 'object')
+                return $currentValue == $this->tagValue;
+            else
+                return $currentValue === $this->tagValue;
+        }
     }
 }
