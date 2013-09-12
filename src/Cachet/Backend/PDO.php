@@ -58,7 +58,7 @@ class PDO implements Backend, Iterable
     /**
      * Creates a Connector from an array of connection parameters.
      * @param array Parameters to use to create the connection
-     * @return Amiss\Sql\Connector
+     * @return PDO
      */
     public static function createPDO(array $params)
     {
