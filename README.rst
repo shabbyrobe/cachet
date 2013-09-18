@@ -323,12 +323,26 @@ Iteration support: **fetcher**
 .. code-block:: php
     
     <?php
+    // pass Redis server name/socket as string. connect-on-demand.
+    $backend = new Cachet\Backend\PHPRedis('127.0.0.1');
+    
+    // pass Redis server details as array. connect-on-demand. all keys
+    // except host optional
+    $redis = [
+        'host'=>'127.0.0.1',
+        'port'=>6739,
+        'timeout'=>10,
+        'database'=>2
+    ];
+    $backend = new Cachet\Backend\PHPRedis($redis);
+    
+    // optional cache value prefix. Prefix has a forward slash appended:
+    $backend = new Cachet\Backend\PHPRedis($redis, "myprefix");
+    
+    // pass existing Redis instance. no connect-on-demand.
     $redis = new Redis();
     $redis->connect('127.0.0.1');
     $backend = new Cachet\Backend\PHPRedis($redis);
-    
-    // Or with optional cache value prefix. Prefix has a forward slash appended:
-    $backend = new Cachet\Backend\PHPRedis($redis, "myprefix");
 
 
 Session

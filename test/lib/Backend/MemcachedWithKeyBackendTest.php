@@ -31,11 +31,11 @@ class MemcachedTest extends \BackendTestCase
         if (!extension_loaded('memcached'))
             return $this->markTestSkipped("memcached extension not found");
         
-        if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['memcached']['server'])
-            return $this->markTestSkipped("Please supply a memcached server in .cachettestrc");
+        if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['memcached']['host'])
+            return $this->markTestSkipped("Please supply a memcached host in .cachettestrc");
         
         $sock = @fsockopen(
-            $GLOBALS['settings']['memcached']['server'], 
+            $GLOBALS['settings']['memcached']['host'], 
             $GLOBALS['settings']['memcached']['port'],
             $errno,
             $errstr,
@@ -48,7 +48,7 @@ class MemcachedTest extends \BackendTestCase
         
         $memcached = new \Memcached();
         $memcached->addServer(
-            $GLOBALS['settings']['memcached']['server'], 
+            $GLOBALS['settings']['memcached']['host'], 
             $GLOBALS['settings']['memcached']['port']
         );
         return $memcached;

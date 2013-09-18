@@ -8,17 +8,55 @@ use Cachet\Item;
 class PHPRedis implements Backend, Iterable
 {
     private $redis;
+    private $redisInfo;
     
     public $prefix;
     
-    function __construct(\Redis $redis, $prefix=null)
+    function __construct($redis, $prefix=null)
     {
-        $this->redis = $redis;
+        if ($redis instanceof \Redis) {
+            $this->redis = $redis;
+        }
+        else {
+            if (is_string($redis))
+                $redis = ['host'=>$redis];
+            
+            if (isset($redis['db']))
+                $redis['database'] = $redis['db'];
+            
+            $this->redisInfo = array_merge(
+                [
+                    'host'=>null, 
+                    'port'=>6379, 
+                    'timeout'=>10, 
+                    'persistent'=>false,
+                    'database'=>null,
+                ], 
+                $redis
+            );
+        }
+        
         $this->prefix = $prefix;
+    }
+    
+    private function connect()
+    {
+        $this->redis = new \Redis();
+        $info = $this->redisInfo;
+        if (!$info['persistent'])
+            $this->redis->connect($info['host'], $info['port'], $info['timeout']);
+        else
+            $this->redis->pconnect($info['host'], $info['port'], $info['timeout']);
+        
+        if ($info['database'])
+            $this->redis->select($info['database']);
     }
     
     public function set(Item $item)
     {
+        if (!$this->redis)
+            $this->connect();
+        
         if ($item->dependency instanceof Dependency\TTL) {
             $this->setWithTTL($item);
         }
@@ -65,6 +103,9 @@ class PHPRedis implements Backend, Iterable
     
     public function get($cacheId, $key)
     {
+        if (!$this->redis)
+            $this->connect();
+        
         $key = $this->formatKey($cacheId, $key);
         $result = $this->redis->get($key);
         
@@ -75,12 +116,18 @@ class PHPRedis implements Backend, Iterable
     
     public function delete($cacheId, $key)
     {
+        if (!$this->redis)
+            $this->connect();
+        
         $key = $this->formatKey($cacheId, $key);
         $this->redis->delete(array($key));
     }
     
     function flush($cacheId)
     {
+        if (!$this->redis)
+            $this->connect();
+        
         $prefix = $this->formatKey($cacheId, "");
         
         $keys = $this->redis->keys("$prefix*");
@@ -93,6 +140,9 @@ class PHPRedis implements Backend, Iterable
     
     function keys($cacheId)
     {
+        if (!$this->redis)
+            $this->connect();
+        
         $prefix = $this->formatKey($cacheId, "");
         $len = strlen($prefix);
         $redisKeys = $this->redis->keys("$prefix*");
