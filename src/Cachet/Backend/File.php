@@ -6,106 +6,41 @@ use Cachet\Item;
 
 class File implements Backend, Iterable
 {
-    public $user;
-    public $group;
-    public $filePerms;
-    public $dirPerms;
-    public $basePath;
-    
     /**
      * How many intermediate directories to insert into the key path
      * I.e. a hashed key of jw3fdmx-pants becomes j/w/3/jw3fdmx-pants
      */
     public $keySplit = 3;
-    
-    /**
-     * Dangerous - can break setting when happening concurrently.
-     */
-    public $purgeEmptyDirs = false;
-    
+     
     public function __construct($basePath, $options=array())
     {
-        if (!is_writable($basePath))
-            throw new \InvalidArgumentException("Base path must be writable");
-        
-        $this->basePath = $basePath;
-        $this->user = isset($options['user']) ? $options['user'] : null;
-        $this->group = isset($options['group']) ? $options['group'] : null;
-        $this->filePerms = isset($options['filePerms']) ? $options['filePerms'] : null;
-        $this->dirPerms = isset($options['dirPerms']) ? $options['dirPerms'] : null;
-        
-        if ($unknown = array_diff(array_keys($options), array('user', 'group', 'filePerms', 'dirPerms')))
-            throw new \InvalidArgumentException("Unknown options: ".implode(', ', $unknown));
+        $this->fileManager = new \Cachet\Util\File($basePath, $options);
     }
     
     function get($cacheId, $key)
     {
-        list ($fileName, $fullFileName) = $this->getFilePath($cacheId, $key);
-        
-        if (file_exists($fullFileName)) {
-            return $this->decode(file_get_contents($fullFileName));
+        $data = $this->fileManager->read($this->getFilePath($cacheId, $key), $found);
+        if ($found) {
+            return $this->decode($data);
         }
     }
     
     function set(Item $item)
     {
-        list ($fileName, $fullFileName) = $this->getFilePath($item->cacheId, $item->key);
-        
-        $fullDir = dirname($fullFileName);
-        if (!file_exists($fullDir)) {
-            $dir = dirname($fileName);
-            $parts = preg_split('~[/\\\\]~', $dir, null, PREG_SPLIT_NO_EMPTY);
-            $current = $this->basePath;
-            
-            // can't use mkdir recursive mode because it is affected by umask
-            foreach ($parts as $part) {
-                $current .= "/$part";
-                if (!file_exists($current)) {
-                    mkdir($current);
-                    $this->applySettings($current, false);
-                }
-            }
-        }
-
-        file_put_contents($fullFileName, serialize($item));
-        $this->applySettings($fullFileName, true);
+        $filePath = $this->getFilePath($item->cacheId, $item->key);
+        $this->fileManager->write($filePath, serialize($item));
     }
     
     function delete($cacheId, $key)
     {
-        list ($fileName, $fullFileName) = $this->getFilePath($cacheId, $key);
-        if (file_exists($fullFileName))
-            unlink($fullFileName);
+        $filePath = $this->getFilePath($cacheId, $key);
+        $this->fileManager->delete($filePath);
     }
-    
+
     function flush($cacheId)
     {
-        $iter = $this->getIterator($cacheId);
-        if (!$iter)
-            return;
-        
-        $lastDir = null;
-        foreach ($iter as $item) {
-            if ($item->isFile()) {
-                $currentDir = dirname($item);
-                unlink($item);
-            }
-            else {
-                $currentDir = $item.'';
-            }
-            
-            if ($this->purgeEmptyDirs) {
-                if ($lastDir != null && $currentDir != $lastDir) {
-                    if (count(glob("$lastDir/*")) === 0) {
-                        rmdir($lastDir);
-                    }
-                }
-                $lastDir = $currentDir;
-            }
-        }
-        if ($this->purgeEmptyDirs && $lastDir && count(glob("$lastDir/*")) === 0) {
-            rmdir($lastDir);
-        }
+        $filePath = $this->getFilePath($cacheId);
+        $this->fileManager->flush($filePath);
     }
     
     function decode($fileContents)
@@ -115,7 +50,8 @@ class File implements Backend, Iterable
     
     function keys($cacheId)
     {
-        $iter = $this->getIterator($cacheId);
+        $filePath = $this->getFilePath($cacheId);
+        $iter = $this->fileManager->getIterator($filePath);
         foreach ($iter as $cacheFile) {
             if (!file_exists($cacheFile))
                 continue;
@@ -130,7 +66,8 @@ class File implements Backend, Iterable
     
     function items($cacheId)
     {
-        $iter = $this->getIterator($cacheId);
+        $filePath = $this->getFilePath($cacheId);
+        $iter = $this->fileManager->getIterator($filePath);
         foreach ($iter as $cacheFile) {
             if (!file_exists($cacheFile))
                 continue;
@@ -140,39 +77,6 @@ class File implements Backend, Iterable
                 throw new \UnexpectedValueException();
             
             yield $item;
-        }
-    }
-    
-    private function getIterator($cacheId, $iteratorMode=\RecursiveIteratorIterator::LEAVES_ONLY)
-    {
-        $hashedCache = $this->createSafeKey($cacheId);
-        $path = "{$this->basePath}/$hashedCache";
-        if (!file_exists($path))
-            return;
-        
-        list ($fileName, $fullFileName) = $this->getFilePath($cacheId);
-        $dir = new \RecursiveDirectoryIterator(
-            $path,
-            \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO | \FilesystemIterator::SKIP_DOTS
-        );
-        $iter = new \RecursiveIteratorIterator($dir, $iteratorMode);
-        return $iter;
-    }
-    
-    private function applySettings($name, $file=true)
-    {
-        if ($this->user)
-            chown($name, $this->user);
-        if ($this->group)
-            chown($name, $this->group);
-        
-        if ($file) {
-            if ($this->filePerms)
-                chmod($name, $this->filePerms);
-        }
-        else {
-            if ($this->dirPerms)
-                chmod($name, $this->dirPerms);
         }
     }
     
@@ -190,7 +94,7 @@ class File implements Backend, Iterable
             $keyPath .= $hashedKey;
         }
         
-        return array($keyPath, "{$this->basePath}/$keyPath");
+        return $keyPath;
     }
     
     private function createSafeKey($key)
@@ -200,3 +104,4 @@ class File implements Backend, Iterable
         return $hashedKey;
     }
 }
+

@@ -12,6 +12,11 @@ class Cache implements \ArrayAccess
      * @var Cachet\Backend
      */
     public $backend;
+
+    /**
+     * @var Cachet\Locker
+     */
+    public $locker;
     
     /**
      * Default dependency to use when none passed
@@ -99,8 +104,23 @@ class Cache implements \ArrayAccess
         $found = false;
         $data = $this->get($key, $found);
         if (!$found) {
-            $data = $callback();
-            $this->set($key, $data, $dependency);
+            if ($this->locker) {
+                $this->locker->acquire($this, $key);
+                try {
+                    $data = $this->get($key, $found);
+                    if (!$found) {
+                        $data = $callback();
+                        $this->set($key, $data, $dependency);
+                    }
+                }
+                finally {
+                    $this->locker->release($this, $key);
+                }
+            }
+            else {
+                $data = $callback();
+                $this->set($key, $data, $dependency);
+            }
         }
         
         return $data;
