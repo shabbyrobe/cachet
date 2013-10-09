@@ -103,7 +103,7 @@ returned value is stored in the cache:
     $value = $cache->wrap('foo', function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
     });
-
+    
     // With a TTL
     $value = $cache->wrap('foo', 300, function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
@@ -120,6 +120,7 @@ detail:
 
 .. code-block:: php
 
+    <?php
     $cache = new Cachet\Cache($id, new Cachet\Backend\Memory());
     $cache->set('foo', 'bar');
     

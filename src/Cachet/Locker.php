@@ -10,8 +10,13 @@ abstract class Locker
         $this->keyHasher = $keyHasher;
     }
 
-    abstract function acquire(Cache $cache, $key);
+    /**
+     * @return bool Whether or not the lock was acquired
+     */
+    abstract function acquire(Cache $cache, $key, $block=true);
+
     abstract function release(Cache $cache, $key);
+
     abstract function shutdown();
 
     function getLockKey(Cache $cache, $key)

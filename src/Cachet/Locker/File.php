@@ -6,33 +6,33 @@ use Cachet\Cache;
 class File extends \Cachet\Locker
 {
     private $path;
-    private $fileLimit;
     private $files = [];
+    private $fileUtil;
 
-    public $fileNameFormat = "<path>/<key>.lock";
-
-    public function __construct($path, callable $keyHasher=null)
+    public function __construct($basePath, callable $keyHasher, $fileOptions=[])
     {
         parent::__construct($keyHasher);
-
-        $this->path = $path;
-        if (!is_writable($path))
-            throw new \InvalidArgumentException("Path $path is not writable");
+        $this->fileUtil = new \Cachet\Util\File($basePath, $fileOptions);
     }
 
-    function acquire(Cache $cache, $key)
+    function acquire(Cache $cache, $key, $block=true)
     {
-        $name = $this->getFileName($cache, $key);
-        $dir = dirname($name);
-        if (
+        $name = $this->getLockKey($cache, $key);
+        $this->files[$name] = $file = $this->fileUtil->open($name, "w");
 
-        $this->files[$name] = $file = fopen($name, 'w');
-        flock($file, LOCK_EX);
+        if ($block) {
+            flock($file, LOCK_EX);
+            return true;
+        } 
+        else {
+            flock($file, LOCK_EX | LOCK_NB, $wouldBlock);
+            return $wouldBlock;
+        }
     }
 
     function release(Cache $cache, $key)
     {
-        $name = $this->getFileName($cache, $key);
+        $name = $this->getLockKey($cache, $key);
         $handle = $this->files[$name];
         flock($handle, LOCK_UN);
         fclose($handle);
@@ -46,14 +46,6 @@ class File extends \Cachet\Locker
             fclose($file);
         }
         $this->files = [];
-    }
-
-    private function getFileName($cache, $key)
-    {
-        return strtr($this->fileNameFormat, [
-            "<key>"=>preg_replace('/[^A-z0-9]/', '-', $this->getLockKey($cache, $key)),
-            "<path>"=>$this->path,
-        ]);
     }
 }
 

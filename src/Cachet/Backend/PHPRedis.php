@@ -5,7 +5,7 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PHPRedis implements Backend, Iterable
+class PHPRedis implements Backend, Iterable, AutoExpiry
 {
     private $redis;
     private $redisInfo;

@@ -2,6 +2,7 @@
 class Cachet
 {
     public static $classes = array(
+        'Cachet'=>'Cachet.php',
         'Cachet\Backend'=>'Cachet/Backend.php',
         'Cachet\Backend\APC'=>'Cachet/Backend/APC.php',
         'Cachet\Backend\Cascading'=>'Cachet/Backend/Cascading.php',
@@ -25,7 +26,12 @@ class Cachet
         'Cachet\Dependency\TTL'=>'Cachet/Dependency/TTL.php',
         'Cachet\Dependency\Time'=>'Cachet/Dependency/Time.php',
         'Cachet\Item'=>'Cachet/Item.php',
+        'Cachet\Locker'=>'Cachet/Locker.php',
+        'Cachet\Locker\File'=>'Cachet/Locker/File.php',
+        'Cachet\Locker\Semaphore'=>'Cachet/Locker/Semaphore.php',
         'Cachet\SessionHandler'=>'Cachet/SessionHandler.php',
+        'Cachet\Util\File'=>'Cachet/Util/File.php',
+        'Cachet\Util\Hash'=>'Cachet/Util/Hash.php',
     );
     
     public static function register()

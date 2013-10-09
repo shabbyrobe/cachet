@@ -87,43 +87,85 @@ class Cache implements \ArrayAccess
     {
         return $this->backend->flush($this->id);
     }
+ 
+    private function wrapArgs($argv)
+    {
+        $argc = count($argv);
+        $dependency = null;
+        if ($argc == 2)
+            list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
+        elseif ($argc == 3)
+            list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
+        else
+            throw new \InvalidArgumentException();
+
+        if (!is_callable($callback))
+            throw new \InvalidArgumentException();
+
+        return [$key, $callback, $dependency];
+    }
     
     function wrap($key, $callback)
     {
-        $args = func_get_args();
-        $argc = func_num_args();
-        
-        $dependency = null;
-        if ($argc == 2)
-            list ($key, $callback) = $args;
-        elseif ($argc == 3)
-            list ($key, $dependency, $callback) = $args;
-        else
-            throw new \InvalidArgumentException();
-        
+        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
         $found = false;
         $data = $this->get($key, $found);
         if (!$found) {
-            if ($this->locker) {
-                $this->locker->acquire($this, $key);
-                try {
-                    $data = $this->get($key, $found);
-                    if (!$found) {
-                        $data = $callback();
-                        $this->set($key, $data, $dependency);
-                    }
-                }
-                finally {
-                    $this->locker->release($this, $key);
+            $data = $callback();
+            $this->set($key, $data, $dependency);
+        }
+        return $data;
+    }
+    
+    function blocking($key, $callback)
+    {
+        if (!$this->locker)
+            throw new \UnexpectedValueException();
+
+        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
+        $found = false;
+        $data = $this->get($key, $found);
+        if (!$found) {
+            $this->locker->acquire($this, $key);
+            try {
+                $data = $this->get($key, $found);
+                if (!$found) {
+                    $data = $callback();
+                    $this->set($key, $data, $dependency);
                 }
             }
-            else {
-                $data = $callback();
-                $this->set($key, $data, $dependency);
+            finally {
+                $this->locker->release($this, $key);
             }
         }
-        
         return $data;
+    }
+    
+    function nonblocking($key, $callback)
+    {
+        if (!$this->locker)
+            throw new \UnexpectedValueException();
+
+        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
+
+        $item = $this->backend->get($this->id, $key);
+        $stale = $item && !$this->validateItem($item);
+
+        if (!$item || $stale) {
+            $this->locker->acquire($this, $key);
+            try {
+                $item = $this->backend->get($this->id, $key);
+                if (!$item) {
+                    $data = $callback();
+                    $this->set($key, $data, $dependency);
+                    $item = $this->backend->get($this->id, $key);
+                }
+            }
+            finally {
+                $this->locker->release($this, $key);
+            }
+        }
+        return $item ? $item->value : null;
     }
     
     function removeInvalid()

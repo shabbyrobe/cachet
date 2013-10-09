@@ -12,14 +12,14 @@ class File implements Backend, Iterable
      */
     public $keySplit = 3;
      
-    public function __construct($basePath, $options=array())
+    public function __construct($basePath, $fileOptions=[])
     {
-        $this->fileManager = new \Cachet\Util\File($basePath, $options);
+        $this->fileUtil = new \Cachet\Util\File($basePath, $fileOptions);
     }
     
     function get($cacheId, $key)
     {
-        $data = $this->fileManager->read($this->getFilePath($cacheId, $key), $found);
+        $data = $this->fileUtil->read($this->getFilePath($cacheId, $key), $found);
         if ($found) {
             return $this->decode($data);
         }
@@ -28,19 +28,19 @@ class File implements Backend, Iterable
     function set(Item $item)
     {
         $filePath = $this->getFilePath($item->cacheId, $item->key);
-        $this->fileManager->write($filePath, serialize($item));
+        $this->fileUtil->write($filePath, serialize($item));
     }
     
     function delete($cacheId, $key)
     {
         $filePath = $this->getFilePath($cacheId, $key);
-        $this->fileManager->delete($filePath);
+        $this->fileUtil->delete($filePath);
     }
 
     function flush($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
-        $this->fileManager->flush($filePath);
+        $this->fileUtil->flush($filePath);
     }
     
     function decode($fileContents)
@@ -51,7 +51,7 @@ class File implements Backend, Iterable
     function keys($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
-        $iter = $this->fileManager->getIterator($filePath);
+        $iter = $this->fileUtil->getIterator($filePath);
         foreach ($iter as $cacheFile) {
             if (!file_exists($cacheFile))
                 continue;
@@ -67,7 +67,7 @@ class File implements Backend, Iterable
     function items($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
-        $iter = $this->fileManager->getIterator($filePath);
+        $iter = $this->fileUtil->getIterator($filePath);
         foreach ($iter as $cacheFile) {
             if (!file_exists($cacheFile))
                 continue;

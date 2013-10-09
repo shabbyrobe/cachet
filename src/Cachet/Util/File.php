@@ -41,11 +41,9 @@ class File
             return file_get_contents($fullPath);
         }
     }
-    
-    function write($path, $data)
+   
+    private function ensurePathExists($path, $fullPath)
     {
-        $fullPath = $this->resolvePath($path);
-        
         $fullDir = dirname($fullPath);
         if (!file_exists($fullDir)) {
             $dir = dirname($path);
@@ -61,7 +59,21 @@ class File
                 }
             }
         }
+    }
 
+    function open($path, $mode)
+    {
+        $fullPath = $this->resolvePath($path);
+        $this->ensurePathExists($path, $fullPath);
+        $handle = fopen($fullPath, $mode);
+        $this->applySettings($fullPath, true);
+        return $handle;
+    }
+    
+    function write($path, $data)
+    {
+        $fullPath = $this->resolvePath($path);
+        $this->ensurePathExists($path, $fullPath);
         file_put_contents($fullPath, $data);
         $this->applySettings($fullPath, true);
     }
@@ -136,6 +148,9 @@ class File
     
     private function resolvePath($path=null)
     {
+        // hacky base path escape prevention
+        $path = str_replace('..', '', $path);
+
         return "{$this->basePath}/$path";
     }
 }
