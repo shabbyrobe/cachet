@@ -12,6 +12,8 @@ class Memcached extends IterationAdapter
     public $unsafeFlush = false;
     
     public $prefix;
+
+    public $useBackendExpirations = true;
     
     public function __construct($memcached=null)
     {
@@ -43,7 +45,7 @@ class Memcached extends IterationAdapter
         
         $formattedKey = $this->formatKey($item->cacheId, $item->key);
         $formattedItem = serialize($item);
-        if ($item->dependency instanceof Dependency\TTL) {
+        if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
             $item->dependency = null;
         }

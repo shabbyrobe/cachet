@@ -8,6 +8,8 @@ class XCache extends IterationAdapter
 {   
     public $prefix;
     
+    public $useBackendExpirations = true;
+
     function __construct($prefix=null)
     {
         $this->prefix = $prefix;
@@ -27,7 +29,10 @@ class XCache extends IterationAdapter
     {   
         $ttl = null;
         $formattedKey = $this->formatKey($item->cacheId, $item->key);
-        if (isset($item->dependency) && $item->dependency instanceof Dependency\TTL) {
+        if (
+            $this->useBackendExpirations && 
+            isset($item->dependency) && $item->dependency instanceof Dependency\TTL
+        ) {
             $ttl = $item->dependency->ttlSeconds;
             $item->dependency = null;
         }

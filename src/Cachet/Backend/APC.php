@@ -5,12 +5,14 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class APC implements Backend, Iterable, AutoExpiry
+class APC implements Backend, Iterable
 {
     public $iteratorChunkSize = 100;
     
     public $prefix;
     
+    public $useBackendExpirations = true;
+
     function __construct($prefix=null)
     {
         $this->prefix = $prefix;
@@ -25,7 +27,7 @@ class APC implements Backend, Iterable, AutoExpiry
     function set(Item $item)
     {
         $ttl = null;
-        if ($item->dependency instanceof Dependency\TTL) {
+        if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
             $item->dependency = null;
         }

@@ -5,12 +5,14 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PHPRedis implements Backend, Iterable, AutoExpiry
+class PHPRedis implements Backend, Iterable
 {
     private $redis;
     private $redisInfo;
     
     public $prefix;
+
+    public $useBackendExpirations = true;
     
     function __construct($redis, $prefix=null)
     {
@@ -57,10 +59,10 @@ class PHPRedis implements Backend, Iterable, AutoExpiry
         if (!$this->redis)
             $this->connect();
         
-        if ($item->dependency instanceof Dependency\TTL) {
+        if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $this->setWithTTL($item);
         }
-        elseif ($item->dependency instanceof Dependency\Time) {
+        elseif ($this->useBackendExpirations && $item->dependency instanceof Dependency\Time) {
             $this->setWithExpireTime($item);
         }
         else {

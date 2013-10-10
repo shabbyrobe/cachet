@@ -88,86 +88,21 @@ class Cache implements \ArrayAccess
         return $this->backend->flush($this->id);
     }
  
-    private function wrapArgs($argv)
+    function validateItem($item)
     {
-        $argc = count($argv);
-        $dependency = null;
-        if ($argc == 2)
-            list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
-        elseif ($argc == 3)
-            list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
-        else
-            throw new \InvalidArgumentException();
-
-        if (!is_callable($callback))
-            throw new \InvalidArgumentException();
-
-        return [$key, $callback, $dependency];
-    }
-    
-    function wrap($key, $callback)
-    {
-        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
-        $found = false;
-        $data = $this->get($key, $found);
-        if (!$found) {
-            $data = $callback();
-            $this->set($key, $data, $dependency);
+        if (!$item instanceof Item)
+            return false;
+        
+        $valid = false;
+        
+        $dependency = $item->dependency ?: $this->dependency;
+        if (!$dependency || ($dependency instanceof Dependency && $dependency->valid($this, $item))) {
+            $valid = true;
         }
-        return $data;
-    }
-    
-    function blocking($key, $callback)
-    {
-        if (!$this->locker)
-            throw new \UnexpectedValueException();
-
-        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
-        $found = false;
-        $data = $this->get($key, $found);
-        if (!$found) {
-            $this->locker->acquire($this, $key);
-            try {
-                $data = $this->get($key, $found);
-                if (!$found) {
-                    $data = $callback();
-                    $this->set($key, $data, $dependency);
-                }
-            }
-            finally {
-                $this->locker->release($this, $key);
-            }
-        }
-        return $data;
-    }
-    
-    function nonblocking($key, $callback)
-    {
-        if (!$this->locker)
-            throw new \UnexpectedValueException();
-
-        list ($key, $callback, $dependency) = $this->wrapArgs(func_get_args());
-
-        $item = $this->backend->get($this->id, $key);
-        $stale = $item && !$this->validateItem($item);
-
-        if (!$item || $stale) {
-            $this->locker->acquire($this, $key);
-            try {
-                $item = $this->backend->get($this->id, $key);
-                if (!$item) {
-                    $data = $callback();
-                    $this->set($key, $data, $dependency);
-                    $item = $this->backend->get($this->id, $key);
-                }
-            }
-            finally {
-                $this->locker->release($this, $key);
-            }
-        }
-        return $item ? $item->value : null;
-    }
-    
+        
+        return $valid;
+    }    
+   
     function removeInvalid()
     {
         $this->ensureIterable();
@@ -206,21 +141,6 @@ class Cache implements \ArrayAccess
         }
     }
     
-    private function validateItem($item)
-    {
-        if (!$item instanceof Item)
-            return false;
-        
-        $valid = false;
-        
-        $dependency = $item->dependency ?: $this->dependency;
-        if (!$dependency || ($dependency instanceof Dependency && $dependency->valid($this, $item))) {
-            $valid = true;
-        }
-        
-        return $valid;
-    }
-
     private function ensureIterable()
     {   
         if (!$this->backend instanceof Iterable)
@@ -228,7 +148,153 @@ class Cache implements \ArrayAccess
         elseif ($this->backend instanceof IterationAdapter && !$this->backend->iterable())
             throw new \RuntimeException("This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.");
     }
+ 
+    private function strategyArgs($argv)
+    {
+        $argc = count($argv);
+        $dependency = null;
+        if ($argc == 2)
+            list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
+        elseif ($argc == 3)
+            list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
+        else
+            throw new \InvalidArgumentException();
+
+        if (!is_callable($callback))
+            throw new \InvalidArgumentException();
+
+        return [$key, $callback, $dependency];
+    }
     
+    function wrap($key, $callback)
+    {
+        list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
+        $found = false;
+        $data = $this->get($key, $found);
+        if (!$found) {
+            $data = $callback();
+            $this->set($key, $data, $dependency);
+        }
+        return $data;
+    }
+    
+    function blocking($key, $callback)
+    {
+        if (!$this->locker)
+            throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+
+        list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
+        $found = false;
+        $data = $this->get($key, $found);
+        if (!$found) {
+            $this->locker->acquire($this, $key);
+            try {
+                $data = $this->get($key, $found);
+                if (!$found) {
+                    $data = $callback();
+                    $this->set($key, $data, $dependency);
+                }
+            }
+            finally {
+                $this->locker->release($this, $key);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * If the locker is locked, this will return a stale item if one
+     * is available, or block until an item becomes available.
+     */
+    function safeNonblocking($key, $callback)
+    {
+        if (!$this->locker)
+            throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+
+        $this->ensureBackendExpiring(true);
+
+        list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
+
+        $item = $this->backend->get($this->id, $key);
+        $stale = $item && !$this->validateItem($item);
+
+        if (!$item || $stale) {
+            if ($this->locker->acquire($this, $key, !'block')) {
+                try {
+                    $item = $this->backend->get($this->id, $key);
+                    if (!$item) {
+                        $data = $callback();
+                        $this->set($key, $data, $dependency);
+                        $item = $this->backend->get($this->id, $key);
+                    }
+                }
+                finally {
+                    $this->locker->release($this, $key);
+                }
+            }
+            elseif (!$item) {
+                // if another process has the lock and we have no stale item to return,
+                // block until one becomes available. 
+                $this->locker->acquire($this, $key);
+                try {
+                    $item = $this->backend->get($this->id, $key);
+                }
+                finally {
+                    $this->locker->release($this, $key);
+                }
+            }
+        }
+        return $item ? $item->value : null;
+    }
+ 
+    /**
+     * If the locker is locked, this will return a stale item if one
+     * is available, or null if one is not.
+     */
+    function nonblocking($key, $callback)
+    {
+        if (!$this->locker)
+            throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+
+        $this->ensureBackendExpiring(true);
+
+        list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
+
+        $item = $this->backend->get($this->id, $key);
+        $stale = $item && !$this->validateItem($item);
+
+        if (!$item || $stale) {
+            if ($this->locker->acquire($this, $key, !'block')) {
+                try {
+                    $item = $this->backend->get($this->id, $key);
+                    if (!$item) {
+                        $data = $callback();
+                        $this->set($key, $data, $dependency);
+                        $item = $this->backend->get($this->id, $key);
+                    }
+                }
+                finally {
+                    $this->locker->release($this, $key);
+                }
+            }
+        }
+        return $item ? $item->value : null;
+    }
+ 
+    private function ensureBackendExpiring($status)
+    {
+        if ($this->expiringBackend === null)
+            $this->expiringBackend = property_exists($this->backend, 'useBackendExpirations');
+
+        if ($this->expiringBackend && $this->backend->useBackendExpirations) {
+            throw new \RuntimeException(
+                "This backend supports automatic expirations, but you should not use ".
+                "this caching strategy without deactivating them. Set useBackendExpirations ".
+                "to false, flush your cache and try again"
+            );
+        }
+    }
+
     function offsetGet($key)
     {
         return $this->get($key, $value);
