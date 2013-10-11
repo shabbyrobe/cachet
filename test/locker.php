@@ -5,24 +5,26 @@ Cachet::register();
 $backend = new Cachet\Backend\PHPRedis('127.0.0.1');
 $cache = new Cachet\Cache('foo', $backend);
 
-$lockers = [
-    'fileSingleLock'=>function() {
-        return new Cachet\Locker\File('/tmp/locks', function($cache, $key) {
-            $key = $cache->id."/".implode("/", str_split(md5($key), 8));
-            return $key;
-        });
-    },
+$tests = [
+    'fileSingleLock'=>[
+        'keyGenerator'=>function() {
+            while (true) yield rand(1, 6);
+        },
+        'keyHasher'=>function($cache, $key) {
+            return 1;
+        },
+    ],
+
+    'semaphoreSingleLock'=>[
+        'keyGenerator'=>function() {
+            while (true) yield rand(1, 6);
+        },
+        'keyHasher'=>function($cache, $key) {
+            $file = tempnam(sys_get_temp_dir(), '');
+            return ftok($file, '');
+        },
+    ],
 ];
-
-
-/*
-$cache->locker = new Cachet\Locker\Semaphore(function ($cache, $key) {
-    return Cachet\Util\Hash::mdhack("$cache->id/$key") % 4;
-});
-*/
-
-if (!isset($argv[1]))
-    die("Pass id\n");
 
 $id = $argv[1];
 
