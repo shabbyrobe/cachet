@@ -143,10 +143,15 @@ class Cache implements \ArrayAccess
     
     private function ensureIterable()
     {   
-        if (!$this->backend instanceof Iterable)
+        if (!$this->backend instanceof Iterable) {
             throw new \RuntimeException("This backend does not support iteration");
-        elseif ($this->backend instanceof IterationAdapter && !$this->backend->iterable())
-            throw new \RuntimeException("This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.");
+        }
+        elseif ($this->backend instanceof IterationAdapter && !$this->backend->iterable()) {
+            throw new \RuntimeException(
+                "This backend supports iteration, but only with a secondary key backend. ".
+                "Please call setKeyBackend() and rebuild your cache."
+            );
+        }
     }
  
     private function strategyArgs($argv)

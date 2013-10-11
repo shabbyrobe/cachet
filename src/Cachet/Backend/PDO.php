@@ -135,11 +135,14 @@ class PDO implements Backend, Iterable
         unset($itemData[Item::COMPACT_CACHE_ID]);
         unset($itemData[Item::COMPACT_TIMESTAMP]);
         
-        $sql = "REPLACE INTO `{$tableName}` (cacheKey, keyHash, itemData, creationTimestamp, expiryTimestamp) VALUES(?, ?, ?, ?, ?)";
+        $sql = "
+            REPLACE INTO `{$tableName}` (cacheKey, keyHash, itemData, creationTimestamp, expiryTimestamp) 
+            VALUES(?, ?, ?, ?, ?)
+        ";
         $stmt = $this->pdo->prepare($sql);
         
         $keyHash = $this->hashKey($item->key);
-        if ($stmt->execute(array($item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp)) === false)
+        if ($stmt->execute([$item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp]) === false)
             throw new \UnexpectedValueException("Cache $cacheId set query failed: ".implode(' ', $stmt->errorInfo()));
     }
     
@@ -154,8 +157,11 @@ class PDO implements Backend, Iterable
         $sql = "DELETE FROM `{$tableName}` WHERE keyHash=?";
         $stmt = $this->pdo->prepare($sql);
         
-        if ($stmt->execute(array($keyHash)) === false)
-            throw new \UnexpectedValueException("Cache $cacheId delete query failed: ".implode(' ', $stmt->errorInfo()));
+        if ($stmt->execute(array($keyHash)) === false) {
+            throw new \UnexpectedValueException(
+                "Cache $cacheId delete query failed: ".implode(' ', $stmt->errorInfo())
+            );
+        }
     }
     
     function flush($cacheId)
@@ -170,8 +176,11 @@ class PDO implements Backend, Iterable
         else
             $result = $this->pdo->exec("DELETE FROM `{$tableName}`");
         
-        if ($result === false)
-            throw new \UnexpectedValueException("Cache $cacheId flush query failed: ".implode(' ', $this->pdo->errorInfo()));
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "Cache $cacheId flush query failed: ".implode(' ', $this->pdo->errorInfo())
+            );
+        }
     }
     
     function keys($cacheId)
@@ -218,8 +227,11 @@ class PDO implements Backend, Iterable
                     );
                 ");
                 
-                if ($result === false)
-                    throw new \UnexpectedValueException("Cache $cacheId create table query failed: ".implode(' ', $this->pdo->errorInfo()));
+                if ($result === false) {
+                    throw new \UnexpectedValueException(
+                        "Cache $cacheId create table query failed: ".implode(' ', $this->pdo->errorInfo())
+                    );
+                }
             }
         }
         

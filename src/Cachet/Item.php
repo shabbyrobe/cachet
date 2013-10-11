@@ -15,8 +15,13 @@ class Item
     public $dependency;
     public $timestamp;
     
-    public function __construct($cacheId=null, $key=null, $value=null, $dependency=null, $timestamp=null)
-    {
+    public function __construct(
+        $cacheId=null,
+        $key=null,
+        $value=null,
+        $dependency=null,
+        $timestamp=null
+    ) {
         $this->cacheId = $cacheId;
         $this->key = $key;
         $this->value = $value;
@@ -57,7 +62,13 @@ class Item
             $compacted[] = null;
         
         $item = new static;
-        list ($item->cacheId, $item->key, $item->value, $item->timestamp, $item->dependency) = $compacted;
+        list (
+            $item->cacheId,
+            $item->key,
+            $item->value,
+            $item->timestamp,
+            $item->dependency
+        ) = $compacted;
         return $item;
     }
 }

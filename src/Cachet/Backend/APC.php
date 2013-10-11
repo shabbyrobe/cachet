@@ -50,7 +50,12 @@ class APC implements Backend, Iterable
     function flush($cacheId)
     {
         $fullPrefix = $this->formatKey($cacheId, "");
-        $iter = new \APCIterator('user', "~^".preg_quote($fullPrefix, "~")."~", APC_ITER_VALUE, $this->iteratorChunkSize);
+        $iter = new \APCIterator(
+            'user', 
+            "~^".preg_quote($fullPrefix, "~")."~",
+            APC_ITER_VALUE,
+            $this->iteratorChunkSize
+        );
         apc_delete($iter);
     }
     

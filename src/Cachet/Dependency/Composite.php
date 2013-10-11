@@ -18,8 +18,11 @@ class Composite implements Dependency
     {
         $this->all = $mode == self::MODE_ALL;
         
-        if (count($dependencies) < 2)
-            throw new \InvalidArgumentException("There's no point using a Composite dependency with less than 2 dependencies!");
+        if (count($dependencies) < 2) {
+            throw new \InvalidArgumentException(
+                "There's no point using a Composite dependency with less than 2 dependencies!"
+            );
+        }
         
         $this->dependencies = $dependencies;
     }

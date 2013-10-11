@@ -67,7 +67,9 @@ class Memcached extends IterationAdapter
             }
         }
         elseif (!$this->unsafeFlush) {
-                throw new \RuntimeException("Memcache is not iterable by default. Please either call setKeyBackend or unsafeFlush.");
+            throw new \RuntimeException(
+                "Memcache is not iterable by default. Please either call setKeyBackend or unsafeFlush."
+            );
         }
         else {
             $this->memcached->flush();

@@ -23,8 +23,11 @@ class CachedTag implements Dependency
     {
         if (!isset($cache->services[$this->cacheService]))
             throw new \UnexpectedValueException("CachedTag dependency: missing cache service {$this->cacheService}");
-        if (!$cache->services[$this->cacheService] instanceof Cache)
-            throw new \UnexpectedValueException("CachedTag cache service {$this->cacheService} was not an instance of Cachet\Cache");
+        if (!$cache->services[$this->cacheService] instanceof Cache) {
+            throw new \UnexpectedValueException(
+                "CachedTag cache service {$this->cacheService} was not an instance of Cachet\Cache"
+            );
+        }
         
         $this->tagValue = $cache->services[$this->cacheService]->get($this->tag);
     }
