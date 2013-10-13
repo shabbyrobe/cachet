@@ -2,7 +2,7 @@
 require __DIR__.'/config.php';
 
 Cachet::register();
-$backend = new Cachet\Backend\PHPRedis('127.0.0.1');
+$backend = redis_create_testing(); 
 $cache = new Cachet\Cache('foo', $backend);
 
 $tests = [

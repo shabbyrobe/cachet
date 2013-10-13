@@ -158,46 +158,51 @@ class Cache implements \ArrayAccess
     {
         $argc = count($argv);
         $dependency = null;
-        if ($argc == 2)
+        if (is_callback($argv[2]))
             list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
-        elseif ($argc == 3)
+        elseif (is_callback($argv[3]))
             list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
         else
-            throw new \InvalidArgumentException();
-
-        if (!is_callable($callback))
             throw new \InvalidArgumentException();
 
         return [$key, $callback, $dependency];
     }
     
-    function wrap($key, $callback)
+    function wrap($key, $dependency, $callback, &$result=null)
     {
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
         $found = false;
         $data = $this->get($key, $found);
+
+        $result = 'found';
         if (!$found) {
+            $result = 'set';
             $data = $callback();
             $this->set($key, $data, $dependency);
         }
         return $data;
     }
     
-    function blocking($key, $callback)
+    function blocking($key, $dependency, $callback, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
 
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
         $found = false;
+        $result = 'found';
         $data = $this->get($key, $found);
         if (!$found) {
             $this->locker->acquire($this, $key);
             try {
                 $data = $this->get($key, $found);
                 if (!$found) {
+                    $result = 'set';
                     $data = $callback();
                     $this->set($key, $data, $dependency);
+                }
+                else {
+                    $result = 'foundInLock';
                 }
             }
             finally {
@@ -211,7 +216,7 @@ class Cache implements \ArrayAccess
      * If the locker is locked, this will return a stale item if one
      * is available, or block until an item becomes available.
      */
-    function safeNonblocking($key, $callback)
+    function safeNonblocking($key, $dependency, $callback, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
@@ -223,14 +228,19 @@ class Cache implements \ArrayAccess
         $item = $this->backend->get($this->id, $key);
         $stale = $item && !$this->validateItem($item);
 
+        $result = 'found';
         if (!$item || $stale) {
             if ($this->locker->acquire($this, $key, !'block')) {
                 try {
                     $item = $this->backend->get($this->id, $key);
                     if (!$item) {
+                        $result = 'set';
                         $data = $callback();
                         $this->set($key, $data, $dependency);
                         $item = $this->backend->get($this->id, $key);
+                    }
+                    else {
+                        $result = 'foundInLock';
                     }
                 }
                 finally {
@@ -247,6 +257,10 @@ class Cache implements \ArrayAccess
                 finally {
                     $this->locker->release($this, $key);
                 }
+                $result = 'foundWait';
+            }
+            else {
+                $result = 'foundStale';
             }
         }
         return $item ? $item->value : null;
@@ -256,7 +270,7 @@ class Cache implements \ArrayAccess
      * If the locker is locked, this will return a stale item if one
      * is available, or null if one is not.
      */
-    function nonblocking($key, $callback)
+    function nonBlocking($key, $dependency, $callback, &$found=null, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
@@ -268,6 +282,7 @@ class Cache implements \ArrayAccess
         $item = $this->backend->get($this->id, $key);
         $stale = $item && !$this->validateItem($item);
 
+        $result = 'found';
         if (!$item || $stale) {
             if ($this->locker->acquire($this, $key, !'block')) {
                 try {
@@ -276,13 +291,22 @@ class Cache implements \ArrayAccess
                         $data = $callback();
                         $this->set($key, $data, $dependency);
                         $item = $this->backend->get($this->id, $key);
+                        $result = 'set';
+                    }
+                    else {
+                        $result = 'foundInLock';
                     }
                 }
                 finally {
                     $this->locker->release($this, $key);
                 }
             }
+            else {
+                $result = $item ? 'foundStale' : 'notFound';
+            }
         }
+
+        $found = $item == true;
         return $item ? $item->value : null;
     }
  
