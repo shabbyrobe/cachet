@@ -2,7 +2,7 @@
     "name": "k3jw/cachet",
     "description": "Pluggable Caching for PHP 5.5",
     "keywords": ["php", "caching", "cache"],
-    "version": "1.2.1",
+    "version": "1.3.0",
     "license": "MIT",
     "homepage": "http://k3jw.com/code/cachet/",
     "authors": [

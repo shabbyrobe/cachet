@@ -3,13 +3,43 @@ require __DIR__.'/config.php';
 
 Cachet::register();
 $backend = redis_create_testing(); 
-$cache = new Cachet\Cache('foo', $backend);
 
+$parentPid = posix_getpid();
+$workers = [];
+
+$GLOBALS['semFile'] = sys_get_temp_dir().'/'.uniqid('lockertest', true);
+touch($GLOBALS['semFile']);
+for ($i=0; $i<$workerCount; $i++) {
+    $childPid = pcntl_fork();
+    if ($childPid) {
+        $workers[] = $childPid;
+        return run_parent($workers, $argv);
+    }
+    else {
+        return run_worker($argv);
+    }
+}
+
+function run_parent($workers, $argv)
+{
+    $sem = tester_sem_get();
+    foreach ($workers as $pid)
+        pcntl_wait($pid);
+
+    echo "All workers done\n";
+}
+
+function run_worker(
+
+
+/*
 $tests = [
     'fileSingleLock'=>[
         'keyGenerator'=>function() {
             while (true) yield rand(1, 6);
         },
+        1;5P
+        1;5Q
         'keyHasher'=>function($cache, $key) {
             return 1;
         },
@@ -41,3 +71,5 @@ while (true) {
     $tot += (microtime(true) - $s);
     $cnt++;
 }
+*/
+

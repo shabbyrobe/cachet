@@ -270,7 +270,7 @@ class Cache implements \ArrayAccess
      * If the locker is locked, this will return a stale item if one
      * is available, or null if one is not.
      */
-    function nonBlocking($key, $dependency, $callback, &$found=null, &$result=null)
+    function unsafeNonBlocking($key, $dependency, $callback, &$found=null, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");

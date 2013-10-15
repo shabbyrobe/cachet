@@ -8,6 +8,15 @@ Cachet - Pluggable Caching for PHP 5.5
       a flat capsule enclosing a dose of unpleasant-tasting medicine.
 
 
+Features:
+
+- PHP 5.5 only
+- Swappable backends
+- Support for Redis, MySQL, Xcache, APCu and others
+- Simple cascading and sharding
+- Dynamic item expiration
+- Locking strategies for stampede protection
+
 .. contents::
     :depth: 3
 
@@ -15,8 +24,10 @@ Cachet - Pluggable Caching for PHP 5.5
 Install
 -------
 
-Download **Cachet** directly from GitHub, or use the `Composer <http://getcomposer.org>`_
-repository at ``k3jw.com`` with the following ``composer.json``::
+Download **Cachet** from Packagist:
+
+You can also download **Cachet** directly from GitHub, or use the `Composer
+<http://getcomposer.org>`_ repository at ``k3jw.com`` with the following ``composer.json``::
 
     {
         "repositories": {
@@ -79,7 +90,7 @@ was actually found:
     var_dump($found);
 
 
-Dependencies <dependencies>:
+Expire data dynamically with dependencies_:
     
 .. code-block:: php
     
@@ -94,25 +105,31 @@ Dependencies <dependencies>:
     $cache->get('foo') == 'bar';   // false
 
 
-Cache wrapper method - pass a callback that is called if the key is not found in the cache. The
-returned value is stored in the cache:
+Cachet provides a convenient way to wrap getting and setting using strategies_ with optional
+locking_:
 
 .. code-block:: php
 
     <?php
-    $value = $cache->wrap('foo', function() use ($db) {
+    $dataRetriever = function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
-    });
+    }
+    $value = $cache->wrap('foo', $dataRetriever);
     
     // With a TTL
-    $value = $cache->wrap('foo', 300, function() use ($db) {
-        return $db->query("SELECT * FROM table")->fetchAll();
-    });
+    $value = $cache->wrap('foo', 300, $dataRetriever);
     
     // With a Dependency
-    $value = $cache->wrap('foo', new Cachet\Dependency\Permanent(), function() use ($db) {
-        return $db->query("SELECT * FROM table")->fetchAll();
-    });
+    $value = $cache->wrap('foo', new Cachet\Dependency\Permanent(), $dataRetriever);
+
+    // Set up a rotating pool of 4 file locks (using flock)
+    $hasher = function($cache, $key) {
+        return $cache->id."/".(crc32($key) % 4);
+    };
+    $cache->locker = new Cachet\Locker\File('/path/to/locks', $hasher);
+
+    // blocks if another concurrent process is running the dataRetriever
+    $value = $cache->blocking('foo', $dataRetriever);
 
 
 Iteration - this is tricky and loaded with caveats. See the section below that describes them in
@@ -133,6 +150,8 @@ detail:
     }
     // outputs "foo: bar" only.
 
+
+.. _iteration:
 
 Iteration
 ---------
@@ -157,14 +176,14 @@ The different types of iteration support are:
   Millions of keys may cause memory issues.
 
 **all data**
-  Everything is returned in one hit. This is only applied to the in-memory cache or session
-  cache, where no other option is possible. Thousands of keys may cause memory issues.
+  Everything is returned in one hit. This is only applied to the in-memory cache or session cache,
+  where no other option is possible. Thousands of keys may cause memory issues.
 
 **optional key backend**
-  Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower
-  as these operations need to be performed on both the backend and the key backend. Memory issues
-  are inherited from the key backend, so you should try to use a generator-based key backend
-  wherever possible.
+  Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower as
+  these operations need to be performed on both the backend and the key backend. Memory issues are
+  inherited from the key backend, so you should try to use a generator-based key backend wherever
+  possible.
   
   Key backend iteration is optional. If no key backend is supplied, iteration will fail.
 
@@ -174,12 +193,25 @@ Iteration is a requirement for garbage collection.
 Backends
 --------
 
+Cache backends should implement ``Cache\Backend``, though some backends have to work a bit harder to
+satisfy the interface than others.
+
+Backends should, but may not necessarily, implement ``Cache\Backend\Iterable``. Backends that do not
+can't be iterated. This will be specified against each backend's documentation.
+
+Some backends support automatic expiration for certain dependency_ types. When a backend supports
+this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
+Setting this to false does not guarantee the backend will not expire cache values under other
+circumstances.
+
+
 APC
 ~~~
 
 Works with ``apc`` and ``apcu``.
 
 Iteration support: **generator**.
+Backend expirations: ``Cachet\Expiration\TTL``
 
 .. code-block:: php
 
@@ -203,6 +235,7 @@ If you use this cache, do some performance crunching to see if it's actually any
 cache at all.
 
 Iteration support: **generator**.
+Backend expirations: **none**
 
 .. code-block:: php
 
@@ -225,6 +258,7 @@ Memcached
 Requires ``memcached`` PHP extension.
 
 Iteration support: **optional key backend**.
+Backend expirations: ``Cachet\Expiration\TTL``
 
 .. code-block:: php
 
@@ -238,7 +272,7 @@ Iteration support: **optional key backend**.
     $backend = new Cachet\Backend\Memcached($memcached);
 
 
-Flushing is not supported by default, but works properly when a key backend is provided. If you 
+Flushing is not supported by default, but works properly when a key backend is provided. If you
 don't wish to use a key backend, you can activate unsafe flush mode, which will simply flush your
 entire memcache instance regardless of which cache it was called against.
 
@@ -276,7 +310,8 @@ Memory
 
 In-memory cache for the duration of the request or CLI run.
 
-Iteration support: **all data**.
+Iteration support: **all data**
+Backend expirations: **none**
 
 .. code-block:: php
 
@@ -290,6 +325,7 @@ PDO
 Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
 
 Iteration support: **fetcher**
+Backend expirations: **none**
 
 .. code-block:: php
     
@@ -320,6 +356,7 @@ PHPRedis
 Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
 
 Iteration support: **fetcher**
+Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``
 
 .. code-block:: php
     
@@ -349,11 +386,12 @@ Iteration support: **fetcher**
 Session
 ~~~~~~~
 
-Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked growth. 
-``session_start()`` will be called automatically if it hasn't yet been called, so if you would
-like to customise the session startup, call ``session_start()`` yourself beforehand.
+Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked growth.
+``session_start()`` will be called automatically if it hasn't yet been called, so if you would like
+to customise the session startup, call ``session_start()`` yourself beforehand.
 
 Iteration support: **all data**
+Backend expiration: **none**
 
 .. code-block:: php
 
@@ -365,6 +403,7 @@ XCache
 ~~~~~~
 
 Iteration support: **optional key backend**
+Backend expiration: ``Cache\Dependency\TTL`` 
 
 .. code-block:: php
 
@@ -386,6 +425,7 @@ This works best when the fastest backend has the highest priority (earlier in th
 Values are set in all caches in reverse priority order.
 
 Iteration support: whatever is supported by the lowest priority cache
+Backend expiration: N/A
 
 .. code-block:: php
     
@@ -418,6 +458,7 @@ Allows the cache to choose one of several backends for each key. The same backen
 be chosen for the same key, provided the list of backends is always the same.
 
 Iteration support: each backend is iterated fully.
+Backend expiration: N/A
 
 .. code-block:: php
 
@@ -438,6 +479,198 @@ Iteration support: each backend is iterated fully.
     var_dump(count($memory2->data));  // 1
     var_dump(count($memory3->data));  // 2
 
+
+.. _strategy:
+.. _strategies:
+
+Strategies
+----------
+
+``Cachet\Cache`` provides a series of strategy methods. Most of them require a locker implementation
+to be supplied to the cache. They all follow the same general API (with some minor exceptions for
+certain strategies which are noted below)::
+
+    $cache->strategyName(string $key, callable $dataRetriever);
+    $cache->strategyName(string $key, int $ttl, callable $dataRetriever);
+    $cache->strategyName(string $key, $dependency, callable $dataRetriever);
+    
+Most of the strategies interact with a locker_, and some strategies work best when the backend's
+underlying expirations are disabled if it supports them.
+
+
+Wrap
+~~~~
+
+The simplest caching strategy provided by **Cachet** is the ``wrap`` strategy. It doesn't do
+anything to prevent stampedes, but it does not require a locker and can make your code much more
+concise by reducing boilerplate. When using ``wrap``, you can turn the following code:
+
+.. code-block:: php
+
+    <?php
+    $value = $cache->get('key', $found);
+    if (!$found) {
+        $value = $service->findExpensiveValue($blahBlahBlah);
+        if ($value)
+            $cache->set('key', $value);
+    }
+
+With this:
+
+.. code-block:: php
+
+    <?php
+    $value = $cache->wrap('key', function() use ($service, $blahBlahBlah) {
+        return $service->findExpensiveValue($blahBlahBlah);
+    };
+
+I find this dramatically improves readability by keeping the caching boilerplate out of the way.
+
+
+Blocking
+~~~~~~~~
+
+This requires a locker_. In the event of a cache miss, a request will try to acquire the lock before
+calling the data retrieval function. The lock will be released after the data is retrieved. Any
+concurrent request which causes a cache miss will block until the request with the lock finishes.
+
+This strategy isn't adversely affected when ``useBackendExpirations`` is set to ``true`` if the
+backend supports it.
+
+.. code-block:: php
+
+    <?php
+    $cache->locker = create_my_locker();
+    echo sprintf("%s %s start\n", microtime(true), uniqid('', true));
+    $value = $cache->blocking('key', function() {
+        sleep(10);
+        return get_stuff();
+    });
+    echo sprintf("%s %s end\n", microtime(true), uniqid('', true));
+
+The following code would output something like this (the uniqids would be slightly more complex)::
+
+    1381834595 1 start
+    1381834599 2 start
+    1381834605 1 end
+    1381834605 2 end 
+
+
+Safe Non Blocking
+~~~~~~~~~~~~~~~~~
+
+This requires a locker_. If the cache misses, the first request will acquire the lock and run the
+data retriever function. Subsequent requests will return a stale value if one is available,
+otherwise it will block until the first request finishes, thus guaranteeing a value is always
+returned.
+
+This strategy works best when ``useBackendExpirations`` is set to ``false`` if the backend supports
+it.
+
+.. code-block:: php
+
+    <?php
+    $cache->locker = create_my_locker();
+    $value = $cache->safeNonBlocking('key', function() {
+        return get_stuff();
+    });
+
+
+Unsafe Non Blocking
+~~~~~~~~~~~~~~~~~~~
+
+This requires a locker_. If the cache misses, the first request will acquire the lock and run the
+data retriever function. Subsequent requests will return a stale value if one is available,
+otherwise they will return nothing immediately.
+
+The API for this strategy is slightly different to the others as it does not guarantee a value will
+be returned, so it provides an optional output parameter ``$found`` to signal that the method has
+returned without retrieving or setting a value:
+
+This strategy works best when ``useBackendExpirations`` is set to ``false`` if the backend supports
+it.
+
+.. code-block:: php
+
+    <?php
+    $cache->locker = create_my_locker();
+
+    $value = $cache->unsafeNonBlocking('key', $retriever);
+    $value = $cache->unsafeNonBlocking('key', $ttl, $retiever);
+    $value = $cache->unsafeNonBlocking('key', $dependency, $retriever);
+
+    $value = $cache->unsafeNonBlocking('key', $retiever, null, $found);
+    $value = $cache->unsafeNonBlocking('key', $ttl, $retiever, $found);
+    $value = $cache->unsafeNonBlocking('key', $dependency, $retiever, $found);
+
+
+.. _locker:
+.. _lockers:
+.. _locking:
+
+Lockers
+-------
+
+Lockers handle managing synchronisation between requests in the various caching strategies_. They
+must be able to support blocking on acquire, and should be able to support a non-blocking acquire.
+
+Lockers are passed the cache and the key when acquired by a strategy_. This can be used raw if you
+want one lock for every cache key, but if you want to keep the number of locks down, you can pass a
+callable as the ``$keyHasher`` argument to the locker's constructor. You can use this to return a
+less complex version of the key.
+
+.. code-block:: php
+    
+    <?php
+    // restrict to 4 locks per cache
+    $keyHasher = function($cache, $key) {
+        return $cache->id."/".crc32($key) % 4;
+    };
+
+
+File
+~~~~
+
+Uses ``flock`` to handle locking. Requires a dedicated directory in which locks will be stored.
+
+.. code-block:: php
+    
+    <?php
+    $locker = new Cachet\Locker\File('/path/to/lockfiles');
+    $locker = new Cachet\Locker\File('/path/to/lockfiles', $keyHasher);
+
+The file locker supports the same array of options as ``Cachet\Backend\File``:
+
+.. code-block:: php
+
+    <?php
+    $locker = new Cachet\Locker\File('/path/to/lockfiles', $keyHasher, [
+        'user'=>'foo',
+        'group'=>'foo',
+        'filePerms'=>0666,   // Important: must be octal
+        'dirPerms'=>0777,    // Important: must be octal
+    ]);
+
+If the ``$keyHasher`` returns a value that contains ``/`` characters, they are converted into path
+segments.
+
+
+Semaphore
+~~~~~~~~~
+
+Uses PHP's `semaphore <http://php.net/manual/en/book.sem.php>`_ functions to provide locking. PHP
+must be compiled with ``--enable-sysvsem`` for this to work.
+
+This locker **does not** support non-blocking acquire.
+
+.. code-block:: php
+
+    <?php
+    $locker = new Cachet\Locker\Semaphore($keyHasher);
+
+
+.. _dependency:
+.. _dependencies:
 
 Dependencies
 ------------
@@ -477,12 +710,10 @@ an item:
 
 .. warning::
 
-    Just because an item has expired does not mean it has been removed. Expired items will be 
-    removed on retrieval, but garbage collection is a manual process for now and can only really
-    be performed on backends that support iteration (Memcache does not, for example).
+    Just because an item has expired does not mean it has been removed. Expired items will be
+    removed on retrieval, but garbage collection is a manual process that should be performed by a
+    separate process.
     
-    Some way to manage garbage collection and key iteration is on my TODO list.
-
 
 TTL
 ~~~
@@ -626,7 +857,7 @@ Session Handler
 
 By default, ``Cachet\SessionHandler`` does nothing when the ``gc`` (garbage collect) method is
 called. This is because cache iteration can't be relied upon to be performant - this is a backend
-specific characteristic and can vary wildly (see the **Iteration** section for more details) and it
+specific characteristic and can vary wildly (see the iteration_ section for more details) and it
 is up to the developer to be aware of this when selecting a backend. 
 
 You can activate automatic garbage collection like so:
@@ -671,13 +902,14 @@ follow these guidelines:
 - Backends aren't meant to be used by themselves - they should be used by an instance of
   ``Cachet\Cache``
 
-- It must be possible to use the same backend with more than one instance of ``Cachet\Cache``.
+- It must be possible to use the same backend instance with more than one instance of
+  ``Cachet\Cache``.
 
 - ``get()`` must return an instance of ``Cachet\Item``. The backend must not check whether an item
-  is valid, ``Cachet\Cache`` does this for you.
+  is valid as ``Cachet\Cache`` depends on an item always being returned.
 
 - Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is
-  not strictly necessary.
+  not strictly necessary, though useful.
 
 - ``set()`` must store enough information so that ``get()`` can return a fully populated instance
   of ``Cachet\Item``. This usually means that if your backend can't support PHP objects directly,
