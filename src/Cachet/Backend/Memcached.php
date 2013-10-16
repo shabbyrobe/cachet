@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class Memcached extends IterationAdapter
+class Memcached extends IterationAdapter implements Counter
 {
     public $memcached;
     
@@ -15,6 +15,8 @@ class Memcached extends IterationAdapter
 
     public $useBackendExpirations = true;
     
+    public $counterTTL = null;
+
     public function __construct($memcached=null)
     {
         if ($memcached instanceof \Memcached) {
@@ -29,7 +31,7 @@ class Memcached extends IterationAdapter
     
     function get($cacheId, $key)
     {
-        $formattedKey = $this->formatKey($cacheId, $key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
         $encoded = $this->memcached->get($formattedKey);
         
         $item = null;
@@ -43,7 +45,7 @@ class Memcached extends IterationAdapter
     {
         $ttl = 0;
         
-        $formattedKey = $this->formatKey($item->cacheId, $item->key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
         $formattedItem = serialize($item);
         if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
@@ -55,7 +57,7 @@ class Memcached extends IterationAdapter
     
     protected function deleteFromStore($cacheId, $key)
     {
-        $formattedKey = $this->formatKey($cacheId, $key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
         return $this->memcached->delete($formattedKey);
     }
     
@@ -75,9 +77,18 @@ class Memcached extends IterationAdapter
             $this->memcached->flush();
         }
     }
-    
-    private function formatKey($cacheId, $key)
+
+    function increment($cacheId, $key, $by=1)
     {
-        return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $value = $this->memcached->increment($formattedKey, $by, null, $this->counterTTL);
+        return $value;
+    }
+
+    function decrement($cacheId, $key, $by=1)
+    {
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $value = $this->memcached->decrement($formattedKey, $by, null, $this->counterTTL);
+        return $value;
     }
 }

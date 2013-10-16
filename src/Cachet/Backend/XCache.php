@@ -4,11 +4,13 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class XCache extends IterationAdapter
+class XCache extends IterationAdapter implements Counter
 {   
     public $prefix;
     
     public $useBackendExpirations = true;
+
+    public $counterTTL = null;
 
     function __construct($prefix=null)
     {
@@ -17,7 +19,7 @@ class XCache extends IterationAdapter
     
     function get($cacheId, $key)
     {
-        $formattedKey = $this->formatKey($cacheId, $key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
         $item = xcache_get($formattedKey);
         if ($item) {
             $item = @unserialize($item);
@@ -28,7 +30,7 @@ class XCache extends IterationAdapter
     protected function setInStore(Item $item)
     {   
         $ttl = null;
-        $formattedKey = $this->formatKey($item->cacheId, $item->key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
         if (
             $this->useBackendExpirations && 
             $item->dependency && $item->dependency instanceof Dependency\TTL
@@ -42,17 +44,26 @@ class XCache extends IterationAdapter
     
     protected function deleteFromStore($cacheId, $key)
     {
-        xcache_unset($this->formatKey($cacheId, $key));
+        xcache_unset(\Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]));
     }
     
     protected function flushStore($cacheId)
     {
-        $prefix = $this->formatKey($cacheId, "");
+        $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         xcache_unset_by_prefix($prefix);
     }
     
-    private function formatKey($cacheId, $key)
+    function increment($cacheId, $key, $by=1)
     {
-        return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";
+        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $value = xcache_inc($formatted, $by, $this->counterTTL);
+        return $value;
+    }
+
+    function decrement($cacheId, $key, $by=1)
+    {
+        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $value = xcache_dec($formatted, $by, $this->counterTTL);
+        return $value;
     }
 }

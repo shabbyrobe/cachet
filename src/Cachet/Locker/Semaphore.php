@@ -48,7 +48,7 @@ class Semaphore extends \Cachet\Locker
     {
         $id = $this->getLockKey($cache, $key);
         if (!is_int($id) || $id > PHP_INT_MAX || $id < ~PHP_INT_MAX)
-            $id = \Cachet\Util\Hash::mdhack($id);
+            $id = \Cachet\Helper::hashMDHack($id);
         return $id;
     }
 }

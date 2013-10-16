@@ -13,7 +13,7 @@ $cache->locker = new Cachet\Locker\File('/tmp/locks', function($cache, $key) {
 
 /*
 $cache->locker = new Cachet\Locker\Semaphore(function ($cache, $key) {
-    return Cachet\Util\Hash::mdhack("$cache->id/$key") % 4;
+    return Cachet\Helper::hashMDHack("$cache->id/$key") % 4;
 });
 */
 

@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PDO implements Backend, Iterable
+class PDO implements Backend, Iterable, Counter
 {
     private $tables;
     private $engine;
@@ -12,6 +12,8 @@ class PDO implements Backend, Iterable
     private $params;
     private $connector;
     
+    private $counter;
+
     public function __construct($dbInfo)
     {
         if (is_array($dbInfo)) {
@@ -48,6 +50,8 @@ class PDO implements Backend, Iterable
             if ($this->engine != 'mysql' && $this->engine != 'sqlite')
                 throw new \RuntimeException("Only works with mysql and sqlite (for now)");
         }
+
+        return $this->pdo;
     }
     
     public function disconnect()
@@ -105,8 +109,11 @@ class PDO implements Backend, Iterable
         
         $sql = "SELECT itemData, creationTimestamp FROM `{$tableName}` WHERE keyHash=?";
         $stmt = $this->pdo->prepare($sql);
-        if ($stmt->execute(array($keyHash)) === false)
-            throw new \UnexpectedValueException("Cache $cacheId get query failed: ".implode(' ', $stmt->errorInfo()));
+        if ($stmt->execute(array($keyHash)) === false) {
+            throw new \UnexpectedValueException(
+                "Cache $cacheId get query failed: ".implode(' ', $stmt->errorInfo())
+            );
+        }
         
         $record = $stmt->fetch(\PDO::FETCH_ASSOC);
         
@@ -142,8 +149,12 @@ class PDO implements Backend, Iterable
         $stmt = $this->pdo->prepare($sql);
         
         $keyHash = $this->hashKey($item->key);
-        if ($stmt->execute([$item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp]) === false)
-            throw new \UnexpectedValueException("Cache $cacheId set query failed: ".implode(' ', $stmt->errorInfo()));
+        $params = [$item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp];
+        if ($stmt->execute($params) === false) {
+            throw new \UnexpectedValueException(
+                "Cache $cacheId set query failed: ".implode(' ', $stmt->errorInfo())
+            );
+        }
     }
     
     function delete($cacheId, $key)
@@ -203,6 +214,33 @@ class PDO implements Backend, Iterable
         }
     }
     
+    function increment($cacheId, $key, $by=1)
+    {
+        if (!isset($this->counter)) {
+            $this->counter = $this->createEngineCounter();
+        }
+        return $this->counter->increment($cacheId, $key, $by);
+    }
+
+    function decrement($cacheId, $key, $by=1)
+    {
+        if (!isset($this->counter)) {
+            $this->counter = $this->createEngineCounter();
+        }
+        return $this->counter->decrement($cacheId, $key, $by);
+    }
+
+    private function createEngineCounter()
+    {
+        switch ($this->engine) {
+            case 'mysql' :  return new PDO\MySQLCounter ($this);  break;
+            case 'sqlite':  return new PDO\SQLiteCounter($this);  break;
+
+            default:
+                throw new \RuntimeException("PDO engine $engine does not support counters");
+        }
+    }
+
     private function hashKey($key)
     {
         return hash('sha256', $key);

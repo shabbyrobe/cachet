@@ -12,8 +12,8 @@ Features:
 
 - PHP 5.5 only
 - Swappable backends
-- Support for Redis, MySQL, Xcache, APCu and others
-- Simple cascading and sharding
+- Support for Redis, MySQL, Xcache, APCu, Memcached and others
+- Composite backends for cascading and sharding
 - Dynamic item expiration
 - Locking strategies for stampede protection
 

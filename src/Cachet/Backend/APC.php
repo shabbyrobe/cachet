@@ -5,7 +5,7 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class APC implements Backend, Iterable
+class APC implements Backend, Iterable, Counter
 {
     public $iteratorChunkSize = 100;
     
@@ -20,7 +20,8 @@ class APC implements Backend, Iterable
     
     function get($cacheId, $key)
     {
-        $item = apc_fetch($this->formatKey($cacheId, $key));
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $item = apc_fetch($formattedKey);
         return $item ?: null;
     }
     
@@ -32,7 +33,7 @@ class APC implements Backend, Iterable
             $item->dependency = null;
         }
         
-        $formattedKey = $this->formatKey($item->cacheId, $item->key);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
         
         // Item::compact() *increases* data usage!!
         // APCU uses significantly less memory when the Item instance is serialised directly
@@ -43,13 +44,13 @@ class APC implements Backend, Iterable
     
     function delete($cacheId, $key)
     {
-        $key = $this->formatKey($cacheId, $key);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
         apc_delete($key);
     }
     
     function flush($cacheId)
     {
-        $fullPrefix = $this->formatKey($cacheId, "");
+        $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $iter = new \APCIterator(
             'user', 
             "~^".preg_quote($fullPrefix, "~")."~",
@@ -61,7 +62,7 @@ class APC implements Backend, Iterable
     
     function keys($cacheId)
     {
-        $fullPrefix = $this->formatKey($cacheId, "");
+        $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
         foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
             yield $item['value']->key;
@@ -70,15 +71,30 @@ class APC implements Backend, Iterable
     
     function items($cacheId)
     {
-        $fullPrefix = $this->formatKey($cacheId, "");
+        $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
         foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
             yield $item['value'];
         }
     }
     
-    private function formatKey($cacheId, $key)
+    function increment($cacheId, $key, $by=1)
     {
-        return ($this->prefix ? "{$this->prefix}/" : "")."{$cacheId}/{$key}";
+        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $value = apc_inc($fullKey, $by, $success);
+        if (!$success)
+            throw new \UnexpectedValueException("APC could not increment the key at $fullKey");
+
+        return $value;
+    }
+
+    function decrement($cacheId, $key, $by=1)
+    {
+        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $value = apc_dec($fullKey, $by, $success);
+        if (!$success)
+            throw new \UnexpectedValueException("APC could not decrement the key at $fullKey");
+
+        return $value;
     }
 }
