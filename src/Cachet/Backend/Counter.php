@@ -1,5 +1,5 @@
 <?php
-namespace Cachet;
+namespace Cachet\Backend;
 
 interface Counter
 {

@@ -344,9 +344,9 @@ class CacheTest extends \CachetTestCase
     /**
      * @expectedException InvalidArgumentException
      */
-    public function testWrapInvalidArguments4()
+    public function testWrapInvalidArguments5()
     {
-        $this->cache->wrap('nope', 'nope', 'nope', 'nope');
+        $this->cache->wrap('nope', 'nope', 'nope', $nope, 'nope');
     }
     
     /**

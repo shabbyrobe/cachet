@@ -100,7 +100,7 @@ class File implements Backend, Iterable
     private function createSafeKey($key)
     {
         $safeKey = preg_replace("/[^a-z\d_\-]/", "", strtolower($key));
-        $hashedKey = base_convert(crc32($key), 10, 36).($safeKey ? "-$safeKey" : '');
+        $hashedKey = base_convert(abs(crc32($key)), 10, 36).($safeKey ? "-$safeKey" : '');
         return $hashedKey;
     }
 }

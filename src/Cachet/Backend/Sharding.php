@@ -68,7 +68,7 @@ class Sharding implements Backend, Iterable
     private function selectBackend($cacheId, $key)
     {
         $hashValue = "$cacheId/$key";
-        $backendId = crc32($hashValue) % $this->backendCount;
+        $backendId = abs(crc32($hashValue)) % $this->backendCount;
         return $this->backends[$backendId];
     }
 }

@@ -158,9 +158,9 @@ class Cache implements \ArrayAccess
     {
         $argc = count($argv);
         $dependency = null;
-        if (is_callback($argv[2]))
+        if (is_callable($argv[1]))
             list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
-        elseif (is_callback($argv[3]))
+        elseif (is_callable($argv[2]))
             list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
         else
             throw new \InvalidArgumentException();
@@ -168,7 +168,7 @@ class Cache implements \ArrayAccess
         return [$key, $callback, $dependency];
     }
     
-    function wrap($key, $dependency, $callback, &$result=null)
+    function wrap($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
         $found = false;
@@ -177,13 +177,13 @@ class Cache implements \ArrayAccess
         $result = 'found';
         if (!$found) {
             $result = 'set';
-            $data = $callback();
+            $data = call_user_func($callback);
             $this->set($key, $data, $dependency);
         }
         return $data;
     }
     
-    function blocking($key, $dependency, $callback, &$result=null)
+    function blocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
@@ -198,7 +198,7 @@ class Cache implements \ArrayAccess
                 $data = $this->get($key, $found);
                 if (!$found) {
                     $result = 'set';
-                    $data = $callback();
+                    $data = call_user_func($callback);
                     $this->set($key, $data, $dependency);
                 }
                 else {
@@ -216,7 +216,7 @@ class Cache implements \ArrayAccess
      * If the locker is locked, this will return a stale item if one
      * is available, or block until an item becomes available.
      */
-    function safeNonblocking($key, $dependency, $callback, &$result=null)
+    function safeNonblocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
@@ -235,7 +235,7 @@ class Cache implements \ArrayAccess
                     $item = $this->backend->get($this->id, $key);
                     if (!$item) {
                         $result = 'set';
-                        $data = $callback();
+                        $data = call_user_func($callback);
                         $this->set($key, $data, $dependency);
                         $item = $this->backend->get($this->id, $key);
                     }
@@ -270,7 +270,7 @@ class Cache implements \ArrayAccess
      * If the locker is locked, this will return a stale item if one
      * is available, or null if one is not.
      */
-    function unsafeNonBlocking($key, $dependency, $callback, &$found=null, &$result=null)
+    function unsafeNonBlocking($key, $dependency, $callback=null, &$found=null, &$result=null)
     {
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
@@ -288,7 +288,7 @@ class Cache implements \ArrayAccess
                 try {
                     $item = $this->backend->get($this->id, $key);
                     if (!$item) {
-                        $data = $callback();
+                        $data = call_user_func($callback);
                         $this->set($key, $data, $dependency);
                         $item = $this->backend->get($this->id, $key);
                         $result = 'set';

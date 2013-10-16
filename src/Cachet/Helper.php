@@ -13,5 +13,10 @@ class Helper
         $parts = array_filter($parts);
         return implode('/', $parts);
     }
+
+    public static function getType($arg)
+    {
+		return is_object($input) ? get_class($input) : gettype($input);
+    }
 }
 

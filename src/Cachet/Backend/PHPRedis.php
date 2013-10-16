@@ -67,7 +67,7 @@ class PHPRedis implements Backend, Iterable, Counter
         }
         else {
             $this->redis->set(
-                \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]),
+                \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]),
                 $this->formatItem($item)
             );
         }
@@ -75,7 +75,7 @@ class PHPRedis implements Backend, Iterable, Counter
     
     private function setWithTTL($item)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         $ttl = $item->dependency->ttlSeconds;
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
@@ -87,7 +87,7 @@ class PHPRedis implements Backend, Iterable, Counter
     
     private function setWithExpireTime($item)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         $time = $item->dependency->time;
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
@@ -108,7 +108,7 @@ class PHPRedis implements Backend, Iterable, Counter
         if (!$this->redis)
             $this->connect();
         
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $result = $this->redis->get($key);
         if ($result) {
             return $this->decode($result);
@@ -120,7 +120,7 @@ class PHPRedis implements Backend, Iterable, Counter
         if (!$this->redis)
             $this->connect();
         
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $this->redis->delete(array($key));
     }
     
@@ -174,13 +174,13 @@ class PHPRedis implements Backend, Iterable, Counter
 
     function increment($cacheId, $key, $by=1)
     {
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         return $this->redis->incrBy($key, $by);
     }
 
     function decrement($cacheId, $key, $by=1)
     {
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         return $this->redis->decrBy($key, $by);
     }
 }

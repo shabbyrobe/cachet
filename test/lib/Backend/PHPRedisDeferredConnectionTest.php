@@ -19,7 +19,10 @@ class PHPRedisDeferredConnectionTest extends PHPRedisTest
         
         $info = [
             'host'=>$GLOBALS['settings']['redis']['host'], 
-            'port'=>isset($GLOBALS['settings']['redis']['port']) ? $GLOBALS['settings']['redis']['port'] : 6379,
+            'port'=>isset($GLOBALS['settings']['redis']['port']) 
+                ? $GLOBALS['settings']['redis']['port'] 
+                : 6379
+            ,
             'database'=>$GLOBALS['settings']['redis']['database'],
         ];
         return $info;

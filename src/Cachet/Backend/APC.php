@@ -20,7 +20,7 @@ class APC implements Backend, Iterable, Counter
     
     function get($cacheId, $key)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $item = apc_fetch($formattedKey);
         return $item ?: null;
     }
@@ -33,7 +33,7 @@ class APC implements Backend, Iterable, Counter
             $item->dependency = null;
         }
         
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         
         // Item::compact() *increases* data usage!!
         // APCU uses significantly less memory when the Item instance is serialised directly
@@ -44,7 +44,7 @@ class APC implements Backend, Iterable, Counter
     
     function delete($cacheId, $key)
     {
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         apc_delete($key);
     }
     
@@ -80,7 +80,7 @@ class APC implements Backend, Iterable, Counter
     
     function increment($cacheId, $key, $by=1)
     {
-        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = apc_inc($fullKey, $by, $success);
         if (!$success)
             throw new \UnexpectedValueException("APC could not increment the key at $fullKey");
@@ -90,7 +90,7 @@ class APC implements Backend, Iterable, Counter
 
     function decrement($cacheId, $key, $by=1)
     {
-        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = apc_dec($fullKey, $by, $success);
         if (!$success)
             throw new \UnexpectedValueException("APC could not decrement the key at $fullKey");

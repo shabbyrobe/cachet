@@ -31,7 +31,7 @@ class Memcached extends IterationAdapter implements Counter
     
     function get($cacheId, $key)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $encoded = $this->memcached->get($formattedKey);
         
         $item = null;
@@ -45,7 +45,7 @@ class Memcached extends IterationAdapter implements Counter
     {
         $ttl = 0;
         
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         $formattedItem = serialize($item);
         if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $ttl = $item->dependency->ttlSeconds;
@@ -57,7 +57,7 @@ class Memcached extends IterationAdapter implements Counter
     
     protected function deleteFromStore($cacheId, $key)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         return $this->memcached->delete($formattedKey);
     }
     
@@ -80,14 +80,14 @@ class Memcached extends IterationAdapter implements Counter
 
     function increment($cacheId, $key, $by=1)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = $this->memcached->increment($formattedKey, $by, null, $this->counterTTL);
         return $value;
     }
 
     function decrement($cacheId, $key, $by=1)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = $this->memcached->decrement($formattedKey, $by, null, $this->counterTTL);
         return $value;
     }

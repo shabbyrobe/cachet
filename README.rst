@@ -124,7 +124,7 @@ locking_:
 
     // Set up a rotating pool of 4 file locks (using flock)
     $hasher = function($cache, $key) {
-        return $cache->id."/".(crc32($key) % 4);
+        return $cache->id."/".(abs(crc32($key)) % 4);
     };
     $cache->locker = new Cachet\Locker\File('/path/to/locks', $hasher);
 
@@ -624,7 +624,7 @@ less complex version of the key.
     <?php
     // restrict to 4 locks per cache
     $keyHasher = function($cache, $key) {
-        return $cache->id."/".crc32($key) % 4;
+        return $cache->id."/".abs(crc32($key)) % 4;
     };
 
 

@@ -22,11 +22,15 @@ class PDO implements Backend, Iterable, Counter
         elseif (is_callable($dbInfo)) {
             $this->connector = $dbInfo;
         }
-        elseif (is_object($pdo)) {
+        elseif (is_object($dbInfo)) {
             $this->pdo = $dbInfo;
+            $this->engine = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
         }
         else {
-            throw new \InvalidArgumentException();
+            throw new \InvalidArgumentException(
+                "Must pass a connection info array, a callback that returns a PDO ".
+                "or a PDO instance, found ".\Cachet\Helper::getType($dbInfo)
+            );
         }
     }
     
@@ -45,11 +49,8 @@ class PDO implements Backend, Iterable, Counter
             }
         }
         
-        if (!$this->engine) {
-            $this->engine = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-            if ($this->engine != 'mysql' && $this->engine != 'sqlite')
-                throw new \RuntimeException("Only works with mysql and sqlite (for now)");
-        }
+        if ($this->engine != 'mysql' && $this->engine != 'sqlite')
+            throw new \RuntimeException("Only works with mysql and sqlite (for now)");
 
         return $this->pdo;
     }
@@ -57,6 +58,11 @@ class PDO implements Backend, Iterable, Counter
     public function disconnect()
     {
         $this->pdo = null;
+    }
+
+    public function getEngine()
+    {
+        return $this->engine;
     }
     
     /**
@@ -143,7 +149,9 @@ class PDO implements Backend, Iterable, Counter
         unset($itemData[Item::COMPACT_TIMESTAMP]);
         
         $sql = "
-            REPLACE INTO `{$tableName}` (cacheKey, keyHash, itemData, creationTimestamp, expiryTimestamp) 
+            REPLACE INTO `{$tableName}` (
+                cacheKey, keyHash, itemData, creationTimestamp, expiryTimestamp
+            )
             VALUES(?, ?, ?, ?, ?)
         ";
         $stmt = $this->pdo->prepare($sql);
@@ -251,7 +259,7 @@ class PDO implements Backend, Iterable, Counter
         if (!isset($this->tables[$cacheId])) {
             $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
             $this->tables[$cacheId] = $tableName;
-            
+           
             if ($this->engine == 'sqlite') {
                 $result = $this->pdo->exec("
                     CREATE TABLE IF NOT EXISTS `{$tableName}` (

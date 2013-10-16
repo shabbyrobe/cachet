@@ -19,7 +19,7 @@ class XCache extends IterationAdapter implements Counter
     
     function get($cacheId, $key)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $item = xcache_get($formattedKey);
         if ($item) {
             $item = @unserialize($item);
@@ -30,7 +30,7 @@ class XCache extends IterationAdapter implements Counter
     protected function setInStore(Item $item)
     {   
         $ttl = null;
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, 'value', $item->key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         if (
             $this->useBackendExpirations && 
             $item->dependency && $item->dependency instanceof Dependency\TTL
@@ -44,7 +44,7 @@ class XCache extends IterationAdapter implements Counter
     
     protected function deleteFromStore($cacheId, $key)
     {
-        xcache_unset(\Cachet\Helper::formatKey([$this->prefix, $cacheId, 'value', $key]));
+        xcache_unset(\Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]));
     }
     
     protected function flushStore($cacheId)
@@ -55,14 +55,14 @@ class XCache extends IterationAdapter implements Counter
     
     function increment($cacheId, $key, $by=1)
     {
-        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = xcache_inc($formatted, $by, $this->counterTTL);
         return $value;
     }
 
     function decrement($cacheId, $key, $by=1)
     {
-        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, 'count', $key]);
+        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $value = xcache_dec($formatted, $by, $this->counterTTL);
         return $value;
     }
