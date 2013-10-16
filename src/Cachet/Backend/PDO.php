@@ -48,7 +48,10 @@ class PDO implements Backend, Iterable, Counter
                 );
             }
         }
-        
+
+        if (!$this->engine)
+            $this->engine = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
         if ($this->engine != 'mysql' && $this->engine != 'sqlite')
             throw new \RuntimeException("Only works with mysql and sqlite (for now)");
 

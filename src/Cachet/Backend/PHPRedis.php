@@ -143,7 +143,7 @@ class PHPRedis implements Backend, Iterable, Counter
         if (!$this->redis)
             $this->connect();
         
-        $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
+        $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId])."/";
         $len = strlen($prefix);
         $redisKeys = $this->redis->keys("$prefix*");
         

@@ -31,8 +31,11 @@ class MemcachedTest extends \BackendTestCase
         if (!extension_loaded('memcached'))
             return $this->markTestSkipped("memcached extension not found");
         
-        if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['memcached']['host'])
+        if (!isset($GLOBALS['settings']['memcached'])
+            || !isset($GLOBALS['settings']['memcached']['host'])
+        ) {
             return $this->markTestSkipped("Please supply a memcached host in .cachettestrc");
+        }
         
         $sock = @fsockopen(
             $GLOBALS['settings']['memcached']['host'], 
