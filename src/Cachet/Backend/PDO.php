@@ -252,12 +252,12 @@ class PDO implements Backend, Iterable, Counter
         }
     }
 
-    private function hashKey($key)
+    function hashKey($key)
     {
         return hash('sha256', $key);
     }
     
-    private function ensureTable($cacheId)
+    function ensureTable($cacheId)
     {
         if (!isset($this->tables[$cacheId])) {
             $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
@@ -278,7 +278,8 @@ class PDO implements Backend, Iterable, Counter
                 
                 if ($result === false) {
                     throw new \UnexpectedValueException(
-                        "Cache $cacheId create table query failed: ".implode(' ', $this->pdo->errorInfo())
+                        "Cache $cacheId create table query failed: ".
+                        implode(' ', $this->pdo->errorInfo())
                     );
                 }
             }

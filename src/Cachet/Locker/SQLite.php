@@ -9,7 +9,7 @@ class SQLite extends \Cachet\Locker
 
     function __construct()
     {
-        throw new \Exception("Doesn't work with PDO - can't disable autocommit");
+        throw new \Exception("TODO Doesn't work with PDO - can't disable autocommit");
     }
 
     function acquire(Cache $cache, $key, $block=true)
