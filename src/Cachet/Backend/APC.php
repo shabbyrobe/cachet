@@ -64,7 +64,8 @@ class APC implements Backend, Iterable, Counter
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        foreach (new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize) as $item) {
+        $iter = new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
+        foreach ($iter as $item) {
             yield $item['value']->key;
         }
     }
@@ -79,23 +80,4 @@ class APC implements Backend, Iterable, Counter
         }
     }
     
-    function increment($cacheId, $key, $by=1)
-    {
-        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = apc_inc($fullKey, $by, $success);
-        if (!$success)
-            throw new \UnexpectedValueException("APC could not increment the key at $fullKey");
-
-        return $value;
-    }
-
-    function decrement($cacheId, $key, $by=1)
-    {
-        $fullKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = apc_dec($fullKey, $by, $success);
-        if (!$success)
-            throw new \UnexpectedValueException("APC could not decrement the key at $fullKey");
-
-        return $value;
-    }
 }
