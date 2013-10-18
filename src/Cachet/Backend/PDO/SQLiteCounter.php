@@ -16,9 +16,14 @@ class SQLiteCounter implements \Cachet\Backend\Counter
         $pdo->beginTransaction();
 
         $table = $this->backend->ensureTable($cacheId);
-        $stmt = $pdo->prepare("UPDATE `$table` SET itemData=itemData".($by>=0 ? '+' : '-').((int)$by)." WHERE keyHash=?");
+        $stmt = $pdo->prepare(
+            "UPDATE `$table` ".
+            "SET itemData=itemData".($by>=0 ? '+' : '-').((int)$by)." ".
+            "WHERE keyHash=?"
+        );
         $keyHash = $this->backend->hashKey($key);
-        $rowsUpdated = $stmt->execute([$keyHash]);
+        $result = $stmt->execute([$keyHash]);
+        $rowsUpdated = $stmt->rowCount();
         if ($rowsUpdated == 0) {
             $stmt = $pdo->prepare(
                 "INSERT INTO `$table`(keyHash, cacheKey, itemData, creationTimestamp) ".
@@ -32,6 +37,11 @@ class SQLiteCounter implements \Cachet\Backend\Counter
             ]);
         }
         $pdo->commit();
+    }
+
+    function increment($cacheId, $key, $by=1)
+    {
+        return $this->change($cacheId, $key, $by);
     }
 
     function decrement($cacheId, $key, $by=1)

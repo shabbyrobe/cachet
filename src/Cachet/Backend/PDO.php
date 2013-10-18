@@ -227,6 +227,8 @@ class PDO implements Backend, Iterable, Counter
     
     function increment($cacheId, $key, $by=1)
     {
+        if (!$this->pdo)
+            $this->connect();
         if (!isset($this->counter)) {
             $this->counter = $this->createEngineCounter();
         }
@@ -235,6 +237,8 @@ class PDO implements Backend, Iterable, Counter
 
     function decrement($cacheId, $key, $by=1)
     {
+        if (!$this->pdo)
+            $this->connect();
         if (!isset($this->counter)) {
             $this->counter = $this->createEngineCounter();
         }
@@ -248,7 +252,7 @@ class PDO implements Backend, Iterable, Counter
             case 'sqlite':  return new PDO\SQLiteCounter($this);  break;
 
             default:
-                throw new \RuntimeException("PDO engine $engine does not support counters");
+                throw new \RuntimeException("PDO engine {$this->engine} does not support counters");
         }
     }
 
