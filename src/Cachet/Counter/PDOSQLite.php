@@ -1,18 +1,21 @@
 <?php
-namespace Cachet\Backend\PDO;
+namespace Cachet\Counter;
 
-class SQLiteCounter implements \Cachet\Backend\Counter
+class PDOSQLite implements \Cachet\Counter
 {
-    public $backend;
+    public $connector;
 
-    public function __construct(\Cachet\Backend\PDO $backend)
+    public function __construct($connector)
     {
-        $this->backend = $backend;
+        $this->connector = $connector instanceof Connector\PDO 
+            ? $connector 
+            : new Connector\PDO($connector)
+        ;
     }
 
     private function change($cacheId, $key, $by=1)
     {
-        $pdo = $this->backend->connect();
+        $pdo = $this->connector->pdo ?: $this->connector->connect();
         $pdo->beginTransaction();
 
         $table = $this->backend->ensureTable($cacheId);
@@ -46,6 +49,8 @@ class SQLiteCounter implements \Cachet\Backend\Counter
 
     function decrement($cacheId, $key, $by=1)
     {
+        return $this->change($cacheId, $key, -$by);
     }
 }
+
 

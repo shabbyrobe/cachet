@@ -8,25 +8,31 @@ class PDOMySQLTest extends \BackendTestCase
 {
     public function getBackend()
     {
-        $backend = new Backend\PDO($GLOBALS['settings']['mysql']);
-        
-        if (!$GLOBALS['settings']['mysql']['db']) {
-            return $this->markTestSkipped("Please pass db");
+        if (!$this->backend) {
+            $backend = new Backend\PDO($GLOBALS['settings']['mysql']);
+            
+            if (!isset($GLOBALS['settings']['mysql']['db'])) {
+                return $this->markTestSkipped("Please pass db name");
+            }
+            
+            try {
+                $backend->connector->connect();
+            }
+            catch (\PDOException $pex) {
+                return $this->markTestSkipped("Cannot connect to MySQL - ".$pex);
+            }
+            
+            $this->backend = $backend;
         }
-        
-        try {
-            $backend->connect();
-        }
-        catch (\PDOException $pex) {
-            return $this->markTestSkipped("Cannot connect to MySQL - ".$pex);
-        }
-        
-        return $backend;
+        return $this->backend;
     }
     
     public function setUp()
     {
-        $pdo = Backend\PDO::createPDO($GLOBALS['settings']['mysql']);
+        $this->backend = null; 
+        $this->backend = $this->getBackend();
+
+        $pdo = $this->backend->connect();
         $db = $GLOBALS['settings']['mysql']['db'];
         $pdo->exec("DROP DATABASE IF EXISTS `$db`");
         $pdo->exec("CREATE DATABASE `$db`");

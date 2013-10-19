@@ -2,37 +2,33 @@
 namespace Cachet\Backend;
 
 use Cachet\Backend;
+use Cachet\Connector;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class Memcached extends IterationAdapter implements Counter
+class Memcache extends IterationAdapter
 {
-    public $memcached;
-    
+    public $connector;
+
     public $unsafeFlush = false;
     
     public $prefix;
 
     public $useBackendExpirations = true;
     
-    public $counterTTL = null;
-
-    public function __construct($memcached=null)
+    public function __construct($memcache=null)
     {
-        if ($memcached instanceof \Memcached) {
-            $this->memcached = $memcached;
-        }
-        else {
-            $this->memcached = new \Memcached();
-            if ($memcached)
-                $this->memcached->addServers($memcached);
-        }
+        $this->connector = $memcache instanceof Connector\Memcache
+            ? $memcache
+            : new Connector\Memcache($memcache)
+        ;
     }
     
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $encoded = $this->memcached->get($formattedKey);
+        $memcache = $this->connector->memcache ?: $this->connector->connect();
+        $encoded = $memcache->get($formattedKey);
         
         $item = null;
         if ($encoded)
@@ -45,6 +41,7 @@ class Memcached extends IterationAdapter implements Counter
     {
         $ttl = 0;
         
+        $memcache = $this->connector->memcache ?: $this->connector->connect();
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         $formattedItem = serialize($item);
         if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
@@ -52,17 +49,19 @@ class Memcached extends IterationAdapter implements Counter
             $item->dependency = null;
         }
         
-        $this->memcached->set($formattedKey, $formattedItem, $ttl);
+        $memcache->set($formattedKey, $formattedItem, $ttl);
     }
     
     protected function deleteFromStore($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        return $this->memcached->delete($formattedKey);
+        $memcache = $this->connector->memcache ?: $this->connector->connect();
+        return $memcache->delete($formattedKey);
     }
     
     protected function flushStore($cacheId)
     {
+        $memcache = $this->connector->memcache ?: $this->connector->connect();
         if ($this->keyBackend) {
             foreach ($this->keys($cacheId) as $key) {
                 $this->delete($cacheId, $key);
@@ -74,21 +73,7 @@ class Memcached extends IterationAdapter implements Counter
             );
         }
         else {
-            $this->memcached->flush();
+            $memcache->flush();
         }
-    }
-
-    function increment($cacheId, $key, $by=1)
-    {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = $this->memcached->increment($formattedKey, $by, null, $this->counterTTL);
-        return $value;
-    }
-
-    function decrement($cacheId, $key, $by=1)
-    {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = $this->memcached->decrement($formattedKey, $by, null, $this->counterTTL);
-        return $value;
     }
 }

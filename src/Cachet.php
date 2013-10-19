@@ -9,7 +9,7 @@ class Cachet
         'Cachet\Backend\File'=>'Cachet/Backend/File.php',
         'Cachet\Backend\Iterable'=>'Cachet/Backend/Iterable.php',
         'Cachet\Backend\IterationAdapter'=>'Cachet/Backend/IterationAdapter.php',
-        'Cachet\Backend\Memcached'=>'Cachet/Backend/Memcached.php',
+        'Cachet\Backend\Memcache'=>'Cachet/Backend/Memcache.php',
         'Cachet\Backend\Memory'=>'Cachet/Backend/Memory.php',
         'Cachet\Backend\PDO'=>'Cachet/Backend/PDO.php',
         'Cachet\Backend\PHPRedis'=>'Cachet/Backend/PHPRedis.php',

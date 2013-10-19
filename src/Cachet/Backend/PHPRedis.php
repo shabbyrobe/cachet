@@ -5,60 +5,26 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PHPRedis implements Backend, Iterable, Counter
+class PHPRedis implements Backend, Iterable
 {
-    private $redis;
-    private $redisInfo;
-    
+    public $connector;
+
     public $prefix;
 
     public $useBackendExpirations = true;
-    
-    function __construct($redis, $prefix=null)
+
+    public function __construct($redis, $prefix=null)
     {
-        if ($redis instanceof \Redis) {
-            $this->redis = $redis;
-        }
-        else {
-            if (is_string($redis))
-                $redis = ['host'=>$redis];
-            
-            if (isset($redis['db']))
-                $redis['database'] = $redis['db'];
-            
-            $this->redisInfo = array_merge(
-                [
-                    'host'=>null, 
-                    'port'=>6379, 
-                    'timeout'=>10, 
-                    'persistent'=>false,
-                    'database'=>null,
-                ], 
-                $redis
-            );
-        }
-        
+        if (!$redis instanceof \Cachet\Connector\PHPRedis)
+            $this->connector = new \Cachet\Connector\PHPRedis($redis);
+        else
+            $this->connector = $redis;
+
         $this->prefix = $prefix;
     }
     
-    private function connect()
-    {
-        $this->redis = new \Redis();
-        $info = $this->redisInfo;
-        if (!$info['persistent'])
-            $this->redis->connect($info['host'], $info['port'], $info['timeout']);
-        else
-            $this->redis->pconnect($info['host'], $info['port'], $info['timeout']);
-        
-        if ($info['database'])
-            $this->redis->select($info['database']);
-    }
-    
     public function set(Item $item)
-    {
-        if (!$this->redis)
-            $this->connect();
-        
+    { 
         if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
             $this->setWithTTL($item);
         }
@@ -66,7 +32,8 @@ class PHPRedis implements Backend, Iterable, Counter
             $this->setWithExpireTime($item);
         }
         else {
-            $this->redis->set(
+            $redis = $this->connector->redis ?: $this->connector->connect();
+            $redis->set(
                 \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]),
                 $this->formatItem($item)
             );
@@ -80,7 +47,8 @@ class PHPRedis implements Backend, Iterable, Counter
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
         
-        $query = $this->redis->multi(\Redis::PIPELINE);
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $query = $redis->multi(\Redis::PIPELINE);
         $query->setEx($formattedKey, $ttl, $formattedItem);
         $query->exec();
     }
@@ -92,7 +60,8 @@ class PHPRedis implements Backend, Iterable, Counter
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
         
-        $query = $this->redis->multi(\Redis::PIPELINE);
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $query = $redis->multi(\Redis::PIPELINE);
         $query->set($formattedKey, $formattedItem);
         $query->expireAt($formattedKey, $time);
         $query->exec();
@@ -104,12 +73,10 @@ class PHPRedis implements Backend, Iterable, Counter
     }
     
     public function get($cacheId, $key)
-    {
-        if (!$this->redis)
-            $this->connect();
-        
+    { 
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $result = $this->redis->get($key);
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $result = $redis->get($key);
         if ($result) {
             return $this->decode($result);
         }
@@ -117,21 +84,17 @@ class PHPRedis implements Backend, Iterable, Counter
     
     public function delete($cacheId, $key)
     {
-        if (!$this->redis)
-            $this->connect();
-        
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $this->redis->delete(array($key));
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $redis->delete(array($key));
     }
     
     function flush($cacheId)
     {
-        if (!$this->redis)
-            $this->connect();
-        
         $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
-        $keys = $this->redis->keys("$prefix*");
-        $query = $this->redis->multi(\Redis::PIPELINE);
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $keys = $redis->keys("$prefix*");
+        $query = $redis->multi(\Redis::PIPELINE);
         foreach ($keys as $key) {
             $query->delete($key);
         }
@@ -140,12 +103,10 @@ class PHPRedis implements Backend, Iterable, Counter
     
     function keys($cacheId)
     {
-        if (!$this->redis)
-            $this->connect();
-        
         $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId])."/";
         $len = strlen($prefix);
-        $redisKeys = $this->redis->keys("$prefix*");
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $redisKeys = $redis->keys("$prefix*");
         
         $keys = [];
         foreach ($redisKeys as $key) {
@@ -170,17 +131,5 @@ class PHPRedis implements Backend, Iterable, Counter
         $itemData = @unserialize($data);
         if ($itemData)
             return Item::uncompact($itemData);
-    }
-
-    function increment($cacheId, $key, $by=1)
-    {
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        return $this->redis->incrBy($key, $by);
-    }
-
-    function decrement($cacheId, $key, $by=1)
-    {
-        $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        return $this->redis->decrBy($key, $by);
     }
 }

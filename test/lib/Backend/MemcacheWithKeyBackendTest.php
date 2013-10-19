@@ -3,7 +3,7 @@ namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
 
-class MemcachedTest extends \BackendTestCase
+class MemcacheTest extends \BackendTestCase
 {
     public function setUp()
     {
@@ -22,7 +22,7 @@ class MemcachedTest extends \BackendTestCase
     protected function createMemcacheBackend()
     {
         $memcached = $this->getMemcached();
-        $backend = new \Cachet\Backend\Memcached($memcached);
+        $backend = new \Cachet\Backend\Memcache($memcached);
         return $backend;
     }   
     

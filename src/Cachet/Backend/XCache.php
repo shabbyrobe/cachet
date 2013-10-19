@@ -4,13 +4,11 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class XCache extends IterationAdapter implements Counter
+class XCache extends IterationAdapter
 {   
     public $prefix;
     
     public $useBackendExpirations = true;
-
-    public $counterTTL = null;
 
     function __construct($prefix=null)
     {
@@ -51,19 +49,5 @@ class XCache extends IterationAdapter implements Counter
     {
         $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         xcache_unset_by_prefix($prefix);
-    }
-    
-    function increment($cacheId, $key, $by=1)
-    {
-        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = xcache_inc($formatted, $by, $this->counterTTL);
-        return $value;
-    }
-
-    function decrement($cacheId, $key, $by=1)
-    {
-        $formatted = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $value = xcache_dec($formatted, $by, $this->counterTTL);
-        return $value;
-    }
+    }    
 }

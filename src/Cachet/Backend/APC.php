@@ -5,7 +5,7 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class APC implements Backend, Iterable, Counter
+class APC implements Backend, Iterable
 {
     public $iteratorChunkSize = 100;
     
@@ -79,5 +79,4 @@ class APC implements Backend, Iterable, Counter
             yield $item['value'];
         }
     }
-    
 }

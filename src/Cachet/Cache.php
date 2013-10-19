@@ -141,20 +141,6 @@ class Cache implements \ArrayAccess
         }
     }
 
-    function increment($key, $by=1)
-    {
-        if (!$this->backend instanceof Backend\Counter)
-            throw new \RuntimeException("Backend must implement Cachet\Backend\Counter");
-        return $this->backend->increment($this->id, $key, $by);
-    }
-    
-    function decrement($key, $by=1)
-    {
-        if (!$this->backend instanceof Backend\Counter)
-            throw new \RuntimeException("Backend must implement Cachet\Backend\Counter");
-        return $this->backend->decrement($this->id, $key, $by);
-    }
-
     private function ensureIterable()
     {   
         if (!$this->backend instanceof Iterable) {

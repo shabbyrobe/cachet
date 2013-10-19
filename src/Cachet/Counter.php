@@ -1,18 +1,20 @@
 <?php
-namespace Cachet\Backend;
+namespace Cachet;
 
 interface Counter
 {
+    function value($key);
+
     /**
      * @return int The incremented value
      * @throws UnexpectedValueException when the backend could not increment the key
      */
-    function increment($cacheId, $key, $by=1);
+    function increment($key, $by=1);
 
     /**
      * @return int The decremented value
      * @throws UnexpectedValueException when the backend could not decrement the key
      */
-    function decrement($cacheId, $key, $by=1);
+    function decrement($key, $by=1);
 }
 
