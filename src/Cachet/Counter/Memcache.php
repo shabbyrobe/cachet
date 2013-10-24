@@ -10,9 +10,14 @@ class Memcache implements \Cachet\Counter
         
     }
 
+    function set($key, $value)
+    {
+        return $this->memcached->set($key, $value);
+    }
+
     function value()
     {
-        return $this->memcached->get
+        return $this->memcached->get($key);
     }
 
     function increment($key, $by=1)

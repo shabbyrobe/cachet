@@ -5,10 +5,19 @@ class APC implements \Cachet\Counter
 {
     public $prefix;
 
+    function set($key, $value)
+    {
+        if (!is_int($value))
+            throw new \InvalidArgumentException();
+        apc_store($key, $value);
+    }
+
     function value($key)
     {
         $fullKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
         $value = apc_fetch($fullKey);
+        if (!is_int($value))
+            throw new \UnexpectedValueException();
         return $value ?: 0;
     }
 

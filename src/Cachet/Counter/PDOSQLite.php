@@ -1,56 +1,104 @@
 <?php
 namespace Cachet\Counter;
 
+use Cachet\Connector;
+
 class PDOSQLite implements \Cachet\Counter
 {
     public $connector;
+    public $tableName;
 
-    public function __construct($connector)
+    public function __construct($connector, $tableName='counter')
     {
         $this->connector = $connector instanceof Connector\PDO 
             ? $connector 
             : new Connector\PDO($connector)
         ;
+        $this->tableName = $tableName;
     }
 
-    private function change($cacheId, $key, $by=1)
+    private function change($key, $by=1)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         $pdo->beginTransaction();
 
-        $table = $this->backend->ensureTable($cacheId);
+        $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $stmt = $pdo->prepare(
             "UPDATE `$table` ".
-            "SET itemData=itemData".($by>=0 ? '+' : '-').((int)$by)." ".
+            "SET counter=counter".($by>=0 ? '+' : '-').((int)$by)." ".
             "WHERE keyHash=?"
         );
-        $keyHash = $this->backend->hashKey($key);
+        $keyHash = $this->hashKey($key);
         $result = $stmt->execute([$keyHash]);
         $rowsUpdated = $stmt->rowCount();
         if ($rowsUpdated == 0) {
-            $stmt = $pdo->prepare(
-                "INSERT INTO `$table`(keyHash, cacheKey, itemData, creationTimestamp) ".
-                "VALUES(:keyHash, :cacheKey, :itemData, :creationTimestamp)"
-            );
-            $stmt->execute([
-                ':keyHash'=>$keyHash,
-                ':cacheKey'=>$key,
-                ':itemData'=>$by,
-                ':creationTimestamp'=>time(),
-            ]);
+            $this->set($key, 0);
         }
         $pdo->commit();
     }
 
-    function increment($cacheId, $key, $by=1)
+    private function hashKey($key)
     {
-        return $this->change($cacheId, $key, $by);
+        return hash('sha256', $key);
     }
 
-    function decrement($cacheId, $key, $by=1)
+    function set($key, $value)
     {
-        return $this->change($cacheId, $key, -$by);
+        $pdo = $this->connector->pdo ?: $this->connector->connect();
+        $table = trim(preg_replace("/[`]/", "", $this->tableName));
+        $keyHash = $this->hashKey($key);
+        $stmt = $pdo->prepare(
+            "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
+            "VALUES(:keyHash, :cacheKey, :counter, :creationTimestamp)"
+        );
+        $result = $stmt->execute([
+            ':keyHash'=>$keyHash,
+            ':cacheKey'=>$key,
+            ':counter'=>$value,
+            ':creationTimestamp'=>time(),
+        ]);
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "Create counter table {$table} query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+    }
+
+    function value($key)
+    {
+    }
+
+    function increment($key, $by=1)
+    {
+        return $this->change($key, $by);
+    }
+
+    function decrement($key, $by=1)
+    {
+        return $this->change($key, -$by);
+    }
+
+    public function ensureTableExists()
+    {
+        $table = trim(preg_replace("/[`]/", "", $this->tableName));
+        $pdo = $this->connector->pdo ?: $this->connector->connect();
+        $sql = "
+            CREATE TABLE IF NOT EXISTS `{$table}` (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                keyHash TEXT,
+                cacheKey TEXT,
+                counter INTEGER,
+                creationTimestamp INTEGER,
+                UNIQUE (keyHash)
+            );
+        ";
+
+        $result = $pdo->exec($sql);
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "Create counter table {$table} query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
     }
 }
-
 

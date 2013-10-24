@@ -5,6 +5,8 @@ interface Counter
 {
     function value($key);
 
+    function set($key, $value);
+
     /**
      * @return int The incremented value
      * @throws UnexpectedValueException when the backend could not increment the key

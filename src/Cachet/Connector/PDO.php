@@ -11,6 +11,9 @@ class PDO
 
     public function __construct($dbInfo)
     {
+        if (is_string($dbInfo))
+            $dbInfo = ['dsn'=>$dbInfo];
+
         if (is_array($dbInfo)) {
             $this->params = $dbInfo;
         }

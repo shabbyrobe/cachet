@@ -129,12 +129,12 @@ class PDO implements Backend, Iterable
         }
     }
     
-    function hashKey($key)
+    private function hashKey($key)
     {
         return hash('sha256', $key);
     }
     
-    function getTableName($cacheId)
+    private function getTableName($cacheId)
     {
         if (!isset($this->tables[$cacheId])) {
             $tableName = $this->cacheTablePrefix.preg_replace('/[^A-z\d_]/', '', $cacheId);
@@ -144,8 +144,10 @@ class PDO implements Backend, Iterable
         return $this->tables[$cacheId];
     }
     
-    public function ensureTableExistsForCache($cacheId)
+    public function ensureTableExistsForCache($cache)
     {
+        $cacheId = $cache instanceof \Cachet\Cache ? $cache->id : $cache;
+
         $tableName = $this->getTableName($cacheId);
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         
