@@ -8,6 +8,9 @@ class PDOSqliteTest extends \BackendTestCase
 {
     public function getBackend()
     {
-        return new Backend\PDO(array('dsn'=>'sqlite::memory:'));
+        $backend = new Backend\PDO(array('dsn'=>'sqlite::memory:'));
+        $backend->ensureTableExistsForCache("cache1");
+        $backend->ensureTableExistsForCache("cache2");
+        return $backend;
     }
 }

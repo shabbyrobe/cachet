@@ -14,6 +14,29 @@ Cachet::register();
 if (!class_exists('PHPUnit_Framework_Exception'))
     require_once 'PHPUnit/Autoload.php';
 
+$GLOBALS['settings'] = [
+    'redis'=>[
+        'server'=>null,
+        'port'=>6379,
+        'database'=>15,
+    ],
+    'memcached'=>[
+        'server'=>null,
+        'port'=>11211,
+    ],
+    'mysql'=>[
+        'server'=>null,
+        'port'=>3306,
+        'db'=>null,
+    ],
+];
+
+if (file_exists($base.'/.cachettestrc')) {
+    foreach (parse_ini_file($base.'/.cachettestrc', !!'sections') as $section=>$items) {
+        $GLOBALS['settings'][$section] = array_merge($GLOBALS['settings'][$section], $items);
+    }
+}
+
 abstract class CachetTestCase extends \PHPUnit_Framework_TestCase
 {
     public function dataValidValues()
@@ -117,7 +140,9 @@ abstract class BackendTestCase extends CachetTestCase
         $backend->set(new \Cachet\Item('cache1', 'key1', 'value1'));
         
         // backends don't care if your item is valid
-        $backend->set(new \Cachet\Item('cache1', 'key2', 'value2', new \Cachet\Dependency\Dummy(false)));
+        $backend->set(
+            new \Cachet\Item('cache1', 'key2', 'value2', new \Cachet\Dependency\Dummy(false))
+        );
         
         $backend->set(new \Cachet\Item('cache1', 'key3', 'value3'));
         $backend->set(new \Cachet\Item('cache2', 'key1', 'value1'));
@@ -152,18 +177,17 @@ abstract class BackendTestCase extends CachetTestCase
     }
 }
 
-$GLOBALS['settings'] = [
-    'redis'=>[
-        'server'=>null,
-        'port'=>6379,
-        'database'=>15,
-    ],
-    'memcached'=>[
-        'server'=>null,
-        'port'=>11211,
-    ],
-    'mysql'=>[],
-];
+function is_server_listening($host, $port)
+{
+    $sock = @fsockopen($host, $port, $errno, $errstr, 1);
+    if ($sock === false) {
+        return false; 
+    }
+    else {
+        fclose($sock);
+        return true;
+    }
+}
 
 function redis_create_testing()
 {
@@ -173,17 +197,12 @@ function redis_create_testing()
     if (!isset($GLOBALS['settings']['redis']) || !$GLOBALS['settings']['redis']['host'])
         throw new \Exception("Please supply a redis host in .cachettestrc");
     
-    $sock = @fsockopen(
+    $redisListening = is_server_listening(
         $GLOBALS['settings']['redis']['host'], 
-        $GLOBALS['settings']['redis']['port'],
-        $errno,
-        $errstr,
-        1
+        $GLOBALS['settings']['redis']['port']
     );
-    if ($sock === false)
+    if (!$redisListening)
         throw new \Exception("Redis server not running");
-    
-    fclose($sock);
     
     $redis = new \Redis();
     $redis->connect(
@@ -194,8 +213,11 @@ function redis_create_testing()
     return $redis;
 }
 
-if (file_exists($base.'/.cachettestrc')) {
-    foreach (parse_ini_file($base.'/.cachettestrc', !!'sections') as $section=>$items) {
-        $GLOBALS['settings'][$section] = array_merge($GLOBALS['settings'][$section], $items);
-    }
+function tryget(&$var)
+{
+    if (isset($var))
+        return $var;
+    else
+        return null;
 }
+

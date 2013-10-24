@@ -9,6 +9,8 @@ class PDO implements Backend, Iterable
 {
     public $connector;
 
+    public $cacheTablePrefix = 'cache_';
+
     private $tables;
 
     function __construct($pdo)
@@ -20,7 +22,7 @@ class PDO implements Backend, Iterable
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         
-        $tableName = $this->ensureTable($cacheId);
+        $tableName = $this->getTableName($cacheId);
         $keyHash = $this->hashKey($key);
         
         $sql = "SELECT itemData, creationTimestamp FROM `{$tableName}` WHERE keyHash=?";
@@ -47,7 +49,7 @@ class PDO implements Backend, Iterable
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
 
-        $tableName = $this->ensureTable($item->cacheId);
+        $tableName = $this->getTableName($item->cacheId);
         
         $expiryTimestamp = null;
         if ($item->dependency && method_exists($item->dependency, 'getExpiryTimestamp'))
@@ -78,7 +80,7 @@ class PDO implements Backend, Iterable
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         
-        $tableName = $this->ensureTable($cacheId);
+        $tableName = $this->getTableName($cacheId);
         
         $keyHash = $this->hashKey($key);
         $sql = "DELETE FROM `{$tableName}` WHERE keyHash=?";
@@ -95,7 +97,7 @@ class PDO implements Backend, Iterable
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         
-        $tableName = $this->ensureTable($cacheId);
+        $tableName = $this->getTableName($cacheId);
         
         if ($this->connector->engine == 'mysql')
             $result = $pdo->exec("TRUNCATE TABLE `{$tableName}`");
@@ -113,7 +115,7 @@ class PDO implements Backend, Iterable
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
  
-        $tableName = $this->ensureTable($cacheId);
+        $tableName = $this->getTableName($cacheId);
         $stmt = $pdo->query("SELECT cacheKey FROM `{$tableName}` ORDER BY cacheKey");
         return $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
     }
@@ -132,54 +134,58 @@ class PDO implements Backend, Iterable
         return hash('sha256', $key);
     }
     
-    function ensureTable($cacheId)
+    function getTableName($cacheId)
     {
         if (!isset($this->tables[$cacheId])) {
-            $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
+            $tableName = $this->cacheTablePrefix.preg_replace('/[^A-z\d_]/', '', $cacheId);
             $this->tables[$cacheId] = $tableName;
-           
-            $pdo = $this->connector->pdo ?: $this->connector->connect();
-
-            if ($this->connector->engine == 'sqlite') {
-                $result = $pdo->exec("
-                    CREATE TABLE IF NOT EXISTS `{$tableName}` (
-                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        keyHash TEXT,
-                        cacheKey TEXT,
-                        itemData BLOB,
-                        creationTimestamp INTEGER,
-                        expiryTimestamp INTEGER NULL,
-                        UNIQUE (keyHash)
-                    );
-                ");
-                
-                if ($result === false) {
-                    throw new \UnexpectedValueException(
-                        "Cache $cacheId create table query failed: ".
-                        implode(' ', $pdo->errorInfo())
-                    );
-                }
-            }
         }
         
         return $this->tables[$cacheId];
     }
     
-    public static function createMySQLTable($pdo, $cacheId)
+    public function ensureTableExistsForCache($cacheId)
     {
-        $tableName = 'cache_'.preg_replace('/[^A-z\d_]/', '', $cacheId);
+        $tableName = $this->getTableName($cacheId);
+        $pdo = $this->connector->pdo ?: $this->connector->connect();
         
-        $sql = "
-            CREATE TABLE IF NOT EXISTS `{$tableName}` (
-                id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-                keyHash VARCHAR(64),
-                cacheKey TEXT,
-                itemData LONGBLOB,
-                creationTimestamp INT,
-                expiryTimestamp INT NULL,
-                UNIQUE (keyHash)
-            ) ENGINE=InnoDB;
-        ";
-        $pdo->exec($sql);
+        if ($this->connector->engine == 'sqlite') {
+            $sql = "
+                CREATE TABLE IF NOT EXISTS `{$tableName}` (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    keyHash TEXT,
+                    cacheKey TEXT,
+                    itemData BLOB,
+                    creationTimestamp INTEGER,
+                    expiryTimestamp INTEGER NULL,
+                    UNIQUE (keyHash)
+                );
+            ";
+        }
+        elseif ($this->connector->engine == 'mysql') {
+            $sql = "
+                CREATE TABLE IF NOT EXISTS `{$tableName}` (
+                    id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                    keyHash VARCHAR(64),
+                    cacheKey TEXT,
+                    itemData LONGBLOB,
+                    creationTimestamp INT,
+                    expiryTimestamp INT NULL,
+                    UNIQUE (keyHash)
+                ) ENGINE=InnoDB;
+            ";
+        }
+        else {
+            throw new \UnexpectedValueException("Engine {$this->connector->engine} unsupported");
+        }
+
+        $result = $pdo->exec($sql);
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "Cache $cacheId create table query failed: ".
+                implode(' ', $pdo->errorInfo())
+            );
+        }
     }
 }
+
