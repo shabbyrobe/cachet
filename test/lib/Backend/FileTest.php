@@ -20,11 +20,12 @@ class FileTest extends \BackendTestCase
     
     public function tearDown()
     {
+        $flags = \FilesystemIterator::KEY_AS_PATHNAME
+            | \FilesystemIterator::CURRENT_AS_FILEINFO 
+            | \FilesystemIterator::SKIP_DOTS
+        ;
         $iter = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
-                $this->path,
-                \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO | \FilesystemIterator::SKIP_DOTS
-            ),
+            new \RecursiveDirectoryIterator($this->path, $flags),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($iter as $item) {
@@ -42,7 +43,7 @@ class FileTest extends \BackendTestCase
         $cache = new Cache('cache', $file);
         $cache->set('foo', 'bar');
         
-        $itemFile = "{$this->path}/i41xif-cache/1/2/y/12yx8v5-foo";
+        $itemFile = "{$this->path}/i41xif-cache/w/2/6/w26t3z-foo";
         $this->assertTrue(file_exists($itemFile));
         $item = unserialize(file_get_contents($itemFile));
         $this->assertTrue($item instanceof Item);
@@ -54,8 +55,8 @@ class FileTest extends \BackendTestCase
         $file = new Backend\File($this->path, array('filePerms'=>0600));
         $cache = new Cache('cache', $file);
         $cache->set('foo', 'bar');
-        
-        $itemFile = "{$this->path}/i41xif-cache/1/2/y/12yx8v5-foo";
+
+        $itemFile = "{$this->path}/i41xif-cache/w/2/6/w26t3z-foo";
         $perms = fileperms($itemFile) & 0x1FF;
         $this->assertEquals(0600, $perms);
     }
@@ -68,7 +69,7 @@ class FileTest extends \BackendTestCase
         $cache->set('foo', 'bar');
         
         $current = "{$this->path}";
-        foreach (array("i41xif-cache", "1", "2", "y") as $part) {
+        foreach (array("i41xif-cache", "w", "2", "6") as $part) {
             $current .= "/$part";
             $perms = fileperms($current) & 0x1FF;
             $this->assertEquals(0707, $perms);

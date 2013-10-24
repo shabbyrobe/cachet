@@ -21,32 +21,36 @@ class ShardingTest extends \BackendTestCase
         $backend2 = new Backend\Memory();
         $backend3 = new Backend\Memory();
         $sharding = new Backend\Sharding(array($backend1, $backend2, $backend3));
-        
+    
         // These keys are known to hash into the different backends.
         // The test is slightly brittle as a result - if the hashing algo changes,
         // new keys will have to be used.
-        $sharding->set(new Item('cache', 'xxx', 'yup'));
-        $sharding->set(new Item('cache', 'qqq', 'qux'));
-        $sharding->set(new Item('cache', 'nnn', 'bar'));
+        $key1 = 'a';
+        $key2 = 'g';
+        $key3 = 'i';
+
+        $sharding->set(new Item('cache', $key1, 'yup'));
+        $sharding->set(new Item('cache', $key2, 'qux'));
+        $sharding->set(new Item('cache', $key3, 'bar'));
         
         // xxx ends up in backend 1
-        $this->assertNotNull($backend1->get('cache', 'xxx'));
-        $this->assertNull($backend2->get('cache', 'xxx'));
-        $this->assertNull($backend3->get('cache', 'xxx'));
+        $this->assertNotNull($backend1->get('cache', $key1));
+        $this->assertNull($backend2->get('cache', $key1));
+        $this->assertNull($backend3->get('cache', $key1));
         
         // qqq ends up in backend 2
-        $this->assertNull($backend1->get('cache', 'qqq'));
-        $this->assertNotNull($backend2->get('cache', 'qqq'));
-        $this->assertNull($backend3->get('cache', 'qqq'));
+        $this->assertNull($backend1->get('cache', $key2));
+        $this->assertNotNull($backend2->get('cache', $key2));
+        $this->assertNull($backend3->get('cache', $key2));
         
         // nnn ends up in backend 3
-        $this->assertNull($backend1->get('cache', 'nnn'));
-        $this->assertNull($backend2->get('cache', 'nnn'));
-        $this->assertNotNull($backend3->get('cache', 'nnn'));
+        $this->assertNull($backend1->get('cache', $key3));
+        $this->assertNull($backend2->get('cache', $key3));
+        $this->assertNotNull($backend3->get('cache', $key3));
         
-        $this->assertNotNull($sharding->get('cache', 'xxx'));
-        $this->assertNotNull($sharding->get('cache', 'qqq'));
-        $this->assertNotNull($sharding->get('cache', 'nnn'));
+        $this->assertNotNull($sharding->get('cache', $key1));
+        $this->assertNotNull($sharding->get('cache', $key2));
+        $this->assertNotNull($sharding->get('cache', $key3));
     }
     
     public function testSetDeleteInternal()
