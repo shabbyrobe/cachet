@@ -4,6 +4,7 @@ namespace Cachet\Counter;
 class PHPRedis implements \Cachet\Counter
 {
     public $connector;
+    public $prefix;
 
     public function __construct($redis, $prefix=null)
     {
@@ -27,6 +28,13 @@ class PHPRedis implements \Cachet\Counter
             );
         }
         return (int)$value ?: 0;
+    }
+
+    function set($key, $value)
+    {
+        $redis = $this->connector->redis ?: $this->connector->connect();
+        $key = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
+        $redis->set($key, $value);
     }
 
     function increment($key, $by=1)

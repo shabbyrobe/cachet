@@ -4,22 +4,17 @@ namespace Cachet\Test\Backend;
 use Cachet\Backend;
 use Cachet\Cache;
 
-$mysqlListening = is_server_listening(
+if (!extension_loaded('pdo') || !extension_loaded('pdo_mysql')) {
+    skip_test(__NAMESPACE__, 'PDOMySQLTest', 'PDO MySQL extension not loaded');
+}
+elseif (!is_server_listening(
     $GLOBALS['settings']['mysql']['host'], 
     $GLOBALS['settings']['mysql']['port']
-);
-
-if (!$mysqlListening) {
-    class PDOMySQLTest extends \PHPUnit_Framework_TestCase
-    {
-        public function testDummy()
-        {
-            $this->markTestSkipped("MySQL server not listening");
-        }
-    }
+)) {
+    skip_test(__NAMESPACE__, 'PDOMySQLTest', 'MySQL server not listening');
 }
 else {
-    class PDOMySQLTest extends \BackendTestCase
+    class PDOMySQLTest extends \Cachet\Test\BackendTestCase
     {
         public function getBackend()
         {

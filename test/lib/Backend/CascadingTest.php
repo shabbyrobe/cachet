@@ -4,7 +4,7 @@ namespace Cachet\Test;
 use Cachet\Backend;
 use Cachet\Item;
 
-class CascadingTest extends \BackendTestCase
+class CascadingTest extends \Cachet\Test\BackendTestCase
 {
     public function getBackend()
     {   

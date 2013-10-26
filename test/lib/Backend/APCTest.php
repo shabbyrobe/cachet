@@ -2,16 +2,10 @@
 namespace Cachet\Test\Backend;
 
 if (!extension_loaded('apc') && !extension_loaded('apcu')) {
-    class APCTest extends \PHPUnit_Framework_TestCase
-    {
-        public function testDummy()
-        {
-            return $this->markTestSkipped("APC extension not loaded");
-        }
-    }
+    skip_test(__NAMESPACE__, "APCTest", "APC extension not loaded");
 }
 else {
-    class APCTest extends \BackendTestCase
+    class APCTest extends \Cachet\Test\BackendTestCase
     {
         public function getBackend()
         {

@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class FileTest extends \BackendTestCase
+class FileTest extends \Cachet\Test\BackendTestCase
 {
     public function setUp()
     {

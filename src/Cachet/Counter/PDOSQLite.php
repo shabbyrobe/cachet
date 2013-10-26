@@ -23,13 +23,13 @@ class PDOSQLite implements \Cachet\Counter
         $pdo->beginTransaction();
 
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
-        $stmt = $pdo->prepare(
+        $sql = 
             "UPDATE `$table` ".
-            "SET counter=counter".($by>=0 ? '+' : '-').((int)$by)." ".
+            "SET counter=counter".($by>=0 ? '+' : '-').abs((int)$by)." ".
             "WHERE keyHash=?"
-        );
-        $keyHash = $this->hashKey($key);
-        $result = $stmt->execute([$keyHash]);
+        ;
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([$this->hashKey($key)]);
         $rowsUpdated = $stmt->rowCount();
         if ($rowsUpdated == 0) {
             $this->set($key, 0);
@@ -48,7 +48,7 @@ class PDOSQLite implements \Cachet\Counter
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $keyHash = $this->hashKey($key);
         $stmt = $pdo->prepare(
-            "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
+            "REPLACE INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
             "VALUES(:keyHash, :cacheKey, :counter, :creationTimestamp)"
         );
         $result = $stmt->execute([
@@ -66,6 +66,17 @@ class PDOSQLite implements \Cachet\Counter
 
     function value($key)
     {
+        $table = trim(preg_replace("/[`]/", "", $this->tableName));
+        $sql = "SELECT counter FROM `$table` WHERE keyHash=?";
+        $pdo = $this->connector->pdo ?: $this->connector->connect();
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([$this->hashKey($key)]);
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "Query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+        return $stmt->fetchColumn() ?: 0;
     }
 
     function increment($key, $by=1)

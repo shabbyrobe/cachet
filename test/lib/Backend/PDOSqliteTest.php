@@ -4,13 +4,18 @@ namespace Cachet\Test\Backend;
 use Cachet\Backend;
 use Cachet\Cache;
 
-class PDOSqliteTest extends \BackendTestCase
-{
-    public function getBackend()
+if (!extension_loaded('pdo') || !extension_loaded('pdo_sqlite')) {
+    skip_test(__NAMESPACE__, 'PDOSQLiteTest', 'PDO SQLite extension not loaded');
+}
+else {
+    class PDOSqliteTest extends \Cachet\Test\BackendTestCase
     {
-        $backend = new Backend\PDO(array('dsn'=>'sqlite::memory:'));
-        $backend->ensureTableExistsForCache("cache1");
-        $backend->ensureTableExistsForCache("cache2");
-        return $backend;
+        public function getBackend()
+        {
+            $backend = new Backend\PDO(array('dsn'=>'sqlite::memory:'));
+            $backend->ensureTableExistsForCache("cache1");
+            $backend->ensureTableExistsForCache("cache2");
+            return $backend;
+        }
     }
 }

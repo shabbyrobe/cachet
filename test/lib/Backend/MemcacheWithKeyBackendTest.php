@@ -3,57 +3,47 @@ namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
 
-class MemcacheTest extends \BackendTestCase
-{
-    public function setUp()
+if (!extension_loaded('memcached')) {
+    skip_test(__NAMESPACE__, "MemcacheTest", "Memcached not loaded");
+}
+elseif (!is_server_listening(
+    $GLOBALS['settings']['memcached']['host'],
+    $GLOBALS['settings']['memcached']['port']
+)) {
+    skip_test(__NAMESPACE__, "MemcacheTest", "Memcached not listening");
+}
+else {
+    class MemcacheTest extends \Cachet\Test\BackendTestCase
     {
-        $memcached = $this->getMemcached();
-        $memcached->flush();
-    }
-    
-    public function getBackend()
-    {
-        $backend = $this->createMemcacheBackend();
-        $backend->setKeyBackend(new \Cachet\Backend\Memory());
-        
-        return $backend;
-    }
-    
-    protected function createMemcacheBackend()
-    {
-        $memcached = $this->getMemcached();
-        $backend = new \Cachet\Backend\Memcache($memcached);
-        return $backend;
-    }   
-    
-    protected function getMemcached()
-    {
-        if (!extension_loaded('memcached'))
-            return $this->markTestSkipped("memcached extension not found");
-        
-        if (!isset($GLOBALS['settings']['memcached'])
-            || !isset($GLOBALS['settings']['memcached']['host'])
-        ) {
-            return $this->markTestSkipped("Please supply a memcached host in .cachettestrc");
+        public function setUp()
+        {
+            $memcached = $this->getMemcached();
+            $memcached->flush();
         }
         
-        $sock = @fsockopen(
-            $GLOBALS['settings']['memcached']['host'], 
-            $GLOBALS['settings']['memcached']['port'],
-            $errno,
-            $errstr,
-            1
-        );
-        if ($sock === false)
-            $this->markTestSkipped("Memcache server not running");
+        public function getBackend()
+        {
+            $backend = $this->createMemcacheBackend();
+            $backend->setKeyBackend(new \Cachet\Backend\Memory());
+            
+            return $backend;
+        }
         
-        fclose($sock);
+        protected function createMemcacheBackend()
+        {
+            $memcached = $this->getMemcached();
+            $backend = new \Cachet\Backend\Memcache($memcached);
+            return $backend;
+        }   
         
-        $memcached = new \Memcached();
-        $memcached->addServer(
-            $GLOBALS['settings']['memcached']['host'], 
-            $GLOBALS['settings']['memcached']['port']
-        );
-        return $memcached;
+        protected function getMemcached()
+        {
+            $memcached = new \Memcached();
+            $memcached->addServer(
+                $GLOBALS['settings']['memcached']['host'], 
+                $GLOBALS['settings']['memcached']['port']
+            );
+            return $memcached;
+        }
     }
 }

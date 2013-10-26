@@ -5,22 +5,17 @@ use Cachet\Backend;
 use Cachet\Item;
 use Cachet\Dependency;
 
-$redisListening = is_server_listening(
+if (!extension_loaded('redis')) {
+    skip_test(__NAMESPACE__, "PHPRedisTest", "Redis extension not loaded");
+}
+elseif (is_server_listening(
     $GLOBALS['settings']['redis']['host'], 
     $GLOBALS['settings']['redis']['port']
-);
-
-if (!$redisListening) {
-    class PHPRedisTest extends \PHPUnit_Framework_TestCase
-    {
-        public function testDummy()
-        {
-            $this->markTestSkipped("Redis server not listening");
-        }
-    }
+)) {
+    skip_test(__NAMESPACE__, "PHPRedisTest", "Redis server not listening");
 }
 else {
-    class PHPRedisTest extends \BackendTestCase
+    class PHPRedisTest extends \Cachet\Test\BackendTestCase
     {
         public function setUp()
         {
@@ -38,12 +33,7 @@ else {
         
         protected function getRedis()
         {
-            try {
-                return redis_create_testing();
-            }
-            catch (\Exception $e) {
-                $this->markTestSkipped($e->getMessage());
-            } 
+            return redis_create_testing();
         }
         
         public function testWithTTLDependency()

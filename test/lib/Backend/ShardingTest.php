@@ -4,7 +4,7 @@ namespace Cachet\Test\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class ShardingTest extends \BackendTestCase
+class ShardingTest extends \Cachet\Test\BackendTestCase
 {
     public function getBackend()
     {
