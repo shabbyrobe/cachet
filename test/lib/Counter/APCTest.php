@@ -8,10 +8,14 @@ elseif (ini_get('apc.enable_cli') != 1) {
     skip_test(__NAMESPACE__, "APCTest", "apc.enable_cli must be set");
 }
 else {
+    /**
+     * @group counter
+     */
     class APCTest extends \Cachet\Test\CounterTestCase
     {
         public function getCounter()
         {
+            apc_delete("counter/value");
             return new \Cachet\Counter\APC();
         }
     }

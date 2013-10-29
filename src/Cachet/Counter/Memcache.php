@@ -44,6 +44,8 @@ class Memcache implements \Cachet\Counter
         $value = $memcache->$method($formattedKey, $by);
         if ($value === false) {
             if ($memcache->getResultCode() == self::NOT_FOUND) {
+                if ($method == 'decrement')
+                    throw new \OutOfBoundsException("Memcache counters cannot be decremented past 0");
                 $value = $by;
                 $this->set($key, $value);
             }

@@ -1,7 +1,6 @@
 <?php
 require __DIR__.'/config.php';
 
-Cachet::register();
 $backend = redis_create_testing(); 
 
 $parentPid = posix_getpid();

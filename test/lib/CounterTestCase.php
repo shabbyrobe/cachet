@@ -3,6 +3,10 @@ namespace Cachet\Test;
 
 abstract class CounterTestCase extends \CachetTestCase
 {
+    /**
+     * This must ensure that the counter's backend is clean, i.e.
+     * there must not be any value already stored in it.
+     */
     public abstract function getCounter();
 
     /**
@@ -14,16 +18,54 @@ abstract class CounterTestCase extends \CachetTestCase
         $counter->set('value', $initial);
         $this->assertEquals($initial, $counter->value('value'));
     }
+
+    /**
+     * @dataProvider dataForIncrement
+     */
+    function testIncrementDecrementAboveZeroWhenSet($initial, $by)
+    {
+        $counter = $this->getCounter();
+        $counter->set('value', $initial);
+        $counter->increment('value', $by);
+        $counter->increment('value', $by);
+        $counter->decrement('value', $by);
+        $counter->decrement('value', $initial);
+        $this->assertEquals($by, $counter->value('value'));
+    }
     
     /**
      * @dataProvider dataForIncrement
      */
-    function testIncrementBy($initial, $by)
+    function testIncrementDecrementAboveZeroWhenUnset($initial, $by)
+    {
+        $counter = $this->getCounter();
+        $counter->increment('value', $initial);
+        $counter->increment('value', $by);
+        $counter->increment('value', $by);
+        $counter->decrement('value', $by);
+        $counter->decrement('value', $initial);
+        $this->assertEquals($by, $counter->value('value'));
+    }
+    
+    /**
+     * @dataProvider dataForIncrement
+     */
+    function testIncrementByWhenSet($initial, $by)
     {
         $counter = $this->getCounter();
         $counter->set('value', $initial);
         $counter->increment('value', $by);
         $this->assertEquals($initial + $by, $counter->value('value'));
+    }
+
+    /**
+     * @dataProvider dataForIncrement
+     */
+    function testIncrementByWhenUnset($initial, $by)
+    {
+        $counter = $this->getCounter();
+        $counter->increment('value', $by);
+        $this->assertEquals($by, $counter->value('value'));
     }
 
     /**
@@ -37,12 +79,29 @@ abstract class CounterTestCase extends \CachetTestCase
         $this->assertEquals($initial - $by, $counter->value('value'));
     }
 
+    /**
+     * @dataProvider dataForIncrement
+     */
+    function testDecrementByWhenUnset($initial, $by)
+    {
+        $counter = $this->getCounter();
+        $counter->decrement('value', $by);
+        $this->assertEquals(-$by, $counter->value('value'));
+    }
+
     function dataForIncrement()
     {
         return [
             [1, 1],
             [2, 1],
             [4, 4],
+            [10, 1],
+
+            // TODO: APC doesn't support integer overflow
+            // [PHP_INT_MAX, 1],
+
+            // TODO: Memcache doesn't support negative counters
+            // [5, -1],
         ];
     }
 }

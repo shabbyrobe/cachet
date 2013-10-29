@@ -11,6 +11,9 @@ elseif (!is_server_listening(
     skip_test(__NAMESPACE__, "MemcacheTest", "Memcached not listening");
 }
 else {
+    /**
+     * @group counter
+     */
     class MemcacheTest extends \Cachet\Test\CounterTestCase
     {
         public function getCounter()
@@ -20,7 +23,17 @@ else {
                 $GLOBALS['settings']['memcached']['host'], 
                 $GLOBALS['settings']['memcached']['port']
             );
+            $memcached->delete('counter/value');
             return new \Cachet\Counter\Memcache($memcached);
+        }
+
+        /**
+         * @dataProvider dataForIncrement
+         */
+        function testDecrementByWhenUnset($initial, $by)
+        {
+            $this->setExpectedException("OutOfBoundsException");
+            $this->getCounter()->decrement('value', 1);
         }
     }
 }

@@ -3,7 +3,7 @@ namespace Cachet\Counter;
 
 use Cachet\Connector;
 
-class PDOSQLite implements \Cachet\Counter
+class PDOMySQL implements \Cachet\Counter
 {
     public $connector;
     public $tableName;
@@ -20,21 +20,20 @@ class PDOSQLite implements \Cachet\Counter
     private function change($key, $by=1)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
-        $pdo->beginTransaction();
-
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $sql = 
-            "UPDATE `$table` ".
-            "SET counter=counter".($by>=0 ? '+' : '-').abs((int)$by)." ".
-            "WHERE keyHash=?"
+            "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
+            "VALUES(:keyHash, :cacheKey, :counterValue, :creationTimestamp) ".
+            "ON DUPLICATE KEY UPDATE counter=counter".($by>=0 ? '+' : '-').":counterValue"
         ;
+
         $stmt = $pdo->prepare($sql);
-        $result = $stmt->execute([$this->hashKey($key)]);
-        $rowsUpdated = $stmt->rowCount();
-        if ($rowsUpdated == 0) {
-            $this->set($key, $by);
-        }
-        $pdo->commit();
+        $stmt->execute([
+            ':keyHash'=>$this->hashKey($key),
+            ':cacheKey'=>$key,
+            ':counterValue'=>abs($value),
+            ':creationTimestamp'=>time(),
+        ]);
     }
 
     private function hashKey($key)
@@ -112,4 +111,5 @@ class PDOSQLite implements \Cachet\Counter
         }
     }
 }
+
 

@@ -5,6 +5,9 @@ if (!extension_loaded('pdo') || !extension_loaded('pdo_sqlite')) {
     skip_test(__NAMESPACE__, 'PDOSQLiteCounterTest', 'PDO SQLite extension not loaded');
 }
 else {
+    /**
+     * @group counter
+     */
     class PDOSQLiteCounterTest extends \Cachet\Test\CounterTestCase
     {
         public function getCounter()
