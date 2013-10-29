@@ -8,7 +8,7 @@ class PDOSQLite implements \Cachet\Counter
     public $connector;
     public $tableName;
 
-    public function __construct($connector, $tableName='counter')
+    public function __construct($connector, $tableName='cachet_counter')
     {
         $this->connector = $connector instanceof Connector\PDO 
             ? $connector 
