@@ -13,17 +13,17 @@ if (!extension_loaded('apc') && !extension_loaded('apcu')) {
 else {
     class SessionHandlerAcceptanceTest extends \PHPUnit_Framework_TestCase
     {
+        public $url = "http://localhost:1999/sessionhandler/";
+
         public function setUp()
         {
             $iniOpts = "-d ".implode(" -d ", [
-                'apc.enabled=1',
+                'extension='.trim(`php-config --extension-dir`).'/apcu.so',
                 'session.use_trans_sid=1',
                 'session.use_only_cookies=0',
             ]);
             $cmd = "php -n $iniOpts -S localhost:1999";
             
-            $this->url = "{$this->url}/";
-
             $p = proc_open(
                 $cmd, 
                 [["pipe", "r"], ["pipe", "w"], ["pipe", "w"]], 
@@ -31,13 +31,24 @@ else {
                 BASE_PATH.'/test/web'
             );
             $s = microtime(true);
+            $connected = false;
             while (true) {
                 usleep(50000);
                 $sock = @fsockopen('localhost', 1999, $errno, $errstr, 1);
-                if ($sock !== false)
+                if ($sock !== false) {
+                    $connected = true;
                     break;
-                elseif (microtime(true) - $s > 5)
+                }
+                elseif (microtime(true) - $s > 3) {
                     break;
+                }
+            }
+            if (!$connected) {
+                fclose($pipes[0]);
+                $out = stream_get_contents($pipes[1]);
+                $err = stream_get_contents($pipes[2]);
+                $rc = proc_close($p);
+                throw new \RuntimeException("Could not set up web test: $rc $out $err");
             }
             $this->p = $p;
         }
