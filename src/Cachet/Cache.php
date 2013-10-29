@@ -221,7 +221,7 @@ class Cache implements \ArrayAccess
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
 
-        $this->ensureBackendExpiring(true);
+        $this->ensureBackendExpirations(!'enabled');
 
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
 
@@ -275,7 +275,7 @@ class Cache implements \ArrayAccess
         if (!$this->locker)
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
 
-        $this->ensureBackendExpiring(true);
+        $this->ensureBackendExpirations(!'enabled');
 
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
 
@@ -310,17 +310,18 @@ class Cache implements \ArrayAccess
         return $item ? $item->value : null;
     }
  
-    private function ensureBackendExpiring($status)
+    private function ensureBackendExpirations($status)
     {
         if ($this->expiringBackend === null)
             $this->expiringBackend = property_exists($this->backend, 'useBackendExpirations');
 
-        if ($this->expiringBackend && $this->backend->useBackendExpirations) {
-            throw new \RuntimeException(
-                "This backend supports automatic expirations, but you should not use ".
-                "this caching strategy without deactivating them. Set useBackendExpirations ".
-                "to false, flush your cache and try again"
-            );
+        if ($this->expiringBackend) {
+            if ($this->backend->useBackendExpirations != $status) {
+                throw new \RuntimeException(
+                    "You must set useBackendExpirations to ".($status ? 'true' : 'false')." ".
+                    "to use this caching strategy"
+                );
+            }
         }
     }
 
