@@ -44,14 +44,14 @@ else {
             $this->backend = null; 
             $this->backend = $this->getBackend();
 
-            $pdo = $this->backend->connect();
+            $pdo = $this->backend->connector->connect();
             $db = $GLOBALS['settings']['mysql']['db'];
             $pdo->exec("DROP DATABASE IF EXISTS `$db`");
             $pdo->exec("CREATE DATABASE `$db`");
             $pdo->exec("USE `$db`");
             
-            Backend\PDO::createMySQLTable($pdo, 'cache1');
-            Backend\PDO::createMySQLTable($pdo, 'cache2');
+            $this->backend->ensureTableExistsForCache('cache1');
+            $this->backend->ensureTableExistsForCache('cache2');
         }
     }
 }
