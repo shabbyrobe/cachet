@@ -37,7 +37,9 @@ class XCache extends IterationAdapter
             $item->dependency = null;
         }
         
-        xcache_set($formattedKey, serialize($item), $ttl);
+        $status = xcache_set($formattedKey, serialize($item), $ttl);
+        if (!$status)
+            throw new \RuntimeException("Could not set $formattedKey in xcache");
     }
     
     protected function deleteFromStore($cacheId, $key)
