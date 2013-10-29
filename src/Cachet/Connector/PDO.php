@@ -77,7 +77,7 @@ class PDO
         
         foreach ($params as $k=>$v) {
             $k = strtolower($k);
-            if (strpos($k, "host")===0 || $k == 'server' || $k == 'sys')
+            if (strpos($k, "host")===0 || $k == 'server')
                 $host = $v;
             elseif ($k=='port')
                 $port = $v;
