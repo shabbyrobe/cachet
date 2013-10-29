@@ -89,7 +89,7 @@ class Memcache
         $this->memcache = null;
     }
 
-    private static function detectMemcached()
+    private static function detectMemcache()
     {
         if (extension_loaded('memcached'))
             static::$useMemcached = true;
