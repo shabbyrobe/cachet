@@ -4,7 +4,7 @@ namespace Cachet\Test\Counter;
 if (!extension_loaded('redis')) {
     skip_test(__NAMESPACE__, "PHPRedisTest", "Redis extension not loaded");
 }
-elseif (is_server_listening(
+elseif (!is_server_listening(
     $GLOBALS['settings']['redis']['host'], 
     $GLOBALS['settings']['redis']['port']
 )) {
