@@ -11,11 +11,12 @@ else {
     /**
      * @group backend
      */
-    class APCPrefixTest extends \Cachet\Test\IterableBackendTestCase
+    class APCPrefixTest extends APCTest
     {
         public function getBackend()
         {
             apc_clear_cache('user');
+            $this->backendPrefix = 'prefix/';
             $backend = new \Cachet\Backend\APC('prefix');
             return $backend;
         }

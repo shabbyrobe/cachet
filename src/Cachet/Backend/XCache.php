@@ -31,7 +31,7 @@ class XCache extends IterationAdapter
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         if (
             $this->useBackendExpirations && 
-            $item->dependency && $item->dependency instanceof Dependency\TTL
+            $item->dependency && $item->dependency instanceof \Cachet\Dependency\TTL
         ) {
             $ttl = $item->dependency->ttlSeconds;
             $item->dependency = null;

@@ -8,7 +8,7 @@ else {
     /**
      * @group backend
      */
-    class XCachePrefixTest extends \Cachet\Test\BackendTestCase
+    class XCachePrefixTest extends XCacheTest
     {
         public function getBackend()
         {
