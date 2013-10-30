@@ -5,7 +5,10 @@ use Cachet\Backend;
 use Cachet\Cache;
 use Cachet\Item;
 
-class FileTest extends \Cachet\Test\BackendTestCase
+/**
+ * @group backend
+ */
+class FileTest extends \Cachet\Test\IterableBackendTestCase
 {
     public function setUp()
     {

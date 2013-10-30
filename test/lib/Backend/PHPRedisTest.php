@@ -15,7 +15,10 @@ elseif (!is_server_listening(
     skip_test(__NAMESPACE__, "PHPRedisTest", "Redis server not listening");
 }
 else {
-    class PHPRedisTest extends \Cachet\Test\BackendTestCase
+    /**
+     * @group backend
+     */
+    class PHPRedisTest extends \Cachet\Test\IterableBackendTestCase
     {
         public function setUp()
         {

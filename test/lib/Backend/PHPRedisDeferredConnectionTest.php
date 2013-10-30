@@ -15,6 +15,9 @@ elseif (!is_server_listening(
     skip_test(__NAMESPACE__, "PHPRedisDeferredConnectionTest", "Redis server not listening");
 }
 else {
+    /**
+     * @group backend
+     */
     class PHPRedisDeferredConnectionTest extends PHPRedisTest
     {
         public function getBackend()

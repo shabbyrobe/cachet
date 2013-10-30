@@ -4,46 +4,36 @@ namespace Cachet\Test\Backend;
 use Cachet\Backend;
 
 if (!extension_loaded('memcached')) {
-    skip_test(__NAMESPACE__, "MemcacheTest", "Memcached not loaded");
+    skip_test(__NAMESPACE__, "MemcacheWithKeyBackendTest", "Memcached not loaded");
 }
 elseif (!is_server_listening(
     $GLOBALS['settings']['memcached']['host'],
     $GLOBALS['settings']['memcached']['port']
 )) {
-    skip_test(__NAMESPACE__, "MemcacheTest", "Memcached not listening");
+    skip_test(__NAMESPACE__, "MemcacheWithKeyBackendTest", "Memcached not listening");
 }
 else {
-    class MemcacheTest extends \Cachet\Test\BackendTestCase
+    /**
+     * @group backend
+     */
+    class MemcacheWithKeyBackendTest extends \Cachet\Test\IterableBackendTestCase
     {
         public function setUp()
         {
-            $memcached = $this->getMemcached();
-            $memcached->flush();
+            $backend = $this->getBackend();
+            $backend->connector->connect()->flush();
         }
         
         public function getBackend()
-        {
-            $backend = $this->createMemcacheBackend();
-            $backend->setKeyBackend(new \Cachet\Backend\Memory());
-            
-            return $backend;
-        }
-        
-        protected function createMemcacheBackend()
-        {
-            $memcached = $this->getMemcached();
-            $backend = new \Cachet\Backend\Memcache($memcached);
-            return $backend;
-        }   
-        
-        protected function getMemcached()
         {
             $memcached = new \Memcached();
             $memcached->addServer(
                 $GLOBALS['settings']['memcached']['host'], 
                 $GLOBALS['settings']['memcached']['port']
             );
-            return $memcached;
+            $backend = new \Cachet\Backend\Memcache($memcached);
+            $backend->setKeyBackend(new \Cachet\Backend\Memory());
+            return $backend;
         }
     }
 }

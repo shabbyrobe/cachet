@@ -8,7 +8,10 @@ if (!extension_loaded('pdo') || !extension_loaded('pdo_sqlite')) {
     skip_test(__NAMESPACE__, 'PDOSQLiteTest', 'PDO SQLite extension not loaded');
 }
 else {
-    class PDOSQLiteTest extends \Cachet\Test\BackendTestCase
+    /**
+     * @group backend
+     */
+    class PDOSQLiteTest extends \Cachet\Test\IterableBackendTestCase
     {
         public function getBackend()
         {

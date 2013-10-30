@@ -104,4 +104,16 @@ abstract class CounterTestCase extends \CachetTestCase
             // [5, -1],
         ];
     }
+
+    function testMultipleCounters()
+    {
+        $counter = $this->getCounter();
+        $counter->increment('value');
+        $counter->increment('value', 2);
+        $counter->increment('value2');
+        $counter->increment('value');
+        $counter->increment('value2', 2);
+        $this->assertEquals(4, $counter->value('value'));
+        $this->assertEquals(3, $counter->value('value2'));
+    }
 }

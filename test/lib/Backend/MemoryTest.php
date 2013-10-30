@@ -1,7 +1,10 @@
 <?php
 namespace Cachet\Test\Backend;
 
-class MemoryTest extends \Cachet\Test\BackendTestCase
+/**
+ * @group backend
+ */
+class MemoryTest extends \Cachet\Test\IterableBackendTestCase
 {
     public function getBackend()
     {

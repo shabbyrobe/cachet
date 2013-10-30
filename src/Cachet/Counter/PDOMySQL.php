@@ -23,15 +23,16 @@ class PDOMySQL implements \Cachet\Counter
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $sql = 
             "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
-            "VALUES(:keyHash, :cacheKey, :counterValue, :creationTimestamp) ".
-            "ON DUPLICATE KEY UPDATE counter=counter".($by>=0 ? '+' : '-').":counterValue"
+            "VALUES(:keyHash, :cacheKey, :counterInsertValue, :creationTimestamp) ".
+            "ON DUPLICATE KEY UPDATE counter=counter".($by>=0 ? '+' : '-').":counterUpdateValue"
         ;
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':keyHash'=>$this->hashKey($key),
             ':cacheKey'=>$key,
-            ':counterValue'=>abs($value),
+            ':counterUpdateValue'=>abs($by),
+            ':counterInsertValue'=>$by,
             ':creationTimestamp'=>time(),
         ]);
     }
@@ -94,11 +95,11 @@ class PDOMySQL implements \Cachet\Counter
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         $sql = "
             CREATE TABLE IF NOT EXISTS `{$table}` (
-                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                keyHash TEXT,
+                id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                keyHash VARCHAR(64),
                 cacheKey TEXT,
-                counter INTEGER,
-                creationTimestamp INTEGER,
+                counter BIGINT NOT NULL DEFAULT 0,
+                creationTimestamp INT,
                 UNIQUE (keyHash)
             );
         ";

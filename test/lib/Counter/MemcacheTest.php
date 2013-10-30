@@ -24,6 +24,7 @@ else {
                 $GLOBALS['settings']['memcached']['port']
             );
             $memcached->delete('counter/value');
+            $memcached->delete('counter/value2');
             return new \Cachet\Counter\Memcache($memcached);
         }
 

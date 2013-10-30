@@ -13,6 +13,7 @@ else {
         public function getCounter()
         {
             xcache_unset('counter/value');
+            xcache_unset('counter/value2');
             return new \Cachet\Counter\XCache();
         }
     }

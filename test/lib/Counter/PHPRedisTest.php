@@ -20,6 +20,7 @@ else {
         {
             $redis = redis_create_testing();
             $redis->delete('counter/value');
+            $redis->delete('counter/value2');
             return new \Cachet\Counter\PHPRedis($redis);
         }
     }

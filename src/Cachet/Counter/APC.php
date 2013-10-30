@@ -6,6 +6,12 @@ class APC implements \Cachet\Counter
     public $prefix;
     public $counterTTL;
 
+    function __construct($prefix=null, $counterTTL=null)
+    {
+        $this->counterTTL = $counterTTL;
+        $this->prefix = $prefix;
+    }
+
     function set($key, $value)
     {
         if (!is_int($value))

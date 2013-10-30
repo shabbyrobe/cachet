@@ -16,6 +16,7 @@ else {
         public function getCounter()
         {
             apc_delete("counter/value");
+            apc_delete("counter/value2");
             return new \Cachet\Counter\APC();
         }
     }

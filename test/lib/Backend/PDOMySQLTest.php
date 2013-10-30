@@ -14,7 +14,10 @@ elseif (!is_server_listening(
     skip_test(__NAMESPACE__, 'PDOMySQLTest', 'MySQL server not listening');
 }
 else {
-    class PDOMySQLTest extends \Cachet\Test\BackendTestCase
+    /**
+     * @group backend
+     */
+    class PDOMySQLTest extends \Cachet\Test\IterableBackendTestCase
     {
         public function getBackend()
         {
