@@ -1,10 +1,6 @@
 <?php
 namespace Cachet\Test\Backend;
 
-use Cachet\Backend;
-use Cachet\Item;
-use Cachet\Dependency;
-
 if (!extension_loaded('redis')) {
     skip_test(__NAMESPACE__, "PHPRedisDeferredConnectionTest", "Redis extension not loaded");
 }

@@ -20,6 +20,8 @@ else {
      */
     class PHPRedisTest extends \Cachet\Test\IterableBackendTestCase
     {
+        public $backendPrefix = null;
+
         public function setUp()
         {
             $this->redis = $this->getRedis();
@@ -45,7 +47,7 @@ else {
             $item = new Item('cache1', 'a', 'b', new Dependency\TTL(600));
             $backend->set($item);
             
-            $ttl = $this->redis->ttl('cache1/a');
+            $ttl = $this->redis->ttl($this->backendPrefix.'cache1/a');
             $this->assertLessThanOrEqual(600, $ttl);
             $this->assertGreaterThan(595, $ttl);
             
@@ -60,7 +62,7 @@ else {
             $item = new Item('cache1', 'a', 'b', new Dependency\Time($time));
             $backend->set($item);
             
-            $ttl = $this->redis->ttl('cache1/a');
+            $ttl = $this->redis->ttl($this->backendPrefix.'cache1/a');
             $this->assertLessThanOrEqual(600, $ttl);
             $this->assertGreaterThan(595, $ttl);
             
@@ -76,7 +78,7 @@ else {
             $item = new Item('cache1', 'a', 'b', new Dependency\Permanent);
             $backend->set($item);
             
-            $ttl = $this->redis->ttl('cache1/a');
+            $ttl = $this->redis->ttl($this->backendPrefix.'cache1/a');
             $this->assertEquals(-1, $ttl);
         }
         
@@ -86,13 +88,13 @@ else {
             $time = time() + 600;
             $item = new Item('cache1', 'a', 'b', new Dependency\Time($time));
             $backend->set($item);
-            $ttl = $this->redis->ttl('cache1/a');
+            $ttl = $this->redis->ttl($this->backendPrefix.'cache1/a');
             $this->assertGreaterThan(0, $ttl);
             
             $item = new Item('cache1', 'a', 'c', new Dependency\Permanent);
             $backend->set($item);
             
-            $ttl = $this->redis->ttl('cache1/a');
+            $ttl = $this->redis->ttl($this->backendPrefix.'cache1/a');
             $this->assertEquals(-1, $ttl);
         }
     }
