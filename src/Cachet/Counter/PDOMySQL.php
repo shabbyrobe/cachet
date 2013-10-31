@@ -59,7 +59,7 @@ class PDOMySQL implements \Cachet\Counter
         ]);
         if ($result === false) {
             throw new \UnexpectedValueException(
-                "Create counter table {$table} query failed: ".implode(' ', $pdo->errorInfo())
+                "Set counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
             );
         }
     }

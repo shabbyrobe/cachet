@@ -12,7 +12,7 @@ class Semaphore extends \Cachet\Locker
         if (!function_exists('sem_get'))
             throw new \RuntimeException("PHP must be compiled with --enable-sysvsem");
 
-        parent::construct($keyHasher);
+        parent::__construct($keyHasher);
     }
 
     function acquire(Cache $cache, $key, $block=true)
