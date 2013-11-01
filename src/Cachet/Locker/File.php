@@ -26,7 +26,7 @@ class File extends \Cachet\Locker
         } 
         else {
             flock($file, LOCK_EX | LOCK_NB, $wouldBlock);
-            return $wouldBlock;
+            return !$wouldBlock;
         }
     }
 

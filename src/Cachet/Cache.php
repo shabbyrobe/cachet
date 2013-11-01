@@ -28,6 +28,8 @@ class Cache implements \ArrayAccess
      * Allows dependencies to access unserializable services when validating
      */
     public $services = array();
+
+    private $expiringBackend;
     
     public function __construct($id, Backend $backend, Dependency $dependency=null)
     {
@@ -233,7 +235,7 @@ class Cache implements \ArrayAccess
             if ($this->locker->acquire($this, $key, !'block')) {
                 try {
                     $item = $this->backend->get($this->id, $key);
-                    if (!$item) {
+                    if (!$item || !$this->validateItem($item)) {
                         $result = 'set';
                         $data = call_user_func($callback);
                         $this->set($key, $data, $dependency);
