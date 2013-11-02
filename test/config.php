@@ -80,6 +80,22 @@ function is_server_listening($host, $port)
     }
 }
 
+function memcached_create_testing()
+{
+    if (!extension_loaded('memcached'))
+        throw new \Exception("memcached extension not found");
+    
+    if (!isset($GLOBALS['settings']['memcached']) || !$GLOBALS['settings']['redis']['port'])
+        throw new \Exception("Please supply a memcached host in .cachettestrc");
+
+    $memcached = new \Memcached();
+    $memcached->addServer(
+        $GLOBALS['settings']['memcached']['host'], 
+        $GLOBALS['settings']['memcached']['port']
+    );
+    return $memcached;
+}
+
 function redis_create_testing()
 {
     if (!extension_loaded('redis'))

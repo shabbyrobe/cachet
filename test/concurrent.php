@@ -1,19 +1,23 @@
 <?php
 require __DIR__.'/config.php';
 
-$options = getopt('w:r:d:ht:');
-$usage = "Usage: concurrent.php [-w <workers>] [-d <delay>] 
-        [-r <runs>] [-t <test>]
+$options = getopt('w:r:d:ht:x:c:');
+$usage = "Usage: concurrent.php [-w <workers>] [-r <runs>] 
+        [-t <test>] [-x <exclude>] [-d <lockerDelay>] [-c <counterRuns>]
 ";
 if (array_key_exists('h', $options)) {
     echo $usage;
     exit;
 }
 
-$workerCount = isset($options['w']) ? $options['w'] : 30;
-$runs = isset($options['r']) ? $options['r'] : 30;
-$delayUsec = isset($options['d']) ? $options['d'] : 1000;
-$filter = isset($options['t']) ? explode(",", $options['t']) : null;
+$config = (object)[
+    'workerCount' => isset($options['w']) ? $options['w'] : 30,
+    'runs' => isset($options['r']) ? $options['r'] : 30,
+    'delayUsec' => isset($options['d']) ? $options['d'] : 1000,
+    'filter' => isset($options['t']) ? explode(",", $options['t']) : null,
+    'exclude' => isset($options['x']) ? explode(",", $options['x']) : null,
+    'counterRuns' => isset($options['c']) ? $options['c'] : 1000,
+];
 
 if (!extension_loaded('redis')) {
     die("Redis extension not loaded\n");
@@ -78,8 +82,8 @@ $bits = [
 
 function delay()
 {
-    global $delayUsec;
-    usleep($delayUsec);
+    global $config;
+    usleep($config->delayUsec);
 }
 
 function report_success($id)
@@ -105,7 +109,7 @@ function cache_create_testing()
 
 $tests = [
     'lockerBlockingSemaphore'=>[
-        'setup'=>function($testState) {
+        'setupWorker'=>function($testState) {
             $testState->cache = cache_create_testing();
             $testState->cache->locker = new \Cachet\Locker\Semaphore(function() { return 10000; });
         },
@@ -114,13 +118,13 @@ $tests = [
     ],
 
     'lockerBlockingFile'=>[
-        'setup'=>$bits['createFileLockerCache'],
+        'setupWorker'=>$bits['createFileLockerCache'],
         'test'=>$bits['blockingTest'],
         'check'=>$bits['ensureNonOverlappingSet'],
     ],
 
     'lockerSafeNonBlockingFile'=>[
-        'setup'=>function($testState) use ($bits) {
+        'setupWorker'=>function($testState) use ($bits) {
             $cache = $bits['createFileLockerCache']($testState);
             $testState->cache->backend->useBackendExpirations = false;
             $dep = new \Cachet\Dependency\Dummy(false);
@@ -141,7 +145,7 @@ $tests = [
     ],
 
     'lockerUnsafeNonBlocking'=>[
-        'setup'=>function($testState) use ($bits) {
+        'setupWorker'=>function($testState) use ($bits) {
             $cache = $bits['createFileLockerCache']($testState);
             $testState->cache->backend->useBackendExpirations = false;
         },
@@ -173,40 +177,123 @@ $tests = [
         },
     ],
 
-    // ensures the APC counter works concurrently
     'apcCounterTest'=>[
-        'setup'=>function($testState) {
+        'setupParent'=>function() {
             apc_clear_cache('user');
-            apc_store('counter/count', 0);
+        },
+        'setupWorker'=>function($testState) {
             $testState->counter = new \Cachet\Counter\APC;
         },
-        'test'=>function($testState) {
-            $testState->counter->increment('count');
+        'test'=>function($testState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $testState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($workerCount) {
+        'check'=>function($id, $workers, $responses) use ($config) {
             $count = apc_fetch('counter/count'); 
-            if ($count != $workerCount)
-                return [false, "Count was $count, expected $workerCount"];
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
             else
                 return [true];
         },
     ],
 
-    // ensures the Redis counter works concurrently
+    'xcacheCounterTest'=>[
+        'setupParent'=>function() {
+            xcache_unset_by_prefix('counter/');
+        },
+        'setupWorker'=>function($testState) {
+            $testState->counter = new \Cachet\Counter\XCache;
+        },
+        'test'=>function($testState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $testState->counter->increment('count');
+        },
+        'check'=>function($id, $workers, $responses) use ($config) {
+            $count = xcache_get('counter/count'); 
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
+    'memcacheCounterTest'=>[
+        'setupParent'=>function() {
+            $memcached = memcache_create_testing();
+            $memcached->flush();
+        },
+        'setupWorker'=>function($testState) {
+            $memcached = memcache_create_testing();
+            $testState->counter = new \Cachet\Counter\Memcache($memcached);
+        },
+        'test'=>function($testState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $testState->counter->increment('count');
+        },
+        'check'=>function($id, $workers, $responses) use ($config) {
+            $memcached = memcache_create_testing();
+            $initialState->counter = new \Cachet\Counter\Memcache($memcached);
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
     'redisCounterTest'=>[
-        'setup'=>function($testState) {
+        'setupParent'=>function() {
             $redis = redis_create_testing();
             $redis->flushDb();
+        },
+        'setupWorker'=>function($testState) {
+            $redis = redis_create_testing();
             $testState->counter = new \Cachet\Counter\PHPRedis($redis);
         },
-        'test'=>function($testState) {
-            $testState->counter->increment('count');
+        'test'=>function($testState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $testState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($workerCount) {
+        'check'=>function($id, $workers, $responses) use ($config) {
             $redis = redis_create_testing();
             $count = $redis->get('counter/count'); 
-            if ($count != $workerCount)
-                return [false, "Count was $count, expected $workerCount"];
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
+    'sqliteCounterTest'=>[
+        'setupParent'=>function() {
+            $initialState = (object)[];
+            $initialState->temp = tempnam(sys_get_temp_dir(), '');
+            $pdo = new \PDO('sqlite:'.$initialState->temp);
+            $counter = new \Cachet\Counter\PDOSQLite($pdo);
+            $counter->ensureTableExists();
+            return $initialState;
+        },
+        'setupWorker'=>function($testState) {
+            $pdo = new \PDO('sqlite:'.$testState->temp);
+            $testState->counter = new \Cachet\Counter\PDOSQLite($pdo);
+        },
+        'test'=>function($testState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $testState->counter->increment('count');
+        },
+        'teardownParent'=>function($initialState) {
+            unlink($initialState->temp);  
+        },
+        'check'=>function($id, $workers, $responses, $initialState) use ($config) {
+            $pdo = new \PDO('sqlite:'.$initialState->temp);
+            $sqlite = new \Cachet\Counter\PDOSQLite($pdo);
+            $count = $sqlite->value('count');
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
             else
                 return [true];
         },
@@ -218,7 +305,7 @@ $workers = [];
 $failMessages = [];
 
 $pairs = [];
-for ($id=0; $id<$workerCount; $id++) {
+for ($id=0; $id<$config->workerCount; $id++) {
     if (!socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $pair))
         die();
 
@@ -237,9 +324,8 @@ return run_parent_process($workers, $argv);
 function run_parent_process($workers, $argv)
 {
     global $tests;
-    global $runs;
+    global $config;
     global $failMessages;
-    global $filter;
 
     $sockets = [];
     $workerInfo = [];
@@ -254,20 +340,53 @@ function run_parent_process($workers, $argv)
     collect_responses($sockets);
 
     foreach ($tests as $id=>$test) {
-        if ($filter && !in_array($id, $filter))
-            continue;
+        if ($config->filter) {
+            $match = false;
+            foreach ($config->filter as $f) {
+                if (preg_match("/$f/i", $id)) {
+                    $match = true;
+                    break;
+                }
+            }
+            if (!$match)
+                continue;
+        }
+        
+        if ($config->exclude) {
+            $match = false;
+            foreach ($config->exclude as $e) {
+                if (preg_match("/$e/i", $id)) {
+                    $match = true;
+                    break;
+                }
+            }
+            if ($match)
+                continue;
+        }
 
         echo "$id:\n";
-        for ($i=0; $i<$runs; $i++) {
-            call_workers($sockets, 'run_test', [$id, 'setup']);
-            $responses = call_workers($sockets, 'run_test', [$id, 'test']);
+        for ($i=0; $i<$config->runs; $i++) {
+            if (isset($test['setupParent']))
+                $initialState = $test['setupParent']();
+            else
+                $initialState = (object)[];
 
-            $result = $test['check']($id, $workerInfo, $responses);
+            if (isset($test['setupWorker']))
+                call_workers($sockets, 'run_test', [$id, $i, 'setupWorker', $initialState]);
+
+            $responses = call_workers($sockets, 'run_test', [$id, $i, 'test']);
+
+            $result = $test['check']($id, $workerInfo, $responses, $initialState);
             if ($result[0])
                 report_success($id);
             else
                 report_failure($id, $result[1]);
+        
+            if (isset($test['teardownParent']))
+                $test['teardownParent']($initialState);
+
         }
+
         echo "\n\n";
     }
  
@@ -289,6 +408,7 @@ function run_parent_process($workers, $argv)
             echo $current;
         $last = $current;
     }
+    exit($failMessages ? 1 : 0);
 }
 
 function call_workers($sockets, $method, $args=[])
@@ -303,18 +423,19 @@ function call_workers($sockets, $method, $args=[])
     return collect_responses($sockets, $index);
 }
 
-function run_test($name, $method)
+function run_test($test, $run, $method, $parentTestState=null)
 {
     global $tests;
     static $testState;
     static $currentName;
 
+    $name = "$test-$run";
     if ($currentName != $name) {
-        $testState = (object)[];
+        $testState = $parentTestState ?: ((object)[]);
         $currentName = $name;
     }
 
-    return call_user_func($tests[$name][$method], $testState);
+    return call_user_func($tests[$test][$method], $testState);
 }
 
 function collect_responses($sockets, $index=null)
@@ -376,23 +497,4 @@ function run_worker_process($id, $socket)
     }
     socket_close($socket);
 }
-
-/*
-
-$id = $argv[1];
-
-$cnt = 0;
-$tot = 0;
-while (true) {
-    $s = microtime(true);
-    $key = rand(1, 6);
-    $cache->nonblocking($key, rand(10, 20), function() use ($id, $cnt, $tot, $key) {
-        sleep(1);
-        file_put_contents("/tmp/pants", time()." ".sprintf("%02d", $id)." - set ".$key.", ".($cnt ? round($cnt / $tot) : 0)." TPS\n", FILE_APPEND);
-        return rand();
-    });
-    $tot += (microtime(true) - $s);
-    $cnt++;
-}
-*/
 

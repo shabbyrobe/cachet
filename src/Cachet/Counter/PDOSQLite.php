@@ -29,7 +29,14 @@ class PDOSQLite implements \Cachet\Counter
             "WHERE keyHash=?"
         ;
         $stmt = $pdo->prepare($sql);
+        if ($stmt === false) {
+            throw new \RuntimeException(
+                "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+        
         $result = $stmt->execute([$this->hashKey($key)]);
+            
         $rowsUpdated = $stmt->rowCount();
         if ($rowsUpdated == 0) {
             $this->set($key, $by);
@@ -51,6 +58,12 @@ class PDOSQLite implements \Cachet\Counter
             "REPLACE INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
             "VALUES(:keyHash, :cacheKey, :counter, :creationTimestamp)"
         );
+        if ($stmt === false) {
+            throw new \RuntimeException(
+                "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+
         $result = $stmt->execute([
             ':keyHash'=>$keyHash,
             ':cacheKey'=>$key,
@@ -59,7 +72,7 @@ class PDOSQLite implements \Cachet\Counter
         ]);
         if ($result === false) {
             throw new \UnexpectedValueException(
-                "Create counter table {$table} query failed: ".implode(' ', $pdo->errorInfo())
+                "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
             );
         }
     }
@@ -70,6 +83,12 @@ class PDOSQLite implements \Cachet\Counter
         $sql = "SELECT counter FROM `$table` WHERE keyHash=?";
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         $stmt = $pdo->prepare($sql);
+        if ($stmt === false) {
+            throw new \UnexpectedValueException(
+                "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+
         $result = $stmt->execute([$this->hashKey($key)]);
         if ($result === false) {
             throw new \UnexpectedValueException(
@@ -103,7 +122,6 @@ class PDOSQLite implements \Cachet\Counter
                 UNIQUE (keyHash)
             );
         ";
-
         $result = $pdo->exec($sql);
         if ($result === false) {
             throw new \UnexpectedValueException(
