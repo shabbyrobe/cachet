@@ -1,11 +1,18 @@
 <?php
 namespace Cachet\Counter;
 
+/**
+ * Increments and decrements are not guaranteed to be fully atomic without a locker.
+ * They are atomic if the value is already set, but if it isn't there's no protection
+ * without a locker.
+ */
 class APC implements \Cachet\Counter
 {
     public $prefix;
     public $counterTTL;
     public $locker;
+
+    private $cacheId = 'counter';
 
     function __construct($prefix=null, \Cachet\Locker $locker=null, $counterTTL=null)
     {
@@ -19,7 +26,7 @@ class APC implements \Cachet\Counter
         if (!is_int($value))
             throw new \InvalidArgumentException();
 
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
         if (!apc_store($formattedKey, $value, $this->counterTTL)) {
             throw new \UnexpectedValueException("APC could not set the value at $formattedKey");
         }
@@ -27,7 +34,7 @@ class APC implements \Cachet\Counter
 
     function value($key)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
         $value = apc_fetch($formattedKey);
         if (!is_numeric($value) && !is_bool($value) && $value !== null) {
             $type = \Cachet\Helper::getType($value);
@@ -40,16 +47,24 @@ class APC implements \Cachet\Counter
 
     private function change($method, $key, $by)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
+        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
         $value = $method($formattedKey, abs($by), $success);
         if (!$success) {
-            $value = $by; 
-            $success = apc_store($formattedKey, $value, $this->counterTTL);
-            if (!$success) {
-                throw new \UnexpectedValueException(
-                    "APC could not increment or decrement the key at $formattedKey"
-                );
+            $check = false;
+            if ($this->locker) {
+                $this->locker->acquire($this->cacheId, $key);
+                $check = apc_fetch($formattedKey);
+                if ($check !== false)
+                    $value = $method($formattedKey, abs($by), $success);
             }
+
+            if ($check === false) {
+                $this->set($key, $by);
+                $value = $by; 
+            } 
+
+            if ($this->locker)
+                $this->locker->release($this->cacheId, $key);
         }
         return $value;
     }

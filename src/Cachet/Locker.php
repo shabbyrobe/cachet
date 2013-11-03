@@ -13,18 +13,18 @@ abstract class Locker
     /**
      * @return bool Whether or not the lock was acquired
      */
-    abstract function acquire(Cache $cache, $key, $block=true);
+    abstract function acquire($cacheId, $key, $block=true);
 
-    abstract function release(Cache $cache, $key);
+    abstract function release($cacheId, $key);
 
     abstract function shutdown();
 
-    function getLockKey(Cache $cache, $key)
+    function getLockKey($cacheId, $key)
     {
         if ($this->keyHasher)
-            return call_user_func($this->keyHasher, $cache, $key);
+            return call_user_func($this->keyHasher, $cacheId, $key);
         else
-            return "$cache->id/$key";
+            return "$cacheId/$key";
     }
 
     function __destruct()

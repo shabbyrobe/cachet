@@ -1,8 +1,6 @@
 <?php
 namespace Cachet\Locker;
 
-use Cachet\Cache;
-
 class Semaphore extends \Cachet\Locker
 {
     private $sem = [];
@@ -15,19 +13,19 @@ class Semaphore extends \Cachet\Locker
         parent::__construct($keyHasher);
     }
 
-    function acquire(Cache $cache, $key, $block=true)
+    function acquire($cacheId, $key, $block=true)
     {
         if (!$block)
             throw new \InvalidArgumentException("Non-blocking lock not supported by Sempahore");
          
-        $id = $this->getId($cache, $key);
+        $id = $this->getId($cacheId, $key);
         $this->sem[$id] = $sem = sem_get($id);
         sem_acquire($sem);
     }
 
-    function release(Cache $cache, $key)
+    function release($cacheId, $key)
     {
-        $id = $this->getId($cache, $key);
+        $id = $this->getId($cacheId, $key);
         $sem = $this->sem[$id];
         unset($this->sem[$id]);
         sem_release($sem);
@@ -44,9 +42,9 @@ class Semaphore extends \Cachet\Locker
             throw new \UnexpectedValueException();
     }
     
-    private function getId($cache, $key)
+    private function getId($cacheId, $key)
     {
-        $id = $this->getLockKey($cache, $key);
+        $id = $this->getLockKey($cacheId, $key);
         if (!is_int($id) || $id > PHP_INT_MAX || $id < ~PHP_INT_MAX)
             $id = \Cachet\Helper::hashMDHack($id);
         return $id;

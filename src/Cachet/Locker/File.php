@@ -15,9 +15,9 @@ class File extends \Cachet\Locker
         $this->fileUtil = new \Cachet\Util\File($basePath, $fileOptions);
     }
 
-    function acquire(Cache $cache, $key, $block=true)
+    function acquire($cacheId, $key, $block=true)
     {
-        $name = $this->getLockKey($cache, $key);
+        $name = $this->getLockKey($cacheId, $key);
         $this->files[$name] = $file = $this->fileUtil->open($name, "w");
 
         if ($block) {
@@ -30,9 +30,9 @@ class File extends \Cachet\Locker
         }
     }
 
-    function release(Cache $cache, $key)
+    function release($cacheId, $key)
     {
-        $name = $this->getLockKey($cache, $key);
+        $name = $this->getLockKey($cacheId, $key);
         $handle = $this->files[$name];
         flock($handle, LOCK_UN);
         fclose($handle);

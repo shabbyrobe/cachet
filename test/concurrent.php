@@ -32,12 +32,12 @@ if (array_key_exists('h', $options)) {
 }
 
 $config = (object)[
-    'workerCount' => isset($options['w']) ? $options['w'] : 30,
+    'workerCount' => isset($options['w']) ? $options['w'] : 20,
     'runs' => isset($options['r']) ? $options['r'] : 50,
     'delayUsec' => isset($options['d']) ? $options['d'] : 1000,
     'filter' => isset($options['t']) ? explode(",", $options['t']) : null,
     'exclude' => isset($options['x']) ? explode(",", $options['x']) : null,
-    'counterRuns' => isset($options['c']) ? $options['c'] : 100,
+    'counterRuns' => isset($options['c']) ? $options['c'] : 200,
     'profile' => isset($options['p']) ? $options['p'] : null,
 ];
 
@@ -91,7 +91,7 @@ $bits = [
 
     'createFileLockerCache'=>function($workerState) {
         $workerState->cache = cache_create_testing();
-        $keyHasher = function() { return 10000; };
+        $keyHasher = 'locker_single_hasher';
         $workerState->cache->locker = new \Cachet\Locker\File('/tmp', $keyHasher);
     },
 
@@ -129,11 +129,16 @@ function cache_create_testing()
     return $cache;
 }
 
+function locker_single_hasher()
+{
+    return 10000;
+}
+
 $tests = [
     'lockerBlockingSemaphore'=>[
         'setupWorker'=>function($workerState) {
             $workerState->cache = cache_create_testing();
-            $workerState->cache->locker = new \Cachet\Locker\Semaphore(function() { return 10000; });
+            $workerState->cache->locker = new \Cachet\Locker\Semaphore('locker_single_hasher');
         },
         'test'=>$bits['blockingTest'],
         'check'=>$bits['ensureNonOverlappingSet'],
@@ -220,6 +225,28 @@ $tests = [
         },
     ],
 
+    'apcLockedCounterTest'=>[
+        'setupParent'=>function() {
+            apc_clear_cache('user');
+        },
+        'setupWorker'=>function($workerState) {
+            $workerState->counter = new \Cachet\Counter\APC;
+            $workerState->counter->locker = new \Cachet\Locker\Semaphore();
+        },
+        'test'=>function($workerState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $workerState->counter->increment('count');
+        },
+        'check'=>function($workers, $responses, $parentState) use ($config) {
+            $count = apc_fetch('counter/count'); 
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
     'xcacheCounterTest'=>[
         'setupParent'=>function() {
             xcache_unset_by_prefix('counter/');
@@ -265,6 +292,31 @@ $tests = [
         },
     ],
 
+    'memcacheLockedCounterTest'=>[
+        'setupParent'=>function($parentState) {
+            $memcached = memcached_create_testing();
+            $memcached->flush();
+            $parentState->counter = new \Cachet\Counter\Memcache($memcached);
+        },
+        'setupWorker'=>function($workerState) {
+            $memcached = memcached_create_testing();
+            $workerState->counter = new \Cachet\Counter\Memcache($memcached);
+            $workerState->counter->locker = new \Cachet\Locker\Semaphore('locker_single_hasher');
+        },
+        'test'=>function($workerState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $workerState->counter->increment('count');
+        },
+        'check'=>function($workers, $responses, $parentState) use ($config) {
+            $count = $parentState->counter->value('count');
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+    
     'redisCounterTest'=>[
         'setupParent'=>function() {
             $redis = redis_create_testing();
