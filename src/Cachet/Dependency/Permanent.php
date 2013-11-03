@@ -9,7 +9,7 @@ class Permanent implements Dependency
 {
     function init(Cache $cache, Item $item)
     {}
-    
+
     function valid(Cache $cache, Item $item)
     {
         return true;

@@ -8,13 +8,13 @@ class Item
     const COMPACT_VALUE = 2;
     const COMPACT_TIMESTAMP = 3;
     const COMPACT_DEPENDENCY = 4;
-    
+
     public $cacheId;
     public $key;
     public $value;
     public $dependency;
     public $timestamp;
-    
+
     public function __construct(
         $cacheId=null,
         $key=null,
@@ -28,7 +28,7 @@ class Item
         $this->timestamp = $timestamp ?: time();
         $this->dependency = $dependency;
     }
-    
+
     public function compact()
     {
         $compact = array(
@@ -37,13 +37,13 @@ class Item
             self::COMPACT_VALUE=>$this->value,
             self::COMPACT_TIMESTAMP=>$this->timestamp
         );
-        
+
         if ($this->dependency)
             $compact[self::COMPACT_DEPENDENCY] = $this->dependency;
-        
+
         return $compact;
     }
-    
+
     /**
      * Returns null if the compacted value is not an array with the correct number of
      * elements.
@@ -52,15 +52,15 @@ class Item
     {
         if (!is_array($compacted))
             return null;
-        
+
         // must at least contain cacheId, key, value and timestamp
         $count = count($compacted);
         if ($count < 4)
             return null;
-        
+
         if (!isset($compacted[4]))
             $compacted[] = null;
-        
+
         $item = new static;
         list (
             $item->cacheId,

@@ -1,8 +1,6 @@
 <?php
 namespace Cachet\Locker;
 
-use Cachet\Cache;
-
 class File extends \Cachet\Locker
 {
     private $path;
@@ -23,7 +21,7 @@ class File extends \Cachet\Locker
         if ($block) {
             flock($file, LOCK_EX);
             return true;
-        } 
+        }
         else {
             flock($file, LOCK_EX | LOCK_NB, $wouldBlock);
             return !$wouldBlock;
@@ -48,4 +46,3 @@ class File extends \Cachet\Locker
         $this->files = [];
     }
 }
-

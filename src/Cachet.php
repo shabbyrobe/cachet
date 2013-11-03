@@ -33,7 +33,7 @@ class Cachet
         'Cachet\Util\File'=>'Cachet/Util/File.php',
         'Cachet\Util\Hash'=>'Cachet/Util/Hash.php',
     );
-    
+
     public static function register()
     {
         spl_autoload_register(array(__CLASS__, 'load'));

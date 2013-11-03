@@ -60,8 +60,8 @@ class APC implements \Cachet\Counter
 
             if ($check === false) {
                 $this->set($key, $by);
-                $value = $by; 
-            } 
+                $value = $by;
+            }
 
             if ($this->locker)
                 $this->locker->release($this->cacheId, $key);

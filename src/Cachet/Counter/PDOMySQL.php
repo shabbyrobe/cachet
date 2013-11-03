@@ -10,8 +10,8 @@ class PDOMySQL implements \Cachet\Counter
 
     public function __construct($connector, $tableName='cachet_counter')
     {
-        $this->connector = $connector instanceof Connector\PDO 
-            ? $connector 
+        $this->connector = $connector instanceof Connector\PDO
+            ? $connector
             : new Connector\PDO($connector)
         ;
         $this->tableName = $tableName;
@@ -21,7 +21,7 @@ class PDOMySQL implements \Cachet\Counter
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
-        $sql = 
+        $sql =
             "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
             "VALUES(:keyHash, :cacheKey, :counterInsertValue, :creationTimestamp) ".
             "ON DUPLICATE KEY UPDATE counter=counter".($by>=0 ? '+' : '-').":counterUpdateValue"
@@ -112,5 +112,3 @@ class PDOMySQL implements \Cachet\Counter
         }
     }
 }
-
-

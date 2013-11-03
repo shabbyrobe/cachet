@@ -16,7 +16,6 @@ class Helper
 
     public static function getType($arg)
     {
-		return is_object($input) ? get_class($input) : gettype($input);
+        return is_object($input) ? get_class($input) : gettype($input);
     }
 }
-

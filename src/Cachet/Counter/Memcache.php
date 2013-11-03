@@ -12,7 +12,7 @@ class Memcache implements \Cachet\Counter
     public $prefix;
 
     private $cacheId = 'counter';
-    
+
     public function __construct($memcache, $prefix=null, $locker=null)
     {
         $this->connector = $memcache instanceof Connector\Memcache
@@ -37,7 +37,7 @@ class Memcache implements \Cachet\Counter
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
         $value = $memcache->get($formattedKey);
         $this->ensureValidValue($memcache, $formattedKey, $value);
-        return (int)$value ?: 0;
+        return (int) $value ?: 0;
     }
 
     private function change($method, $key, $by=1)
@@ -59,7 +59,7 @@ class Memcache implements \Cachet\Counter
         else {
             $this->ensureValidValue($memcache, $formattedKey, $value);
         }
-        return (int)$value ?: 0;
+        return (int) $value ?: 0;
     }
 
     private function initialise($memcache, $method, $key, $formattedKey, $by)
@@ -74,12 +74,12 @@ class Memcache implements \Cachet\Counter
 
         if ($check === false) {
             $this->set($key, $by);
-            $value = $by; 
-        } 
+            $value = $by;
+        }
 
         if ($this->locker)
             $this->locker->release($this->cacheId, $key);
-        
+
         return $value;
     }
 
@@ -99,7 +99,7 @@ class Memcache implements \Cachet\Counter
         $message = $memcache->getResultMessage();
         return new \UnexpectedValueException( "Memcache failed with code $code, $message. $text");
     }
-    
+
     private function ensureValidValue($memcache, $formattedKey, $value)
     {
         if (!is_numeric($value) && !is_bool($value) && $value !== null) {

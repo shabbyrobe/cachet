@@ -17,7 +17,7 @@ class Semaphore extends \Cachet\Locker
     {
         if (!$block)
             throw new \InvalidArgumentException("Non-blocking lock not supported by Sempahore");
-         
+
         $id = $this->getId($cacheId, $key);
         $this->sem[$id] = $sem = sem_get($id);
         sem_acquire($sem);
@@ -41,7 +41,7 @@ class Semaphore extends \Cachet\Locker
         if ($this->sem)
             throw new \UnexpectedValueException();
     }
-    
+
     private function getId($cacheId, $key)
     {
         $id = $this->getLockKey($cacheId, $key);
@@ -50,4 +50,3 @@ class Semaphore extends \Cachet\Locker
         return $id;
     }
 }
-

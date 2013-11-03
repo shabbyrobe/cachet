@@ -19,4 +19,3 @@ interface Counter
      */
     function decrement($key, $by=1);
 }
-

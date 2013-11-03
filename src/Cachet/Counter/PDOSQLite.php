@@ -10,8 +10,8 @@ class PDOSQLite implements \Cachet\Counter
 
     public function __construct($connector, $tableName='cachet_counter')
     {
-        $this->connector = $connector instanceof Connector\PDO 
-            ? $connector 
+        $this->connector = $connector instanceof Connector\PDO
+            ? $connector
             : new Connector\PDO($connector)
         ;
         $this->tableName = $tableName;
@@ -23,9 +23,9 @@ class PDOSQLite implements \Cachet\Counter
         $pdo->beginTransaction();
 
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
-        $sql = 
+        $sql =
             "UPDATE `$table` ".
-            "SET counter=counter".($by>=0 ? '+' : '-').abs((int)$by)." ".
+            "SET counter=counter".($by>=0 ? '+' : '-').abs((int) $by)." ".
             "WHERE keyHash=?"
         ;
         $stmt = $pdo->prepare($sql);
@@ -34,7 +34,7 @@ class PDOSQLite implements \Cachet\Counter
                 "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
             );
         }
-       
+
         $keyHash =$this->hashKey($key);
         $result = $stmt->execute([$keyHash]);
         if ($result === false) {
@@ -42,7 +42,7 @@ class PDOSQLite implements \Cachet\Counter
                 "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
             );
         }
-            
+
         $rowsUpdated = $stmt->rowCount();
         $value = null;
         if ($rowsUpdated == 0) {
@@ -156,4 +156,3 @@ class PDOSQLite implements \Cachet\Counter
         }
     }
 }
-

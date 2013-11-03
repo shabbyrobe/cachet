@@ -14,41 +14,41 @@ class Sharding implements Backend, Iterable
 {
     private $backends;
     private $backendCount;
-    
+
     public function __construct($backends)
     {
         $count = count($backends);
         if ($count < 2)
             throw new \InvalidArgumentException("No point sharding with less than two backends!");
-        
+
         $this->backends = array_values($backends);
         $this->backendCount = $count;
     }
-    
+
     function get($cacheId, $key)
     {
         $backend = $this->selectBackend($cacheId, $key);
         return $backend->get($cacheId, $key);
     }
-    
+
     function set(Item $item)
     {
         $backend = $this->selectBackend($item->cacheId, $item->key);
         return $backend->set($item);
     }
-    
+
     function delete($cacheId, $key)
     {
         $backend = $this->selectBackend($cacheId, $key);
         return $backend->delete($cacheId, $key);
     }
-    
+
     function flush($cacheId)
     {
         foreach ($this->backends as $backend)
             $backend->flush($cacheId);
     }
-    
+
     function keys($cacheId)
     {
         foreach ($this->backends as $backend) {
@@ -56,7 +56,7 @@ class Sharding implements Backend, Iterable
                 yield $key;
         }
     }
-    
+
     function items($cacheId)
     {
         foreach ($this->backends as $backend) {
@@ -64,7 +64,7 @@ class Sharding implements Backend, Iterable
                 yield $item;
         }
     }
-    
+
     private function selectBackend($cacheId, $key)
     {
         $hashValue = "$cacheId/$key";

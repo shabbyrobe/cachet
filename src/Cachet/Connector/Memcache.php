@@ -4,7 +4,7 @@ namespace Cachet\Connector;
 class Memcache
 {
     public $memcache;
-    
+
     private $servers = [];
     private $creatorCallback = null;
     private $persistentId;
@@ -53,7 +53,7 @@ class Memcache
                 }
 
                 if (static::$useMemcached) {
-                    $this->memcache = $this->persistentId 
+                    $this->memcache = $this->persistentId
                         ? new \Memcached($this->persistentId)
                         : new \Memcached()
                     ;
@@ -99,4 +99,3 @@ class Memcache
             throw new \RuntimeException("Neither memcached nor memcache extensions loaded");
     }
 }
-

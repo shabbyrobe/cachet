@@ -27,7 +27,7 @@ class PHPRedis implements \Cachet\Counter
                 "Redis counter expected numeric value, found $type at key $key"
             );
         }
-        return (int)$value ?: 0;
+        return (int) $value ?: 0;
     }
 
     function set($key, $value)

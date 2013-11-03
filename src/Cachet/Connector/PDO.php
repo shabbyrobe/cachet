@@ -5,7 +5,7 @@ class PDO
 {
     public $pdo;
     public $engine;
-    
+
     private $params;
     private $creatorCallback;
 
@@ -31,7 +31,7 @@ class PDO
             );
         }
     }
-    
+
     public function connect()
     {
         if (!$this->pdo) {
@@ -55,7 +55,7 @@ class PDO
 
         return $this->pdo;
     }
-    
+
     public function disconnect()
     {
         $this->pdo = null;
@@ -65,7 +65,7 @@ class PDO
     {
         return $this->engine;
     }
-    
+
     /**
      * Creates a Connector from an array of connection parameters.
      * @param array Parameters to use to create the connection
@@ -74,7 +74,7 @@ class PDO
     public static function createPDO(array $params)
     {
         $options = $host = $port = $database = $user = $password = null;
-        
+
         foreach ($params as $k=>$v) {
             $k = strtolower($k);
             if (strpos($k, "host")===0 || $k == 'server')
@@ -90,7 +90,7 @@ class PDO
             elseif ($k=='options')
                 $options = $v;
         }
-       
+
         if (!isset($params['dsn'])) {
             $dsn = (isset($params['engine']) ? $params['engine'] : 'mysql').":host={$host};";
             if ($port) $dsn .= "port=".$port.';';
@@ -99,11 +99,10 @@ class PDO
         else {
             $dsn = $params['dsn'];
         }
-        
+
         if (!isset($options[\PDO::ATTR_ERRMODE]))
             $options[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
-        
+
         return new \PDO($dsn, $user, $password, $options);
     }
 }
-

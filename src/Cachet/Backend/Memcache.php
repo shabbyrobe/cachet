@@ -11,11 +11,11 @@ class Memcache extends IterationAdapter
     public $connector;
 
     public $unsafeFlush = false;
-    
+
     public $prefix;
 
     public $useBackendExpirations = true;
-    
+
     public function __construct($memcache=null)
     {
         $this->connector = $memcache instanceof Connector\Memcache
@@ -23,24 +23,24 @@ class Memcache extends IterationAdapter
             : new Connector\Memcache($memcache)
         ;
     }
-    
+
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $memcache = $this->connector->memcache ?: $this->connector->connect();
         $encoded = $memcache->get($formattedKey);
-        
+
         $item = null;
         if ($encoded)
             $item = @unserialize($encoded);
-        
+
         return $item ?: null;
     }
-    
+
     protected function setInStore(Item $item)
     {
         $ttl = 0;
-        
+
         $memcache = $this->connector->memcache ?: $this->connector->connect();
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
         $formattedItem = serialize($item);
@@ -48,17 +48,17 @@ class Memcache extends IterationAdapter
             $ttl = $item->dependency->ttlSeconds;
             $item->dependency = null;
         }
-        
+
         $memcache->set($formattedKey, $formattedItem, $ttl);
     }
-    
+
     protected function deleteFromStore($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $memcache = $this->connector->memcache ?: $this->connector->connect();
         return $memcache->delete($formattedKey);
     }
-    
+
     protected function flushStore($cacheId)
     {
         $memcache = $this->connector->memcache ?: $this->connector->connect();

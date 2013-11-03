@@ -7,7 +7,7 @@ interface Backend
      * Informal interface property:
      * If the backend implementation supports expiring items and you wish
      * to make use of them when certain Dependencies are used, add this property.
-     * For example, the PHPRedis backend uses the EXPIREAT command when a 
+     * For example, the PHPRedis backend uses the EXPIREAT command when a
      * Cachet\Dependency\Time instance is encountered, or the APC backend
      * sets the TTL if it encounters a Cachet\Dependency\TTL.
      * If this is false, you should not use these mechanisms.
@@ -24,12 +24,12 @@ interface Backend
      * @return Cachet\Item|null
      */
     function get($cacheId, $key);
-    
+
     /**
      * @return void
      */
     function set(Item $item);
-    
+
     /**
      * Delete value from the cache that corresponds to the key.
      * This method is not required to return any value indicating
@@ -40,7 +40,7 @@ interface Backend
      * @return void
      */
     function delete($cacheId, $key);
-    
+
     /**
      * @param string $cacheId
      * @return void
