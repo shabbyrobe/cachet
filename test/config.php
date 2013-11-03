@@ -120,6 +120,20 @@ function redis_create_testing()
     return $redis;
 }
 
+function throw_on_error()
+{
+	static $set=false;
+	if (!$set) {
+		set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+			$reporting = error_reporting();
+			if ($reporting > 0 && ($reporting & $errno)) {
+				throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+			}
+		});
+		$set = true;
+	}
+}
+
 function tryget(&$var)
 {
     if (isset($var))

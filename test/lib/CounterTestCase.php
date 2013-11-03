@@ -64,7 +64,8 @@ abstract class CounterTestCase extends \CachetTestCase
     function testIncrementByWhenUnset($initial, $by)
     {
         $counter = $this->getCounter();
-        $counter->increment('value', $by);
+        $value = $counter->increment('value', $by);
+        $this->assertEquals($by, $value);
         $this->assertEquals($by, $counter->value('value'));
     }
 

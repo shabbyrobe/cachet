@@ -34,14 +34,40 @@ class PDOSQLite implements \Cachet\Counter
                 "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
             );
         }
-        
-        $result = $stmt->execute([$this->hashKey($key)]);
+       
+        $keyHash =$this->hashKey($key);
+        $result = $stmt->execute([$keyHash]);
+        if ($result === false) {
+            throw new \RuntimeException(
+                "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+            );
+        }
             
         $rowsUpdated = $stmt->rowCount();
+        $value = null;
         if ($rowsUpdated == 0) {
             $this->set($key, $by);
+            $value = $by;
+        }
+        else {
+            $stmt = $pdo->prepare("SELECT counter FROM `$table` WHERE keyHash=?");
+            if ($stmt === false) {
+                throw new \RuntimeException(
+                    "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+                );
+            }
+
+            if (!$stmt->execute([$keyHash])) {
+                throw new \RuntimeException(
+                    "PDO sqlite counter query failed: ".implode(' ', $pdo->errorInfo())
+                );
+            }
+
+            $value = $stmt->fetchColumn(0);
         }
         $pdo->commit();
+
+        return $value;
     }
 
     private function hashKey($key)

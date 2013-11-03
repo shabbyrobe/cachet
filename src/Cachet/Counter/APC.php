@@ -5,11 +5,13 @@ class APC implements \Cachet\Counter
 {
     public $prefix;
     public $counterTTL;
+    public $locker;
 
-    function __construct($prefix=null, $counterTTL=null)
+    function __construct($prefix=null, \Cachet\Locker $locker=null, $counterTTL=null)
     {
         $this->counterTTL = $counterTTL;
         $this->prefix = $prefix;
+        $this->locker = $locker;
     }
 
     function set($key, $value)
@@ -36,29 +38,29 @@ class APC implements \Cachet\Counter
         return $value ?: 0;
     }
 
-    function increment($key, $by=1)
+    private function change($method, $key, $by)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
-        $value = apc_inc($formattedKey, $by, $success);
+        $value = $method($formattedKey, abs($by), $success);
         if (!$success) {
-            $success = apc_store($formattedKey, $by, $this->counterTTL);
-            if (!$success)
-                throw new \UnexpectedValueException("APC could not increment the key at $formattedKey");
+            $value = $by; 
+            $success = apc_store($formattedKey, $value, $this->counterTTL);
+            if (!$success) {
+                throw new \UnexpectedValueException(
+                    "APC could not increment or decrement the key at $formattedKey"
+                );
+            }
         }
-
         return $value;
+    }
+
+    function increment($key, $by=1)
+    {
+        return $this->change('apc_inc', $key, $by);
     }
 
     function decrement($key, $by=1)
     {
-        $formattedKey = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
-        $value = apc_dec($formattedKey, $by, $success);
-        if (!$success) {
-            $success = apc_store($formattedKey, -$by);
-            if (!$success)
-                throw new \UnexpectedValueException("APC could not increment the key at $formattedKey");
-        }
-
-        return $value;
+        return $this->change('apc_dec', $key, -$by);
     }
 }

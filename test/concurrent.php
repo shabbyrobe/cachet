@@ -1,9 +1,30 @@
 <?php
 require __DIR__.'/config.php';
+throw_on_error();
 
-$options = getopt('w:r:d:ht:x:c:');
-$usage = "Usage: concurrent.php [-w <workers>] [-r <runs>] 
+$options = getopt('w:r:d:ht:x:c:p:');
+$usage = "Cachet's hacky concurrent tester
+
+Usage: concurrent.php [-w <workers>] [-r <runs>] 
         [-t <test>] [-x <exclude>] [-d <lockerDelay>] [-c <counterRuns>]
+        [-p <outfile>]
+
+This script helps test various aspects of Cachet under simulated heavy
+concurrent load.
+
+Options:
+  -t <test[,test2]>  Run only tests which match any of the comma separated
+                     case insensitive non-delimited regexps passed.
+  -x <test[,test2]>  Exclude tests which match any of the comma separated case
+                     insensitive non-delimited regexps passed.
+  -w <workers>       Number of concurrent worker processes to use
+  -r <runs>          Number of times to run the test
+  -d <lockerDelay>   For locker tests, how long to wait inside the set method
+                     in microseconds. Used to simulate long-running sets.
+  -c <counterRuns>   For counter tests, the number of increments or decrements
+                     to perform per worker per run.
+  -p <outfile>       Profile workers with xdebug_start_trace(). <outfile> will
+                     be suffixed with the worker ID.
 ";
 if (array_key_exists('h', $options)) {
     echo $usage;
@@ -12,11 +33,12 @@ if (array_key_exists('h', $options)) {
 
 $config = (object)[
     'workerCount' => isset($options['w']) ? $options['w'] : 30,
-    'runs' => isset($options['r']) ? $options['r'] : 30,
+    'runs' => isset($options['r']) ? $options['r'] : 50,
     'delayUsec' => isset($options['d']) ? $options['d'] : 1000,
     'filter' => isset($options['t']) ? explode(",", $options['t']) : null,
     'exclude' => isset($options['x']) ? explode(",", $options['x']) : null,
-    'counterRuns' => isset($options['c']) ? $options['c'] : 1000,
+    'counterRuns' => isset($options['c']) ? $options['c'] : 100,
+    'profile' => isset($options['p']) ? $options['p'] : null,
 ];
 
 if (!extension_loaded('redis')) {
@@ -30,9 +52,9 @@ elseif (!is_server_listening(
 }
 
 $bits = [
-    'blockingTest'=>function(&$testState) {
+    'blockingTest'=>function(&$workerState) {
         $start = microtime(true);
-        $out = $testState->cache->blocking(
+        $out = $workerState->cache->blocking(
             'value', 
             null,
             function() { delay(); return 'set value'; },
@@ -41,7 +63,7 @@ $bits = [
         return [$result, $start, microtime(true)];
     },
 
-    'ensureNonOverlappingSet'=>function($id, $workers, $responses) {
+    'ensureNonOverlappingSet'=>function($workers, $responses, $parentState) {
         $sets = [];
         foreach ($responses as list($result, $start, $end)) {
             if ($result == 'set')
@@ -67,13 +89,13 @@ $bits = [
             return [true];
     },
 
-    'createFileLockerCache'=>function($testState) {
-        $testState->cache = cache_create_testing();
+    'createFileLockerCache'=>function($workerState) {
+        $workerState->cache = cache_create_testing();
         $keyHasher = function() { return 10000; };
-        $testState->cache->locker = new \Cachet\Locker\File('/tmp', $keyHasher);
+        $workerState->cache->locker = new \Cachet\Locker\File('/tmp', $keyHasher);
     },
 
-    'checkDump'=> function($id, $workers, $responses) {
+    'checkDump'=> function($workers, $responses) {
         foreach ($responses as $item) {
             echo implode(' ', $item).PHP_EOL;
         }
@@ -109,9 +131,9 @@ function cache_create_testing()
 
 $tests = [
     'lockerBlockingSemaphore'=>[
-        'setupWorker'=>function($testState) {
-            $testState->cache = cache_create_testing();
-            $testState->cache->locker = new \Cachet\Locker\Semaphore(function() { return 10000; });
+        'setupWorker'=>function($workerState) {
+            $workerState->cache = cache_create_testing();
+            $workerState->cache->locker = new \Cachet\Locker\Semaphore(function() { return 10000; });
         },
         'test'=>$bits['blockingTest'],
         'check'=>$bits['ensureNonOverlappingSet'],
@@ -124,16 +146,16 @@ $tests = [
     ],
 
     'lockerSafeNonBlockingFile'=>[
-        'setupWorker'=>function($testState) use ($bits) {
-            $cache = $bits['createFileLockerCache']($testState);
-            $testState->cache->backend->useBackendExpirations = false;
+        'setupWorker'=>function($workerState) use ($bits) {
+            $cache = $bits['createFileLockerCache']($workerState);
+            $workerState->cache->backend->useBackendExpirations = false;
             $dep = new \Cachet\Dependency\Dummy(false);
-            $testState->cache->backend->set(new \Cachet\Item('test', 'value', 'stale', $dep));
+            $workerState->cache->backend->set(new \Cachet\Item('test', 'value', 'stale', $dep));
         },
-        'test'=>function($testState) {
-            $cache = $testState->cache;
+        'test'=>function($workerState) {
+            $cache = $workerState->cache;
             $start = microtime(true);
-            $out = $testState->cache->safeNonBlocking(
+            $out = $workerState->cache->safeNonBlocking(
                 'value', 
                 null,
                 function() { delay(); return 'set value'; },
@@ -145,26 +167,26 @@ $tests = [
     ],
 
     'lockerUnsafeNonBlocking'=>[
-        'setupWorker'=>function($testState) use ($bits) {
-            $cache = $bits['createFileLockerCache']($testState);
-            $testState->cache->backend->useBackendExpirations = false;
+        'setupWorker'=>function($workerState) use ($bits) {
+            $cache = $bits['createFileLockerCache']($workerState);
+            $workerState->cache->backend->useBackendExpirations = false;
         },
-        'test'=>function($testState) {
-            $cache = $testState->cache;
+        'test'=>function($workerState) {
+            $cache = $workerState->cache;
             $start = microtime(true);
             $setter = function() { delay(); return 'set value'; };
-            $out = $testState->cache->unsafeNonBlocking('value', null, $setter, $found, $result);
+            $out = $workerState->cache->unsafeNonBlocking('value', null, $setter, $found, $result);
             $ret = [$result, $start, microtime(true)];
             
             // 10000 is the locker key. this is brittle.
             $cache->locker->acquire($cache, 10000);
             $cache->locker->release($cache, 10000);
-            $out = $testState->cache->get('value');
+            $out = $workerState->cache->get('value');
             $ret[] = $out; 
             return $ret;
         },
-        'check'=>function($id, $workers, $responses) use ($bits) {
-            $result = $bits['ensureNonOverlappingSet']($id, $workers, $responses);
+        'check'=>function($workers, $responses, $parentState) use ($bits) {
+            $result = $bits['ensureNonOverlappingSet']($workers, $responses, $parentState);
             if (!$result[0])
                 return $result;
             foreach ($responses as $response) {
@@ -181,14 +203,14 @@ $tests = [
         'setupParent'=>function() {
             apc_clear_cache('user');
         },
-        'setupWorker'=>function($testState) {
-            $testState->counter = new \Cachet\Counter\APC;
+        'setupWorker'=>function($workerState) {
+            $workerState->counter = new \Cachet\Counter\APC;
         },
-        'test'=>function($testState) use ($config) {
+        'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
-                $testState->counter->increment('count');
+                $workerState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($config) {
+        'check'=>function($workers, $responses, $parentState) use ($config) {
             $count = apc_fetch('counter/count'); 
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
@@ -202,14 +224,14 @@ $tests = [
         'setupParent'=>function() {
             xcache_unset_by_prefix('counter/');
         },
-        'setupWorker'=>function($testState) {
-            $testState->counter = new \Cachet\Counter\XCache;
+        'setupWorker'=>function($workerState) {
+            $workerState->counter = new \Cachet\Counter\XCache;
         },
-        'test'=>function($testState) use ($config) {
+        'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
-                $testState->counter->increment('count');
+                $workerState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($config) {
+        'check'=>function($workers, $responses, $parentState) use ($config) {
             $count = xcache_get('counter/count'); 
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
@@ -220,21 +242,21 @@ $tests = [
     ],
 
     'memcacheCounterTest'=>[
-        'setupParent'=>function() {
-            $memcached = memcache_create_testing();
+        'setupParent'=>function($parentState) {
+            $memcached = memcached_create_testing();
             $memcached->flush();
+            $parentState->counter = new \Cachet\Counter\Memcache($memcached);
         },
-        'setupWorker'=>function($testState) {
-            $memcached = memcache_create_testing();
-            $testState->counter = new \Cachet\Counter\Memcache($memcached);
+        'setupWorker'=>function($workerState) {
+            $memcached = memcached_create_testing();
+            $workerState->counter = new \Cachet\Counter\Memcache($memcached);
         },
-        'test'=>function($testState) use ($config) {
+        'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
-                $testState->counter->increment('count');
+                $workerState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($config) {
-            $memcached = memcache_create_testing();
-            $initialState->counter = new \Cachet\Counter\Memcache($memcached);
+        'check'=>function($workers, $responses, $parentState) use ($config) {
+            $count = $parentState->counter->value('count');
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
                 return [false, "Count was $count, expected $expected"];
@@ -248,15 +270,15 @@ $tests = [
             $redis = redis_create_testing();
             $redis->flushDb();
         },
-        'setupWorker'=>function($testState) {
+        'setupWorker'=>function($workerState) {
             $redis = redis_create_testing();
-            $testState->counter = new \Cachet\Counter\PHPRedis($redis);
+            $workerState->counter = new \Cachet\Counter\PHPRedis($redis);
         },
-        'test'=>function($testState) use ($config) {
+        'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
-                $testState->counter->increment('count');
+                $workerState->counter->increment('count');
         },
-        'check'=>function($id, $workers, $responses) use ($config) {
+        'check'=>function($workers, $responses, $parentState) use ($config) {
             $redis = redis_create_testing();
             $count = $redis->get('counter/count'); 
             $expected = $config->workerCount * $config->counterRuns;
@@ -276,18 +298,18 @@ $tests = [
             $counter->ensureTableExists();
             return $initialState;
         },
-        'setupWorker'=>function($testState) {
-            $pdo = new \PDO('sqlite:'.$testState->temp);
-            $testState->counter = new \Cachet\Counter\PDOSQLite($pdo);
+        'setupWorker'=>function($workerState) {
+            $pdo = new \PDO('sqlite:'.$workerState->temp);
+            $workerState->counter = new \Cachet\Counter\PDOSQLite($pdo);
         },
-        'test'=>function($testState) use ($config) {
+        'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
-                $testState->counter->increment('count');
+                $workerState->counter->increment('count');
         },
-        'teardownParent'=>function($initialState) {
+        'teardownParent'=>function($parentState, $initialState) {
             unlink($initialState->temp);  
         },
-        'check'=>function($id, $workers, $responses, $initialState) use ($config) {
+        'check'=>function($workers, $responses, $parentState, $initialState) use ($config) {
             $pdo = new \PDO('sqlite:'.$initialState->temp);
             $sqlite = new \Cachet\Counter\PDOSQLite($pdo);
             $count = $sqlite->value('count');
@@ -366,8 +388,9 @@ function run_parent_process($workers, $argv)
 
         echo "$id:\n";
         for ($i=0; $i<$config->runs; $i++) {
+            $parentState = (object)[];
             if (isset($test['setupParent']))
-                $initialState = $test['setupParent']();
+                $initialState = $test['setupParent']($parentState);
             else
                 $initialState = (object)[];
 
@@ -376,14 +399,14 @@ function run_parent_process($workers, $argv)
 
             $responses = call_workers($sockets, 'run_test', [$id, $i, 'test']);
 
-            $result = $test['check']($id, $workerInfo, $responses, $initialState);
+            $result = $test['check']($workerInfo, $responses, $parentState, $initialState);
             if ($result[0])
                 report_success($id);
             else
                 report_failure($id, $result[1]);
         
             if (isset($test['teardownParent']))
-                $test['teardownParent']($initialState);
+                $test['teardownParent']($parentState, $initialState);
 
         }
 
@@ -401,14 +424,18 @@ function run_parent_process($workers, $argv)
 
     echo "All workers done\n";
 
-    $last = '';
-    foreach ($failMessages as list($id, $message)) {
-        $current = "$id: $message\n";
-        if ($last != $current)
-            echo $current;
-        $last = $current;
+    if ($failMessages) {
+        $out = [];
+        foreach ($failMessages as list($id, $message)) {
+            $current = "$id: $message";
+            $out[] = $current;
+        }
+        echo implode("\n", array_unique($out))."\n";
+        exit(1);
     }
-    exit($failMessages ? 1 : 0);
+    else {
+        exit(0);
+    }
 }
 
 function call_workers($sockets, $method, $args=[])
@@ -423,19 +450,19 @@ function call_workers($sockets, $method, $args=[])
     return collect_responses($sockets, $index);
 }
 
-function run_test($test, $run, $method, $parentTestState=null)
+function run_test($test, $run, $method, $initialState=null)
 {
     global $tests;
-    static $testState;
+    static $workerState;
     static $currentName;
 
     $name = "$test-$run";
     if ($currentName != $name) {
-        $testState = $parentTestState ?: ((object)[]);
+        $workerState = $initialState ?: ((object)[]);
         $currentName = $name;
     }
 
-    return call_user_func($tests[$test][$method], $testState);
+    return call_user_func($tests[$test][$method], $workerState);
 }
 
 function collect_responses($sockets, $index=null)
@@ -476,6 +503,11 @@ function collect_responses($sockets, $index=null)
 
 function run_worker_process($id, $socket)
 {
+    global $config;
+
+    if ($config->profile)
+        xdebug_start_trace($config->profile."-$id", XDEBUG_TRACE_COMPUTERIZED);
+
     socket_write($socket, serialize('ready').PHP_EOL);
     while (true) {
         $read = [$socket];
