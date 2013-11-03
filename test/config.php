@@ -142,3 +142,13 @@ function tryget(&$var)
         return null;
 }
 
+function ends_with($str, $test)
+{
+	$len = strlen($test);
+	
+	// can't do ! with DirectoryIterator!!??
+	if (!$len || $str == false)
+		return false;
+	return substr_compare($str, $test, -$len, $len) === 0;
+}
+

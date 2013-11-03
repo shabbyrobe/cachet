@@ -16,6 +16,7 @@ Features:
 - Composite backends for cascading and sharding
 - Dynamic item expiration
 - Locking strategies for stampede protection
+- Atomic counters
 
 .. contents::
     :depth: 3
@@ -37,7 +38,7 @@ You can also download **Cachet** directly from GitHub, or use the `Composer
             }
         },
         "require": {
-            "k3jw/cachet": "1.2.*"
+            "k3jw/cachet": "1.3.*"
         }
     }
 
@@ -151,6 +152,32 @@ detail:
     // outputs "foo: bar" only.
 
 
+Atomic counters_:
+
+.. code-block:: php
+
+    <?php
+    $counter = new Cachet\Counter\APC();
+
+    // returns 1
+    $value = $counter->increment('foo');
+
+    // returns 2
+    $value = $counter->increment('foo');
+
+    // returns 1
+    $value = $counter->decrement('foo');
+
+    // returns 4
+    $value = $counter->increment('foo', 3);
+
+    // force a counter's value
+    $counter->set('foo', 100);
+
+    // inspect a counter's value
+    $value = $counter->value('foo');
+
+
 .. _iteration:
 
 Iteration
@@ -193,16 +220,42 @@ Iteration is a requirement for garbage collection.
 Backends
 --------
 
-Cache backends should implement ``Cache\Backend``, though some backends have to work a bit harder to
+Cache backends must implement ``Cache\Backend``, though some backends have to work a bit harder to
 satisfy the interface than others.
 
-Backends should, but may not necessarily, implement ``Cache\Backend\Iterable``. Backends that do not
-can't be iterated. This will be specified against each backend's documentation.
+Different backends have varying degrees of support for the following features:
 
-Some backends support automatic expiration for certain dependency_ types. When a backend supports
-this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
-Setting this to false does not guarantee the backend will not expire cache values under other
-circumstances.
+Iteration
+    Backends should, but may not necessarily, implement ``Cache\Backend\Iterable``. Backends that do not
+    can't be iterated. This will be specified against each backend's documentation. Backends like APC or
+    Redis can rely on native methods for iterating over the keys, but the memcache daemon itself
+    provides no such facility, and Xcache hides it behind some silly HTTP Basic authentication.
+
+    Backends that suffer from these limitations can extend from ``Cachet\Backend\IterationAdapter``,
+    which allows a second backend to be used for storing keys. This slows down setting, deleting and
+    flushing, but doesn't slow down getting items from the backend at all so it's not a bad tradeoff if
+    iteration is required.
+
+    There are some potential pitfalls with this approach:
+
+    - If an item disappears from the key backend, it may still exist in the backend itself. There is
+      no way to detect these keys if the backend is not iterable. Make sure the type of backend you
+      select for the key backend doesn't auto-expire values under any circumstances.
+
+    - The type of backend you can use for the key backend is quite limited - it must itself be
+      iterable, and it can't be a ``Cachet\Backend\IterationAdapter``.
+
+
+Automatic Expirations
+    Some backends support automatic expiration for certain dependency_ types. When a backend supports
+    this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
+    Setting this to false does not guarantee the backend will not expire cache values under other
+    circumstances.
+    
+    For example, the APC backend will detect when a ``Cachet\Dependency\TTL`` is passed and
+    automatically use it for the third parameter to ``apc_store``, which accepts a TTL in seconds.
+    Other backends support different methods of unrolling dependency types. This will be documented
+    below. 
 
 
 APC
@@ -221,12 +274,47 @@ Backend expirations: ``Cachet\Expiration\TTL``
     // Or with optional cache value prefix. Prefix has a forward slash appended:
     $backend = new Cachet\Backend\APC("myprefix");
 
+    $backend->useBackendExpirations = true; 
+
+
+PHPRedis
+~~~~~~~~
+
+Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
+
+Iteration support: **fetcher**
+Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``
+
+.. code-block:: php
+    
+    <?php
+    // pass Redis server name/socket as string. connect-on-demand.
+    $backend = new Cachet\Backend\PHPRedis('127.0.0.1');
+    
+    // pass Redis server details as array. connect-on-demand. all keys
+    // except host optional
+    $redis = [
+        'host'=>'127.0.0.1',
+        'port'=>6739,
+        'timeout'=>10,
+        'database'=>2
+    ];
+    $backend = new Cachet\Backend\PHPRedis($redis);
+    
+    // optional cache value prefix. Prefix has a forward slash appended:
+    $backend = new Cachet\Backend\PHPRedis($redis, "myprefix");
+    
+    // pass existing Redis instance. no connect-on-demand.
+    $redis = new Redis();
+    $redis->connect('127.0.0.1');
+    $backend = new Cachet\Backend\PHPRedis($redis);
+
 
 File
 ~~~~
 
 Filesystem-backed cache. This has only been tested on OS X and Linux but may work on Windows (and
-probably should).
+probably should - please file a bug report if it doesn't).
 
 The cache is not particularly fast. Flushing and iteration can be very, very slow indeed, but should
 not suffer from memory issues.
@@ -270,6 +358,8 @@ Backend expirations: ``Cachet\Expiration\TTL``
     $memcached = new Memcached();
     $memcached->addServer('127.0.0.1');
     $backend = new Cachet\Backend\Memcached($memcached);
+
+    $backend->useBackendExpirations = true; 
 
 
 Flushing is not supported by default, but works properly when a key backend is provided. If you
@@ -348,39 +438,6 @@ Backend expirations: **none**
     // Use an existing PDO (not recommended - doesn't support disconnection
     // or connect-on-demand):
     $backend = new Cachet\Backend\PDO(new PDO('sqlite:/tmp/pants.sqlite'));
-
-
-PHPRedis
-~~~~~~~~
-
-Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
-
-Iteration support: **fetcher**
-Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``
-
-.. code-block:: php
-    
-    <?php
-    // pass Redis server name/socket as string. connect-on-demand.
-    $backend = new Cachet\Backend\PHPRedis('127.0.0.1');
-    
-    // pass Redis server details as array. connect-on-demand. all keys
-    // except host optional
-    $redis = [
-        'host'=>'127.0.0.1',
-        'port'=>6739,
-        'timeout'=>10,
-        'database'=>2
-    ];
-    $backend = new Cachet\Backend\PHPRedis($redis);
-    
-    // optional cache value prefix. Prefix has a forward slash appended:
-    $backend = new Cachet\Backend\PHPRedis($redis, "myprefix");
-    
-    // pass existing Redis instance. no connect-on-demand.
-    $redis = new Redis();
-    $redis->connect('127.0.0.1');
-    $backend = new Cachet\Backend\PHPRedis($redis);
 
 
 Session
@@ -524,7 +581,8 @@ With this:
         return $service->findExpensiveValue($blahBlahBlah);
     };
 
-I find this dramatically improves readability by keeping the caching boilerplate out of the way.
+I find this dramatically improves readability by keeping the caching boilerplate out of the way,
+particularly when the surrounding logic or set logic gets a little more complicated.
 
 
 Blocking
