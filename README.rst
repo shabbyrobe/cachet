@@ -622,8 +622,8 @@ data retriever function. Subsequent requests will return a stale value if one is
 otherwise it will block until the first request finishes, thus guaranteeing a value is always
 returned.
 
-This strategy works best when ``useBackendExpirations`` is set to ``false`` if the backend supports
-it.
+This strategy will fail if the backend has the ``useBackendExpirations`` property and it is set to
+``true``.
 
 .. code-block:: php
 
@@ -645,8 +645,8 @@ The API for this strategy is slightly different to the others as it does not gua
 be returned, so it provides an optional output parameter ``$found`` to signal that the method has
 returned without retrieving or setting a value:
 
-This strategy works best when ``useBackendExpirations`` is set to ``false`` if the backend supports
-it.
+This strategy will fail if the backend has the ``useBackendExpirations`` property and it is set to
+``true``.
 
 .. code-block:: php
 
@@ -681,8 +681,8 @@ less complex version of the key.
     
     <?php
     // restrict to 4 locks per cache
-    $keyHasher = function($cache, $key) {
-        return $cache->id."/".abs(crc32($key)) % 4;
+    $keyHasher = function($cacheId, $key) {
+        return $cacheId."/".abs(crc32($key)) % 4;
     };
 
 
@@ -946,6 +946,198 @@ The following backends should **not** be used with the ``SessionHandler``:
 
 ``Cachet\Backend\Memory``
     This can't possibly work either - the data will disappear when the request is complete.
+
+
+.. _counter:
+.. _counters:
+
+Counters
+--------
+
+Some backends provide methods for incrementing or decrementing an integer atomically. Cachet
+attempts to provide a consistent interface to this functionality.
+
+Unfortunately, it doesn't always succeed. There are some catches (like always):
+
+- In some cases, though the backend's increment and decrement methods work atomcally, they require
+  you to set the value before you can use it in a way which is not atomic. The **Cachet** counter
+  interface allows you to call increment if there is no value already set.
+
+  Unfortunately, this means that multiple concurrent processes can call ``$backend->increment()``
+  and see that nothing is there before one of those processes has a chance to call ``set`` to
+  initialise the counter. Counters that exhibit this behaviour can be passed an optional locker_ to
+  mitigate this problem.
+
+- To make matters worse, all of the counter backends support decrementing below zero except
+  Memcache.
+
+- All of the backends support integer values greater than the native integer type except APC, which
+  overflows. 
+
+- Counters do not support dependencies, but some counters do allow a single TTL to be specified for
+  all counters. This is indicated by the presence of a ``$backend->counterTTL`` property.
+
+Counters support the following API::
+    
+    // $value == 1
+    $value = $counter->increment('foo');
+
+    // $value == 5
+    $value = $counter->increment('foo', 4);
+
+    // $value = 4
+    $decremented = $counter->decrement('foo');
+
+    // $value = 1
+    $decremented = $counter->decrement('foo', 3);
+
+    // $value = 1
+    $value = $counter->value('foo');
+
+    $counter->set('foo', 100);
+
+
+APC
+~~~
+
+Works with ``apc`` and ``apcu``.
+
+Supports ``counterTTL``: **yes**
+Atomic: **with optional locker_**
+
+.. warning:: This counter overflows when it exceeds the bounds of ``PHP_INT_MAX``
+
+.. code-block:: php
+
+    <?php
+    $counter = new \Cachet\Counter\APC();
+
+    // Or with optional cache value prefix. Prefix has a forward slash appended.
+    $counter = new Cachet\Counter\APC('myprefix');
+
+    // TTL
+    $counter->counterTTL = 86400;
+
+    // If you would like set operations to be atomic, pass a locker to the constructor
+    // or assign to the ``locker`` property
+    $counter->locker = new \Cachet\Locker\Semaphore();
+    $counter = new \Cachet\Counter\APC('myprefix', \Cachet\Locker\Semaphore());
+
+
+PHPRedis
+~~~~~~~~
+
+Supports ``counterTTL``: **no**
+Atomic: **yes**
+
+.. code-block:: php
+
+    <?php
+    $redis = new \Cachet\Connector\PHPRedis('127.0.0.1');
+    $counter = new \Cachet\Counter\PHPRedis($redis);
+
+    // Or with optional cache value prefix. Prefix has a forward slash appended.
+    $counter = new \Cachet\Counter\PHPRedis($redis, 'prefix');
+
+Redis itself does support applying a TTL to a counter, but I haven't come up with the best way to
+implement it atomically yet. Consider it a work in progress.
+
+
+Memcache
+~~~~~~~~
+
+Supports ``counterTTL``: **yes**
+Atomic: **with optional locker_**
+
+.. code-block:: php
+    
+    <?php
+    // Construct by passing anything that \Cachet\Connector\Memcache accepts as its first
+    // constructor argument:
+    $counter = new \Cachet\Counter\Memcache('127.0.0.1');
+
+    // Construct by passing in a connector. This allows you to share a connector instance 
+    // with a cache backend:
+    $memcache = new \Cachet\Connector\Memcache('127.0.0.1');
+    $counter = new \Cachet\Counter\Memcache($memcache);
+    $backend = new \Cachet\Backend\Memcache($memcache);
+    
+    // Optional cache value prefix. Prefix has a forward slash appended.
+    $counter = new \Cachet\Counter\Memcache($memcache, 'prefix');
+
+    // TTL
+    $counter->counterTTL = 86400;
+
+    // If you would like set operations to be atomic, pass a locker to the constructor
+    // or assign to the ``locker`` property
+    $counter->locker = $locker;
+    $counter = new \Cachet\Counter\Memcache($memcache, 'myprefix', $locker);
+
+
+PDOSQLite and PDOMySQL
+~~~~~~~~~~~~~~~~~~~~~~
+
+Unlike the PDO cache backend, different database engines require very different queries for counter
+operations. If your PDO engine is sqlite, use ``Cachet\Counter\PDOSQLite``. If your PDO engine is
+MySQL, use ``Cachet\Counter\PDOMySQL``. ``PDOSQLite`` may be compatible with other database backends
+(though this is untested), but ``PDOMySQL`` uses MySQL-specific queries.
+
+Suports ``counterTTL``: **no**
+Atomic: **probably** (I haven't been able to satisfy myself that I have proven this yet)
+
+The table name defaults to ``cachet_counter`` for all counters. This can be changed.
+
+.. code-block:: php
+
+    <?php
+    // Construct by passing anything that \Cachet\Connector\PDO accepts as its first
+    // constructor argument:
+    $counter = new \Cachet\Counter\PDOSQLite('sqlite::memory:');
+    $counter = new \Cachet\Counter\PDOMySQL([
+        'dsn'=>'mysql:host=localhost', 'user'=>'user', 'password'=>'password'
+    ]);
+
+    // Construct by passing in a connector. This allows you to share a connector instance 
+    // with a cache backend:
+    $connector = new \Cachet\Connector\PDO('sqlite::memory:');
+    $counter = new \Cachet\Counter\PDOSQLite($connector);
+   
+    $connector = new \Cachet\Connector\PDO(['dsn'=>'mysql:host=localhost', ...]);
+    $counter = new \Cachet\Counter\PDOMySQL($connector);
+
+    $backend = new \Cachet\Backend\PDO($connector);
+
+    // Use a specific table name
+    $counter->tableName = 'my_custom_table';
+    $counter = new \Cachet\Counter\PDOSQLite($connector, 'my_custom_table');
+    $counter = new \Cachet\Counter\PDOMySQL($connector, 'my_custom_table');
+
+
+The table needs to be initialised in order to be used. It is not recommended to do this inside your
+web application - you should do it as part of your deployment process or application setup:
+
+.. code-block:: php
+
+    <?php
+    $counter->ensureTableExists();
+
+
+XCache
+~~~~~~
+
+Supports ``counterTTL``: **yes**
+Atomic: **yes**
+
+.. code-block:: php
+
+    <?php
+    $counter = new \Cachet\Counter\XCache();
+
+    // Optional cache value prefix. Prefix has a forward slash appended.
+    $counter = new \Cachet\Counter\XCache('prefix');
+
+    // TTL
+    $counter->counterTTL = 86400;
 
 
 Extending
