@@ -214,8 +214,6 @@ The different types of iteration support are:
   
   Key backend iteration is optional. If no key backend is supplied, iteration will fail.
 
-Iteration is a requirement for garbage collection.
-
 
 Backends
 --------
@@ -234,13 +232,14 @@ Iteration
     Backends that suffer from these limitations can extend from ``Cachet\Backend\IterationAdapter``,
     which allows a second backend to be used for storing keys. This slows down setting, deleting and
     flushing, but doesn't slow down getting items from the backend at all so it's not a bad tradeoff if
-    iteration is required.
+    iteration is required and you're doing many more reads than writes.
 
     There are some potential pitfalls with this approach:
 
     - If an item disappears from the key backend, it may still exist in the backend itself. There is
-      no way to detect these keys if the backend is not iterable. Make sure the type of backend you
-      select for the key backend doesn't auto-expire values under any circumstances.
+      no way to detect these values if the backend is not iterable. Make sure the type of backend you
+      select for the key backend doesn't auto-expire values under any circumstances, and if your
+      backend supports ``useBackendExpirations``, set it to ``false``.
 
     - The type of backend you can use for the key backend is quite limited - it must itself be
       iterable, and it can't be a ``Cachet\Backend\IterationAdapter``.
@@ -249,13 +248,14 @@ Iteration
 Automatic Expirations
     Some backends support automatic expiration for certain dependency_ types. When a backend supports
     this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
-    Setting this to false does not guarantee the backend will not expire cache values under other
-    circumstances.
     
     For example, the APC backend will detect when a ``Cachet\Dependency\TTL`` is passed and
     automatically use it for the third parameter to ``apc_store``, which accepts a TTL in seconds.
     Other backends support different methods of unrolling dependency types. This will be documented
     below. 
+
+    Setting ``useBackendExpirations`` to false does not guarantee the backend will not expire cache
+    values under other circumstances.
 
 
 APC
@@ -264,6 +264,7 @@ APC
 Works with ``apc`` and ``apcu``.
 
 Iteration support: **generator**.
+
 Backend expirations: ``Cachet\Expiration\TTL``
 
 .. code-block:: php
@@ -283,7 +284,9 @@ PHPRedis
 Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
 
 Iteration support: **fetcher**
-Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``
+
+Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``,
+``Cachet\Expiration\Permanent``
 
 .. code-block:: php
     
@@ -319,10 +322,11 @@ probably should - please file a bug report if it doesn't).
 The cache is not particularly fast. Flushing and iteration can be very, very slow indeed, but should
 not suffer from memory issues.
 
-If you use this cache, do some performance crunching to see if it's actually any faster than no
-cache at all.
+If you use this cache, please do some performance crunching to see if it's actually any faster than
+no cache at all.
 
 Iteration support: **generator**.
+
 Backend expirations: **none**
 
 .. code-block:: php
@@ -340,12 +344,14 @@ Backend expirations: **none**
     ));
 
 
-Memcached
-~~~~~~~~~
+Memcache
+~~~~~~~~
 
-Requires ``memcached`` PHP extension.
+Requires ``memcached`` PHP extension. May eventually support both ``memcached`` and the ``memcache``
+extension.
 
 Iteration support: **optional key backend**.
+
 Backend expirations: ``Cachet\Expiration\TTL``
 
 .. code-block:: php
@@ -401,6 +407,7 @@ Memory
 In-memory cache for the duration of the request or CLI run.
 
 Iteration support: **all data**
+
 Backend expirations: **none**
 
 .. code-block:: php
@@ -415,6 +422,7 @@ PDO
 Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
 
 Iteration support: **fetcher**
+
 Backend expirations: **none**
 
 .. code-block:: php
@@ -448,6 +456,7 @@ Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked
 to customise the session startup, call ``session_start()`` yourself beforehand.
 
 Iteration support: **all data**
+
 Backend expiration: **none**
 
 .. code-block:: php
@@ -460,6 +469,7 @@ XCache
 ~~~~~~
 
 Iteration support: **optional key backend**
+
 Backend expiration: ``Cache\Dependency\TTL`` 
 
 .. code-block:: php
@@ -482,6 +492,7 @@ This works best when the fastest backend has the highest priority (earlier in th
 Values are set in all caches in reverse priority order.
 
 Iteration support: whatever is supported by the lowest priority cache
+
 Backend expiration: N/A
 
 .. code-block:: php
@@ -515,6 +526,7 @@ Allows the cache to choose one of several backends for each key. The same backen
 be chosen for the same key, provided the list of backends is always the same.
 
 Iteration support: each backend is iterated fully.
+
 Backend expiration: N/A
 
 .. code-block:: php
@@ -544,19 +556,26 @@ Strategies
 ----------
 
 ``Cachet\Cache`` provides a series of strategy methods. Most of them require a locker implementation
-to be supplied to the cache. They all follow the same general API (with some minor exceptions for
-certain strategies which are noted below)::
+to be supplied to the cache. They all follow the same general API::
 
     $cache->strategyName(string $key, callable $dataRetriever);
     $cache->strategyName(string $key, int $ttl, callable $dataRetriever);
     $cache->strategyName(string $key, $dependency, callable $dataRetriever);
     
-Most of the strategies interact with a locker_, and some strategies work best when the backend's
-underlying expirations are disabled if it supports them.
+There are some minor exceptions for certain strategies which are noted below.
+
+Most of the strategies interact with a locker_, and some strategies require that if a backend
+supports ``useBackendExpirations``, that it be set to ``false``.
 
 
 Wrap
 ~~~~
+
+Requires locker_: **no**
+
+Backend expirations: **enabled or disabled**
+
+API deviation: **no**
 
 The simplest caching strategy provided by **Cachet** is the ``wrap`` strategy. It doesn't do
 anything to prevent stampedes, but it does not require a locker and can make your code much more
@@ -588,12 +607,20 @@ particularly when the surrounding logic or set logic gets a little more complica
 Blocking
 ~~~~~~~~
 
+Requires locker_: **blocking**
+
+Backend expirations: **enabled or disabled**
+
+API deviation: **no**
+
 This requires a locker_. In the event of a cache miss, a request will try to acquire the lock before
 calling the data retrieval function. The lock will be released after the data is retrieved. Any
-concurrent request which causes a cache miss will block until the request with the lock finishes.
+concurrent request which causes a cache miss will block until the request which has acquired the
+lock releases it.
 
-This strategy isn't adversely affected when ``useBackendExpirations`` is set to ``true`` if the
-backend supports it.
+This strategy shouldn't be adversely affected when ``useBackendExpirations`` is set to ``true`` if
+the backend supports it, though if your cache items frequently expire after only a couple of
+seconds you'll probably have a bad time.
 
 .. code-block:: php
 
@@ -617,6 +644,12 @@ The following code would output something like this (the uniqids would be slight
 Safe Non Blocking
 ~~~~~~~~~~~~~~~~~
 
+Requires locker_: **non-blocking**
+
+Backend expirations: **must be disabled**
+
+API deviation: **no**
+
 This requires a locker_. If the cache misses, the first request will acquire the lock and run the
 data retriever function. Subsequent requests will return a stale value if one is available,
 otherwise it will block until the first request finishes, thus guaranteeing a value is always
@@ -637,6 +670,12 @@ This strategy will fail if the backend has the ``useBackendExpirations`` propert
 Unsafe Non Blocking
 ~~~~~~~~~~~~~~~~~~~
 
+Requires locker_: **non-blocking**
+
+Backend expirations: **must be disabled**
+
+API deviation: **yes**
+
 This requires a locker_. If the cache misses, the first request will acquire the lock and run the
 data retriever function. Subsequent requests will return a stale value if one is available,
 otherwise they will return nothing immediately.
@@ -652,14 +691,18 @@ This strategy will fail if the backend has the ``useBackendExpirations`` propert
 
     <?php
     $cache->locker = create_my_locker();
+    
+    $dataRetriever = function() use ($params) {
+        return do_slow_stuff($params);
+    };
 
-    $value = $cache->unsafeNonBlocking('key', $retriever);
-    $value = $cache->unsafeNonBlocking('key', $ttl, $retiever);
-    $value = $cache->unsafeNonBlocking('key', $dependency, $retriever);
+    $value = $cache->unsafeNonBlocking('key', $dataRetriever);
+    $value = $cache->unsafeNonBlocking('key', $ttl, $dataRetriever);
+    $value = $cache->unsafeNonBlocking('key', $dependency, $dataRetriever);
 
-    $value = $cache->unsafeNonBlocking('key', $retiever, null, $found);
-    $value = $cache->unsafeNonBlocking('key', $ttl, $retiever, $found);
-    $value = $cache->unsafeNonBlocking('key', $dependency, $retiever, $found);
+    $value = $cache->unsafeNonBlocking('key', $dataRetriever, null, $found);
+    $value = $cache->unsafeNonBlocking('key', $ttl, $dataRetriever, $found);
+    $value = $cache->unsafeNonBlocking('key', $dependency, $dataRetriever, $found);
 
 
 .. _locker:
@@ -685,11 +728,21 @@ less complex version of the key.
         return $cacheId."/".abs(crc32($key)) % 4;
     };
 
+.. warning:: 
+
+    Lockers do not support timeouts. None of the current locking implemientations allow timeouts, so
+    you'll have to rely on a carefully tuned ``max_execution_time`` property for "safety" in the
+    case of deadlocks. This may change in future, but cannot change for the existing locker
+    implementations until platform support improves (which it probably won't).
+
 
 File
 ~~~~
 
-Uses ``flock`` to handle locking. Requires a dedicated directory in which locks will be stored.
+Supported locking modes: **blocking** or **non-blocking**
+
+Uses ``flock`` to handle locking. Requires a dedicated, writable directory in which locks will be
+stored.
 
 .. code-block:: php
     
@@ -710,11 +763,13 @@ The file locker supports the same array of options as ``Cachet\Backend\File``:
     ]);
 
 If the ``$keyHasher`` returns a value that contains ``/`` characters, they are converted into path
-segments.
+segments (i.e. ``mkdir -p``).
 
 
 Semaphore
 ~~~~~~~~~
+
+Supported locking modes: **blocking**
 
 Uses PHP's `semaphore <http://php.net/manual/en/book.sem.php>`_ functions to provide locking. PHP
 must be compiled with ``--enable-sysvsem`` for this to work.
@@ -733,10 +788,6 @@ This locker **does not** support non-blocking acquire.
 Dependencies
 ------------
 
-``Cachet\Cache`` supports passing a TTL (time to live) in seconds to ``set()``. Many backends
-support TTL directly and will garbage collect values for you, so TTL should be used wherever
-practicable, however it is not adequate for all use cases.
-
 **Cachet** supports the notion of cache dependencies - an object implementing ``Cachet\Dependency``
 is serialised with your cache value and checked on retrieval. Any serialisable code can be used in
 a dependency, so this opens up a large range of invalidation possibilities beyond what TTL can
@@ -746,7 +797,8 @@ Dependencies can be passed per-item using ``Cachet\Cache->set($key, $value, $dep
 using the ``Cachet\Cache->set($key, $value, $ttl)`` shorthand. The shorthand is equivalent to
 ``$cache->set($key, $value, new Cachet\Dependency\TTL($ttl))``.
 
-Without a dependency, a cached item will stay cached until it is removed.
+Without a dependency, a cached item will stay cached until it is removed manually or until the
+underlying backend decides to remove it of its own accord.
 
 You can assign a dependency to be used as the default for an entire cache if none is provided for
 an item:
@@ -844,13 +896,14 @@ registered with the primary cache as a service.
     $valueCache = new Cachet\Cache('value', new Cachet\Backend\APC());
     $tagCache = new Cachet\Cache('value', new Cachet\Backend\APC());
     
-    $valueCache->services['tagCache'] = $tagCache;
+    $tagCacheServiceId = 'tagCache';
+    $valueCache->services[$tagCacheServiceId] = $tagCache;
     
     // the value at key 'tag' in $tagCache is stored alongside 'foo'=>'bar' in the
     // $valueCache. It will be checked against whatever is currently in $tagCache
     // on retrieval
-    $valueCache->set('foo', 'bar', new Cachet\Dependency\CachedTag('tagCache', 'tag'));
-    $valueCache->set('baz', 'qux', new Cachet\Dependency\CachedTag('tagCache', 'tag'));
+    $valueCache->set('foo', 'bar', new Cachet\Dependency\CachedTag($tagCacheServiceId, 'tag'));
+    $valueCache->set('baz', 'qux', new Cachet\Dependency\CachedTag($tagCacheServiceId, 'tag'));
     
     // 'tag' has not changed in $tagCache since we set these values in $valueCache
     $valueCache->get('foo');  // returns 'bar'
@@ -869,7 +922,7 @@ comparison by passing a third boolean argument to the constructor:
 .. code-block:: php
 
     <?php
-    $dependency = new Cachet\Dependency\CachedTag('tagCache', 'tag', !!'strict');
+    $dependency = new Cachet\Dependency\CachedTag($tagCacheServiceId, 'tag', !!'strict');
 
 Strict mode uses ``===`` for everything except objects, for which it uses ``==``. This is because
 ``===`` will never match ``true`` for objects as it compares references only; the values to be
@@ -883,13 +936,25 @@ Composite
 Checks many dependencies. Can be set to be valid when any dependency is valid, or when all
 dependencies are valid.
 
-The following will be considered valid only if the item is less than 5 minutes old and the file
-``/path/to/file`` has not been touched.
+**All** mode: the following will be considered valid if **both** the item is less than 5 minutes old
+**and** the file ``/path/to/file`` has not been touched.
 
 .. code-block:: php
 
     <?php
     $cache->set('foo', 'bar', new Cachet\Dependency\Composite('all', array(
+        new Cachet\Dependency\Mtime('/path/to/file'),
+        new Cachet\Dependency\TTL(300),
+    ));
+
+
+**Any** mode: The following will be considered valid when **either** the item is less than 5 minutes
+old **or** the file ``/path/to/file`` has not been touched.
+
+.. code-block:: php
+
+    <?php
+    $cache->set('foo', 'bar', new Cachet\Dependency\Composite('any', array(
         new Cachet\Dependency\Mtime('/path/to/file'),
         new Cachet\Dependency\TTL(300),
     ));
@@ -968,8 +1033,7 @@ Unfortunately, it doesn't always succeed. There are some catches (like always):
   initialise the counter. Counters that exhibit this behaviour can be passed an optional locker_ to
   mitigate this problem.
 
-- To make matters worse, all of the counter backends support decrementing below zero except
-  Memcache.
+- All of the backends support decrementing below zero except Memcache.
 
 - All of the backends support integer values greater than the native integer type except APC, which
   overflows. 
@@ -977,11 +1041,16 @@ Unfortunately, it doesn't always succeed. There are some catches (like always):
 - Counters do not support dependencies, but some counters do allow a single TTL to be specified for
   all counters. This is indicated by the presence of a ``$backend->counterTTL`` property.
 
-Counters support the following API::
-    
+Counters implement the ``Cachet\Counter`` interface, and support the following API:
+
+.. code-block:: php
+
+    <?php
+    // You can increment an uninitialised counter:
     // $value == 1
     $value = $counter->increment('foo');
 
+    // You can also increment by a custom step value:
     // $value == 5
     $value = $counter->increment('foo', 4);
 
@@ -1003,7 +1072,8 @@ APC
 Works with ``apc`` and ``apcu``.
 
 Supports ``counterTTL``: **yes**
-Atomic: **with optional locker_**
+
+Atomic: **partial**. **full** with optional locker_
 
 .. warning:: This counter overflows when it exceeds the bounds of ``PHP_INT_MAX``
 
@@ -1028,6 +1098,7 @@ PHPRedis
 ~~~~~~~~
 
 Supports ``counterTTL``: **no**
+
 Atomic: **yes**
 
 .. code-block:: php
@@ -1047,7 +1118,8 @@ Memcache
 ~~~~~~~~
 
 Supports ``counterTTL``: **yes**
-Atomic: **with optional locker_**
+
+Atomic: **partial**. **full** with optional locker_
 
 .. code-block:: php
     
@@ -1082,10 +1154,11 @@ operations. If your PDO engine is sqlite, use ``Cachet\Counter\PDOSQLite``. If y
 MySQL, use ``Cachet\Counter\PDOMySQL``. ``PDOSQLite`` may be compatible with other database backends
 (though this is untested), but ``PDOMySQL`` uses MySQL-specific queries.
 
-Suports ``counterTTL``: **no**
-Atomic: **probably** (I haven't been able to satisfy myself that I have proven this yet)
-
 The table name defaults to ``cachet_counter`` for all counters. This can be changed.
+
+Suports ``counterTTL``: **no**
+
+Atomic: **probably** (I haven't been able to satisfy myself that I have proven this yet)
 
 .. code-block:: php
 
@@ -1126,6 +1199,7 @@ XCache
 ~~~~~~
 
 Supports ``counterTTL``: **yes**
+
 Atomic: **yes**
 
 .. code-block:: php
@@ -1179,6 +1253,42 @@ stored in the cacne alongside the value. A dependency is always passed a referen
 cache when it is used, and care should be taken never to hold a reference to it, or any other
 objects that don't directly relate to the dependency's data as they will also be shoved into the
 cache, and trust me - you don't want that.
+
+
+Development
+-----------
+
+Testing
+~~~~~~~
+
+**Cachet** is exhaustively tested. As all backends and counters are expected to satisfy the same
+interface, for all but a very small number of (hopefully) well-documented exceptions, all of the
+functional test cases for these classes extend from
+``Cachet\Test\BackendTestCase`` and ``Cachet\Test\CounterTestCase`` respectively.
+
+These tests are run from the root of the project by calling ``phpunit`` without arguments.
+
+Some aspects of **Cachet** cannot be proven to work using simple unit or functional tests, for
+example lockers_ and counter_ atomicity. These are tested using a hacky but workable concurrency
+tester, which is run from the root of the project. You can get help on all of the available options
+like so::
+
+    php test/concurrent.php -h
+
+Or just call it without arguments to run all of the concurrency tests using the default settings. It
+will exit with status ``0`` if all tests pass, or ``1`` if any of them fail.
+
+Some of the tests are designed to fail, but these contain ``unsafe`` in their ID. You can exclude
+unsafe tests like so::
+
+    php test/concurrent.php -x unsafe
+
+I have left the unsafe tests in to demonstrate conditions where the default behaviour may defy
+expectations. I am currently looking for a better way of reperesenting this in the tester.
+
+The concurrency tester has proven to be excellent at finding heisenbugs in **Cachet**. For this
+reason, it should be run many, many times under several different load conditions and on different
+architectures before we can decide that a build is safe to release.
 
 
 License
