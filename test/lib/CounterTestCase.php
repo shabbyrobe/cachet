@@ -9,6 +9,8 @@ abstract class CounterTestCase extends \CachetTestCase
      */
     public abstract function getCounter();
 
+//    public abstract function getMaximumCounterValue();
+
     /**
      * @dataProvider dataForIncrement
      */
@@ -26,9 +28,9 @@ abstract class CounterTestCase extends \CachetTestCase
     {
         $counter = $this->getCounter();
         $counter->set('value', $initial);
+        $this->assertEquals($initial + $by, $counter->increment('value', $by));
         $counter->increment('value', $by);
-        $counter->increment('value', $by);
-        $counter->decrement('value', $by);
+        $this->assertEquals($initial + $by, $counter->decrement('value', $by));
         $counter->decrement('value', $initial);
         $this->assertEquals($by, $counter->value('value'));
     }
@@ -39,10 +41,10 @@ abstract class CounterTestCase extends \CachetTestCase
     function testIncrementDecrementAboveZeroWhenUnset($initial, $by)
     {
         $counter = $this->getCounter();
-        $counter->increment('value', $initial);
+        $this->assertEquals($initial, $counter->increment('value', $initial));
+        $this->assertEquals($initial + $by, $counter->increment('value', $by));
         $counter->increment('value', $by);
-        $counter->increment('value', $by);
-        $counter->decrement('value', $by);
+        $this->assertEquals($initial + $by, $counter->decrement('value', $by));
         $counter->decrement('value', $initial);
         $this->assertEquals($by, $counter->value('value'));
     }
@@ -54,7 +56,7 @@ abstract class CounterTestCase extends \CachetTestCase
     {
         $counter = $this->getCounter();
         $counter->set('value', $initial);
-        $counter->increment('value', $by);
+        $this->assertEquals($initial + $by, $counter->increment('value', $by));
         $this->assertEquals($initial + $by, $counter->value('value'));
     }
 
@@ -76,7 +78,7 @@ abstract class CounterTestCase extends \CachetTestCase
     {
         $counter = $this->getCounter();
         $counter->set('value', $initial);
-        $counter->decrement('value', $by);
+        $this->assertEquals($initial - $by, $counter->decrement('value', $by));
         $this->assertEquals($initial - $by, $counter->value('value'));
     }
 
@@ -86,7 +88,7 @@ abstract class CounterTestCase extends \CachetTestCase
     function testDecrementByWhenUnset($initial, $by)
     {
         $counter = $this->getCounter();
-        $counter->decrement('value', $by);
+        $this->assertEquals(-$by, $counter->decrement('value', $by));
         $this->assertEquals(-$by, $counter->value('value'));
     }
 
@@ -105,6 +107,23 @@ abstract class CounterTestCase extends \CachetTestCase
             // [5, -1],
         ];
     }
+
+/*
+    function testOverflow()
+    {
+        $counter = $this->getCounter();
+
+        $value = $this->getMaximumCounterValue() - 1;
+        $counter->set('value', $value);
+        $this->assertEquals($value, $counter->value('value'));
+
+        $value++;
+        $this->assertEquals($value, $counter->increment('value'));
+
+        $value++;
+        $this->assertEquals($value, $counter->increment('value'));
+    }
+*/
 
     function testMultipleCounters()
     {

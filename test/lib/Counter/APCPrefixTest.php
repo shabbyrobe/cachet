@@ -11,12 +11,11 @@ else {
     /**
      * @group counter
      */
-    class APCPrefixTest extends \Cachet\Test\CounterTestCase
+    class APCPrefixTest extends APCTest
     {
         public function getCounter()
         {
-            apc_delete("prefix/counter/value");
-            apc_delete("prefix/counter/value2");
+            apc_clear_cache('user');
             return new \Cachet\Counter\APC('prefix');
         }
     }

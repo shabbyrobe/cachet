@@ -14,7 +14,7 @@ else {
     /**
      * @group counter
      */
-    class PHPRedisPrefixTest extends \Cachet\Test\CounterTestCase
+    class PHPRedisPrefixTest extends PHPRedisTest
     {
         public function getCounter()
         {

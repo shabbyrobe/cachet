@@ -11,12 +11,14 @@ Cachet - Pluggable Caching for PHP 5.5
 Features:
 
 - PHP 5.5 only
-- Swappable backends
-- Support for Redis, MySQL, Xcache, APCu, Memcached and others
-- Composite backends for cascading and sharding
-- Dynamic item expiration
-- Locking strategies for stampede protection
-- Atomic counters
+- Swappable backends_
+- Support for Redis_, MySQL_, Xcache_, APCu_, Memcached_, SQLite_ and others
+- Composite backends_ for cascading_ and sharding_
+- Generator-based iteration_ for backends (wherever possible)
+- Dynamic item expiration via dependencies_
+- Locking_ strategies for stampede protection
+- Atomic counters_
+- Session_ handling
 
 .. contents::
     :depth: 3
@@ -25,28 +27,23 @@ Features:
 Install
 -------
 
-Download **Cachet** from Packagist:
-
-You can also download **Cachet** directly from GitHub, or use the `Composer
-<http://getcomposer.org>`_ repository at ``k3jw.com`` with the following ``composer.json``::
+**Cachet** can be installed using `Composer <http://getcomposer.org>`_ by ensuring your
+``composer.json`` file contains the following::
 
     {
-        "repositories": {
-            "k3jw": {
-                "type": "composer",
-                "url": "http://k3jw.com/code/composer/"
-            }
-        },
         "require": {
-            "k3jw/cachet": "1.3.*"
+            "shabbyrpbe/cachet": "1.3.*"
         }
     }
+
+You can also download **Cachet** directly from the `GitHub <http://github.com/shabbyrobe/cachet>`_
+page.
 
 
 Usage
 -----
 
-Optional autoloader. **Cachet** is compatible with any PSR-0 autoloader.
+**Cachet** is compatible with any PSR-0 autoloader. A simple autoloader is provided.
 
 .. code-block:: php
 
@@ -112,10 +109,13 @@ locking_:
 .. code-block:: php
 
     <?php
+    $value = $cache->wrap('foo', function() use ($service, $param) {
+        return $service->doSlowStuff($param); 
+    });
+
     $dataRetriever = function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
     }
-    $value = $cache->wrap('foo', $dataRetriever);
     
     // With a TTL
     $value = $cache->wrap('foo', 300, $dataRetriever);
@@ -129,7 +129,8 @@ locking_:
     };
     $cache->locker = new Cachet\Locker\File('/path/to/locks', $hasher);
 
-    // blocks if another concurrent process is running the dataRetriever
+    // Stampede protection - the cache will stop and wait if another concurrent process 
+    // is running the dataRetriever. This means that the cache ``set`` will only happen once:
     $value = $cache->blocking('foo', $dataRetriever);
 
 
@@ -215,6 +216,9 @@ The different types of iteration support are:
   Key backend iteration is optional. If no key backend is supplied, iteration will fail.
 
 
+.. _backend:
+.. _backends:
+
 Backends
 --------
 
@@ -258,6 +262,9 @@ Automatic Expirations
     values under other circumstances.
 
 
+.. _apc:
+.. _apcu:
+
 APC
 ~~~
 
@@ -277,6 +284,8 @@ Backend expirations: ``Cachet\Expiration\TTL``
 
     $backend->useBackendExpirations = true; 
 
+
+.. _redis:
 
 PHPRedis
 ~~~~~~~~
@@ -343,6 +352,8 @@ Backend expirations: **none**
         'dirPerms'=>0777,    // Important: must be octal
     ));
 
+
+.. _memcached:
 
 Memcache
 ~~~~~~~~
@@ -416,6 +427,9 @@ Backend expirations: **none**
     $backend = new Cachet\Backend\Memory();
 
 
+.. _mysql:
+.. _sqlite:
+
 PDO
 ~~~
 
@@ -465,6 +479,8 @@ Backend expiration: **none**
     $session = new Cachet\Backend\Session();
 
 
+.. _xcache:
+
 XCache
 ~~~~~~
 
@@ -480,6 +496,8 @@ Backend expiration: ``Cache\Dependency\TTL``
     // Or with optional cache value prefix. Prefix has a forward slash appended:
     $backend = new Cachet\Backend\XCache("myprefix");
 
+
+.. _cascading:
 
 Cascading
 ~~~~~~~~~
@@ -518,6 +536,8 @@ Backend expiration: N/A
     // Item is inserted into Memory
     $cache->get('foo');
 
+
+.. _sharding:
 
 Sharding
 ~~~~~~~~
@@ -960,6 +980,8 @@ old **or** the file ``/path/to/file`` has not been touched.
     ));
 
 
+.. _session:
+
 Session Handler
 ---------------
 
@@ -1035,11 +1057,22 @@ Unfortunately, it doesn't always succeed. There are some catches (like always):
 
 - All of the backends support decrementing below zero except Memcache.
 
-- All of the backends support integer values greater than the native integer type except APC, which
-  overflows. 
+- Several backends have limits on the maximum counter value and will overflow if this value is
+  reached. There has not been enough testing done yet to determine what the maximum value for each
+  counter backend is, and it may be platform and build dependent. An estimate has been provided, but
+  this is based on the ARM architeture. YMMV.
 
 - Counters do not support dependencies, but some counters do allow a single TTL to be specified for
   all counters. This is indicated by the presence of a ``$backend->counterTTL`` property.
+
+- There does exist the fabled Counter class that is atomic, does not overflow and supports any type
+  of cache dependency (``Cachet\Counter\SafeCache``). Unfortunately, it is *slow* and it requires a
+  locker. Fast, secure, cheap, stable, good. Pick two.
+
+Why aren't counters just a part of ``Cachet\Cache``? I tried to do it that way first, but after
+spending a bit of time hacking and unable to escape the feeling that I was wrecking things that were
+nice and clean to support it, I realised that it was a separate responsibility deserving its own
+hierarchy. There also isn't a clean 1-to-1 relationship between counters and backends.
 
 Counters implement the ``Cachet\Counter`` interface, and support the following API:
 
@@ -1075,7 +1108,9 @@ Supports ``counterTTL``: **yes**
 
 Atomic: **partial**. **full** with optional locker_
 
-.. warning:: This counter overflows when it exceeds the bounds of ``PHP_INT_MAX``
+Range: ``-PHP_INT_MAX - 1`` to ``PHP_INT_MAX``
+
+Overflow error: **no**
 
 .. code-block:: php
 
@@ -1101,6 +1136,10 @@ Supports ``counterTTL``: **no**
 
 Atomic: **yes**
 
+Range: ``-INT64_MAX - 1`` to ``INT64_MAX``
+
+Overflow error: **yes**
+
 .. code-block:: php
 
     <?php
@@ -1120,6 +1159,10 @@ Memcache
 Supports ``counterTTL``: **yes**
 
 Atomic: **partial**. **full** with optional locker_
+
+Range: ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
+
+Overflow error: **no**
 
 .. code-block:: php
     
@@ -1159,6 +1202,10 @@ The table name defaults to ``cachet_counter`` for all counters. This can be chan
 Suports ``counterTTL``: **no**
 
 Atomic: **probably** (I haven't been able to satisfy myself that I have proven this yet)
+
+Range: ``-INT64_MAX - 1 to INT64_MAX``
+
+Overflow error: **no**
 
 .. code-block:: php
 
@@ -1202,6 +1249,10 @@ Supports ``counterTTL``: **yes**
 
 Atomic: **yes**
 
+Range: ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
+
+Overflow error: **no**
+
 .. code-block:: php
 
     <?php
@@ -1212,6 +1263,40 @@ Atomic: **yes**
 
     // TTL
     $counter->counterTTL = 86400;
+
+
+SafeCache
+~~~~~~~~~
+
+Supports ``counterTTL``
+    **yes**, via ``$counter->cache->dependency``
+
+Atomic
+    **yes**
+
+Range
+    unlimited
+
+This counter simply combines a ``Cachet\Cache`` with a locker_ and either ``bcmath`` or ``gmp`` to
+get around the atomicity and range limitations of the other counters.
+
+It also supports dependencies_ of any type.
+
+It is a lot slower than using the APC or Redis backends, but faster than using the PDO-based
+backends (unless, of course, the cache that you use has a PDO-based backend itself).
+
+.. code-block:: php
+
+    <?php
+    $cache = new \Cachet\Cache('counter', $backend);
+    $locker = new \Cachet\Locker\Semaphore();
+    $counter = new \Cachet\Counter\SafeCache($cache, $locker);
+
+    // Simulate counterTTL
+    $cache->dependency = new \Cachet\Dependency\TTL(3600);
+
+    // Or use any dependency you like
+    $cache->dependency = new \Cachet\Dependency\Permanent();
 
 
 Extending
@@ -1278,12 +1363,12 @@ like so::
 Or just call it without arguments to run all of the concurrency tests using the default settings. It
 will exit with status ``0`` if all tests pass, or ``1`` if any of them fail.
 
-Some of the tests are designed to fail, but these contain ``unsafe`` in their ID. You can exclude
+Some of the tests are designed to fail, but these contain ``broken`` in their ID. You can exclude
 unsafe tests like so::
 
-    php test/concurrent.php -x unsafe
+    php test/concurrent.php -x broken
 
-I have left the unsafe tests in to demonstrate conditions where the default behaviour may defy
+I have left the broken tests in to demonstrate conditions where the default behaviour may defy
 expectations. I am currently looking for a better way of reperesenting this in the tester.
 
 The concurrency tester has proven to be excellent at finding heisenbugs in **Cachet**. For this

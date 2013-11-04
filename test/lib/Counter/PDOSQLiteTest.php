@@ -22,5 +22,10 @@ else {
             $counter->ensureTableExists();
             return $counter;
         }
+
+        public function getMaximumCounterValue()
+        {
+            return "9223372036854775807";
+        }
     }
 }

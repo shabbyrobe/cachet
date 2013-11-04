@@ -82,7 +82,7 @@ return [
         },
     ],
 
-    'apcUnsafeCounterTest'=>[
+    'apcBrokenCounterTest'=>[
         'setupParent'=>function() {
             apc_clear_cache('user');
         },
@@ -146,7 +146,7 @@ return [
         },
     ],
 
-    'memcacheUnsafeCounterTest'=>[
+    'memcacheBrokenCounterTest'=>[
         'setupParent'=>function($parentState) {
             $memcached = memcached_create_testing();
             $memcached->flush();
@@ -243,6 +243,67 @@ return [
             $pdo = new \PDO('sqlite:'.$initialState->temp);
             $sqlite = new \Cachet\Counter\PDOSQLite($pdo);
             $count = $sqlite->value('count');
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
+    'mysqlCounterTest'=>[
+        'setupParent'=>function($parentState) {
+            $workerState = (object)['table'=>'cachet_counter_test'];
+            $counter = new \Cachet\Counter\PDOMySQL(
+                $GLOBALS['settings']['mysql'],
+                $workerState->table
+            );
+            $counter->ensureTableExists();
+            $pdo = $counter->connector->connect();
+            $pdo->exec("TRUNCATE TABLE `{$counter->tableName}`");
+            $parentState->counter = $counter;
+            return $workerState;
+        },
+        'setupWorker'=>function($workerState) {
+            $workerState->counter = new \Cachet\Counter\PDOMySQL(
+                $GLOBALS['settings']['mysql'],
+                $workerState->table
+            );
+        },
+        'test'=>function($workerState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $workerState->counter->increment('count');
+        },
+        'check'=>function($workers, $responses, $parentState) use ($config) {
+            $count = $parentState->counter->value('count');
+            $expected = $config->workerCount * $config->counterRuns;
+            if ($count != $expected)
+                return [false, "Count was $count, expected $expected"];
+            else
+                return [true];
+        },
+    ],
+
+    'safeCacheCounterTest'=>[
+        'setupParent'=>function($parentState) {
+            apc_clear_cache('user');
+            $backend = new \Cachet\Backend\APC(); 
+            $cache = new \Cachet\Cache('safeCounter', $backend);
+            $locker = new \Cachet\Locker\Semaphore();
+            $parentState->counter = new \Cachet\Counter\SafeCache($cache, $locker);
+        },
+        'setupWorker'=>function($workerState) {
+            $backend = new \Cachet\Backend\APC(); 
+            $cache = new \Cachet\Cache('safeCounter', $backend);
+            $locker = new \Cachet\Locker\Semaphore();
+            $workerState->counter = new \Cachet\Counter\SafeCache($cache, $locker);
+        },
+        'test'=>function($workerState) use ($config) {
+            for ($i=0; $i<$config->counterRuns; $i++)
+                $workerState->counter->increment('count');
+        },
+        'check'=>function($workers, $responses, $parentState) use ($config) {
+            $count = $parentState->counter->value('count');
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
                 return [false, "Count was $count, expected $expected"];

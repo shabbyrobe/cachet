@@ -8,7 +8,7 @@ else {
     /**
      * @group counter
      */
-    class XCachePrefixTest extends \Cachet\Test\CounterTestCase
+    class XCachePrefixTest extends XCacheTest
     {
         public function getCounter()
         {

@@ -13,6 +13,9 @@ elseif (!is_server_listening(
 )) {
     skip_test(__NAMESPACE__, 'PDOMySQLTest', 'MySQL server not listening');
 }
+elseif (!isset($GLOBALS['settings']['mysql']['db'])) {
+    skip_test(__NAMESPACE__, 'PDOMySQLTest', "Please set 'db' in the 'mysql' section of .cachettestrc");
+}
 else {
     /**
      * @group backend
@@ -23,13 +26,7 @@ else {
         {
             if (!$this->backend) {
                 $backend = new Backend\PDO($GLOBALS['settings']['mysql']);
-                
-                if (!isset($GLOBALS['settings']['mysql']['db'])) {
-                    return $this->markTestSkipped(
-                        "Please set 'db' in the 'mysql' section of .cachettestrc"
-                    );
-                }
-                
+                 
                 try {
                     $backend->connector->connect();
                 }

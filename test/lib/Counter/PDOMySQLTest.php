@@ -35,5 +35,10 @@ else {
             $counter->connector->connect()->exec("DROP TABLE IF EXISTS `{$counter->tableName}`");
             $counter->ensureTableExists();
         }
+
+        public function getMaximumCounterValue()
+        {
+            return "9223372036854775807";
+        }
     }
 }

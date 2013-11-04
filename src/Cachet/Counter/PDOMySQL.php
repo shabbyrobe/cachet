@@ -20,6 +20,8 @@ class PDOMySQL implements \Cachet\Counter
     private function change($key, $by=1)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
+        $pdo->beginTransaction();
+
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $sql =
             "INSERT INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
@@ -28,13 +30,28 @@ class PDOMySQL implements \Cachet\Counter
         ;
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([
+        if ($stmt === false) {
+            throw new \UnexpectedValueException(
+                "MySQL counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+
+        $result = $stmt->execute([
             ':keyHash'=>$this->hashKey($key),
             ':cacheKey'=>$key,
             ':counterUpdateValue'=>abs($by),
             ':counterInsertValue'=>$by,
             ':creationTimestamp'=>time(),
         ]);
+        if ($result === false) {
+            throw new \UnexpectedValueException(
+                "MySQL counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+        
+        $value = $this->value($key);
+        $pdo->commit();
+        return $value;
     }
 
     private function hashKey($key)
@@ -45,12 +62,19 @@ class PDOMySQL implements \Cachet\Counter
     function set($key, $value)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
+
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
         $keyHash = $this->hashKey($key);
         $stmt = $pdo->prepare(
             "REPLACE INTO `$table`(keyHash, cacheKey, counter, creationTimestamp) ".
             "VALUES(:keyHash, :cacheKey, :counter, :creationTimestamp)"
         );
+        if ($stmt === false) {
+            throw new \UnexpectedValueException(
+                "MySQL counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
+            );
+        }
+
         $result = $stmt->execute([
             ':keyHash'=>$keyHash,
             ':cacheKey'=>$key,
@@ -59,7 +83,7 @@ class PDOMySQL implements \Cachet\Counter
         ]);
         if ($result === false) {
             throw new \UnexpectedValueException(
-                "Set counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
+                "MySQL counter value query failed for table {$table}: ".implode(' ', $pdo->errorInfo())
             );
         }
     }

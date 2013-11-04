@@ -15,9 +15,13 @@ else {
     {
         public function getCounter()
         {
-            apc_delete("counter/value");
-            apc_delete("counter/value2");
+            apc_clear_cache('user');
             return new \Cachet\Counter\APC();
+        }
+
+        public function getMaximumCounterValue()
+        {
+            return PHP_INT_MAX;
         }
     }
 }

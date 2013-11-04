@@ -23,6 +23,11 @@ else {
             $redis->delete('counter/value2');
             return new \Cachet\Counter\PHPRedis($redis);
         }
+
+        public function getMaximumCounterValue()
+        {
+            return "9223372036854775807";
+        }
     }
 }
 

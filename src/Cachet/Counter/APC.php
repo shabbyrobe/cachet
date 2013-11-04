@@ -23,7 +23,7 @@ class APC implements \Cachet\Counter
 
     function set($key, $value)
     {
-        if (!is_int($value))
+        if (!is_numeric($value))
             throw new \InvalidArgumentException();
 
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);

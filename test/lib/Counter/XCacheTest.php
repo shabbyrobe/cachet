@@ -16,7 +16,11 @@ else {
             xcache_unset('counter/value2');
             return new \Cachet\Counter\XCache();
         }
+
+        public function getMaximumCounterValue()
+        {
+            return PHP_INT_MAX;
+        }
     }
 }
-
 

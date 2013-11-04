@@ -1,5 +1,5 @@
 {
-    "name": "k3jw/cachet",
+    "name": "shabbyrobe/cachet",
     "description": "Pluggable Caching for PHP 5.5",
     "keywords": ["php", "caching", "cache"],
     "version": "1.3.0",

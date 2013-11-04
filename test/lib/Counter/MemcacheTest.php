@@ -28,6 +28,12 @@ else {
             return new \Cachet\Counter\Memcache($memcached);
         }
 
+        public function getMaximumCounterValue()
+        {
+            return PHP_INT_MAX;
+            // return "9223372036854775807";
+        }
+
         /**
          * @dataProvider dataForIncrement
          */
