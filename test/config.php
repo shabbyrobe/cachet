@@ -16,12 +16,12 @@ if (!class_exists('PHPUnit_Framework_Exception'))
 
 $GLOBALS['settings'] = [
     'redis'=>[
-        'host'=>null,
+        'host'=>'127.0.0.1',
         'port'=>6379,
         'database'=>15,
     ],
     'memcached'=>[
-        'host'=>null,
+        'host'=>'127.0.0.1',
         'port'=>11211,
     ],
     'mysql'=>[
