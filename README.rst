@@ -84,8 +84,18 @@ was actually found:
 .. code-block:: php
     
     <?php
-    $value = $cache->get('doesntExist', $found);
-    var_dump($found);
+    $cache->set('hmm', false);
+    if (!$cache->get('hmm)) {
+        // this will also execute if the 'false' value was actually
+        // retrieved from the cache
+    }
+
+    $value = $cache->get('hmm', $found);
+    if (!$found) {
+        // this will only execute if no value was found in the cache.
+        // it will not execute if values which evaluate to false were
+        // retrieved from the cache.
+    }
 
 
 Expire data dynamically with dependencies_:
@@ -134,8 +144,8 @@ locking_:
     $value = $cache->blocking('foo', $dataRetriever);
 
 
-Iteration - this is tricky and loaded with caveats. See the section below that describes them in
-detail:
+Iteration_ - this is tricky and loaded with caveats. See the iteration_ section below that describes
+them in detail:
 
 .. code-block:: php
 
@@ -184,16 +194,18 @@ Atomic counters_:
 Iteration
 ---------
 
-Iteration support is patchy. If the underlying backend supports listing keys, iteration is usually
-efficient. The **Cachet** APC backend makes use of the ``APCIterator`` class and is very efficient.
-XCache sends the browser a HTTP authentication dialog when you try to list keys, and Memcached
-provides no means to iterate over keys at all.
+Caches can be iterated, but support is patchy. If the underlying backend supports listing keys,
+iteration is usually efficient. The **Cachet** APC backend makes use of the ``APCIterator`` class
+and is very efficient. XCache tries to send a HTTP authentication dialog when you try to list
+keys, and Memcached provides no means to iterate over keys at all.
 
-If a backend doesn't support iteration, it usually supports using a secondary backend which does
-support iteration for the keys. This slows down insertion, deletion and flushing, but has no impact
-on retrieval.
+If a backend supports iteration, it will implement ``Cachet\Backend\Iterable``. Implementing this
+interface is not required, but all backends provided with **Cachet** do.  If the underlying backend
+doesn't support iteration (Memcache, for example), **Cachet** provides optional support for using a
+secondary backend which does support iteration for the keys. This slows down insertion, deletion and
+flushing, but has no impact on retrieval.
 
-The different types of iteration support are:
+The different types of iteration support provided by the backends are:
 
 **generator**
   Iteration is implemented efficiently using a generator. Keys/items are only retrieved and yielded
@@ -227,6 +239,19 @@ satisfy the interface than others.
 
 Different backends have varying degrees of support for the following features:
 
+Automatic Expirations
+    Some backends support automatic expiration for certain dependency_ types. When a backend supports
+    this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
+    
+    For example, the APC backend will detect when a ``Cachet\Dependency\TTL`` is passed and
+    automatically use it for the third parameter to ``apc_store``, which accepts a TTL in seconds.
+    Other backends support different methods of unrolling dependency types. This will be documented
+    below. 
+
+    Setting ``useBackendExpirations`` to false does not guarantee the backend will not expire cache
+    values under other circumstances.
+
+
 Iteration
     Backends should, but may not necessarily, implement ``Cache\Backend\Iterable``. Backends that do not
     can't be iterated. This will be specified against each backend's documentation. Backends like APC or
@@ -249,19 +274,6 @@ Iteration
       iterable, and it can't be a ``Cachet\Backend\IterationAdapter``.
 
 
-Automatic Expirations
-    Some backends support automatic expiration for certain dependency_ types. When a backend supports
-    this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
-    
-    For example, the APC backend will detect when a ``Cachet\Dependency\TTL`` is passed and
-    automatically use it for the third parameter to ``apc_store``, which accepts a TTL in seconds.
-    Other backends support different methods of unrolling dependency types. This will be documented
-    below. 
-
-    Setting ``useBackendExpirations`` to false does not guarantee the backend will not expire cache
-    values under other circumstances.
-
-
 .. _apc:
 .. _apcu:
 
@@ -270,9 +282,11 @@ APC
 
 Works with ``apc`` and ``apcu``.
 
-Iteration support: **generator**.
+Iteration support
+    **generator**
 
-Backend expirations: ``Cachet\Expiration\TTL``
+Backend expirations
+    ``Cachet\Expiration\TTL``
 
 .. code-block:: php
 
@@ -292,10 +306,13 @@ PHPRedis
 
 Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
 
-Iteration support: **fetcher**
+Iteration support
+    **fetcher**
 
-Backend expiration: ``Cachet\Expiration\TTL``, ``Cachet\Expiration\Time``,
-``Cachet\Expiration\Permanent``
+Backend expirations
+    - ``Cachet\Expiration\TTL``
+    - ``Cachet\Expiration\Time``
+    - ``Cachet\Expiration\Permanent``
 
 .. code-block:: php
     
@@ -334,9 +351,11 @@ not suffer from memory issues.
 If you use this cache, please do some performance crunching to see if it's actually any faster than
 no cache at all.
 
-Iteration support: **generator**.
+Iteration support
+    **generator**
 
-Backend expirations: **none**
+Backend expirations
+    **none**
 
 .. code-block:: php
 
@@ -361,9 +380,11 @@ Memcache
 Requires ``memcached`` PHP extension. May eventually support both ``memcached`` and the ``memcache``
 extension.
 
-Iteration support: **optional key backend**.
+Iteration support
+    **optional key backend**.
 
-Backend expirations: ``Cachet\Expiration\TTL``
+Backend expirations
+    ``Cachet\Expiration\TTL``
 
 .. code-block:: php
 
@@ -417,9 +438,11 @@ Memory
 
 In-memory cache for the duration of the request or CLI run.
 
-Iteration support: **all data**
+Iteration support
+    **all data**
 
-Backend expirations: **none**
+Backend expirations
+    **none**
 
 .. code-block:: php
 
@@ -435,9 +458,11 @@ PDO
 
 Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
 
-Iteration support: **fetcher**
+Iteration support
+    **fetcher**
 
-Backend expirations: **none**
+Backend expirations
+    **none**
 
 .. code-block:: php
     
@@ -469,9 +494,11 @@ Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked
 ``session_start()`` will be called automatically if it hasn't yet been called, so if you would like
 to customise the session startup, call ``session_start()`` yourself beforehand.
 
-Iteration support: **all data**
+Iteration support
+    **all data**
 
-Backend expiration: **none**
+Backend expiration
+    **none**
 
 .. code-block:: php
 
@@ -484,9 +511,11 @@ Backend expiration: **none**
 XCache
 ~~~~~~
 
-Iteration support: **optional key backend**
+Iteration support
+    **optional key backend**
 
-Backend expiration: ``Cache\Dependency\TTL`` 
+Backend expiration
+    ``Cache\Dependency\TTL`` 
 
 .. code-block:: php
 
@@ -509,9 +538,11 @@ This works best when the fastest backend has the highest priority (earlier in th
 
 Values are set in all caches in reverse priority order.
 
-Iteration support: whatever is supported by the lowest priority cache
+Iteration support
+    Whatever is supported by the lowest priority cache
 
-Backend expiration: N/A
+Backend expiration
+    N/A
 
 .. code-block:: php
     
@@ -545,9 +576,11 @@ Sharding
 Allows the cache to choose one of several backends for each key. The same backend is guaranteed to
 be chosen for the same key, provided the list of backends is always the same.
 
-Iteration support: each backend is iterated fully.
+Iteration support
+    Each backend is iterated fully.
 
-Backend expiration: N/A
+Backend expiration
+    N/A
 
 .. code-block:: php
 
@@ -593,9 +626,11 @@ Wrap
 
 Requires locker_: **no**
 
-Backend expirations: **enabled or disabled**
+Backend expirations
+    **enabled or disabled**
 
-API deviation: **no**
+API deviation
+    **no**
 
 The simplest caching strategy provided by **Cachet** is the ``wrap`` strategy. It doesn't do
 anything to prevent stampedes, but it does not require a locker and can make your code much more
@@ -627,11 +662,14 @@ particularly when the surrounding logic or set logic gets a little more complica
 Blocking
 ~~~~~~~~
 
-Requires locker_: **blocking**
+Requires locker_
+    **blocking**
 
-Backend expirations: **enabled or disabled**
+Backend expirations
+    **enabled or disabled**
 
-API deviation: **no**
+API deviation
+    **no**
 
 This requires a locker_. In the event of a cache miss, a request will try to acquire the lock before
 calling the data retrieval function. The lock will be released after the data is retrieved. Any
@@ -664,11 +702,14 @@ The following code would output something like this (the uniqids would be slight
 Safe Non Blocking
 ~~~~~~~~~~~~~~~~~
 
-Requires locker_: **non-blocking**
+Requires locker_
+    **non-blocking**
 
-Backend expirations: **must be disabled**
+Backend expirations
+    **must be disabled**
 
-API deviation: **no**
+API deviation
+    **no**
 
 This requires a locker_. If the cache misses, the first request will acquire the lock and run the
 data retriever function. Subsequent requests will return a stale value if one is available,
@@ -690,11 +731,14 @@ This strategy will fail if the backend has the ``useBackendExpirations`` propert
 Unsafe Non Blocking
 ~~~~~~~~~~~~~~~~~~~
 
-Requires locker_: **non-blocking**
+Requires locker_
+    **non-blocking**
 
-Backend expirations: **must be disabled**
+Backend expirations
+    **must be disabled**
 
-API deviation: **yes**
+API deviation
+    **yes**
 
 This requires a locker_. If the cache misses, the first request will acquire the lock and run the
 data retriever function. Subsequent requests will return a stale value if one is available,
@@ -759,7 +803,8 @@ less complex version of the key.
 File
 ~~~~
 
-Supported locking modes: **blocking** or **non-blocking**
+Supported locking modes
+    **blocking** or **non-blocking**
 
 Uses ``flock`` to handle locking. Requires a dedicated, writable directory in which locks will be
 stored.
@@ -789,7 +834,8 @@ segments (i.e. ``mkdir -p``).
 Semaphore
 ~~~~~~~~~
 
-Supported locking modes: **blocking**
+Supported locking modes
+    **blocking**
 
 Uses PHP's `semaphore <http://php.net/manual/en/book.sem.php>`_ functions to provide locking. PHP
 must be compiled with ``--enable-sysvsem`` for this to work.
@@ -1104,13 +1150,17 @@ APC
 
 Works with ``apc`` and ``apcu``.
 
-Supports ``counterTTL``: **yes**
+Supports ``counterTTL``
+    **yes**
 
-Atomic: **partial**. **full** with optional locker_
+Atomic
+    **partial**. **full** with optional locker_
 
-Range: ``-PHP_INT_MAX - 1`` to ``PHP_INT_MAX``
+Range
+    ``-PHP_INT_MAX - 1`` to ``PHP_INT_MAX``
 
-Overflow error: **no**
+Overflow error
+    **no**
 
 .. code-block:: php
 
@@ -1132,13 +1182,17 @@ Overflow error: **no**
 PHPRedis
 ~~~~~~~~
 
-Supports ``counterTTL``: **no**
+Supports ``counterTTL``
+    **no**
 
-Atomic: **yes**
+Atomic
+    **yes**
 
-Range: ``-INT64_MAX - 1`` to ``INT64_MAX``
+Range
+    ``-INT64_MAX - 1`` to ``INT64_MAX``
 
-Overflow error: **yes**
+Overflow error
+    **yes**
 
 .. code-block:: php
 
@@ -1156,13 +1210,17 @@ implement it atomically yet. Consider it a work in progress.
 Memcache
 ~~~~~~~~
 
-Supports ``counterTTL``: **yes**
+Supports ``counterTTL``
+    **yes**
 
-Atomic: **partial**. **full** with optional locker_
+Atomic
+    **partial**. **full** with optional locker_
 
-Range: ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
+Range
+    ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
 
-Overflow error: **no**
+Overflow error
+    **no**
 
 .. code-block:: php
     
@@ -1199,13 +1257,17 @@ MySQL, use ``Cachet\Counter\PDOMySQL``. ``PDOSQLite`` may be compatible with oth
 
 The table name defaults to ``cachet_counter`` for all counters. This can be changed.
 
-Suports ``counterTTL``: **no**
+Suports ``counterTTL``
+    **no**
 
-Atomic: **probably** (I haven't been able to satisfy myself that I have proven this yet)
+Atomic
+    **probably** (I haven't been able to satisfy myself that I have proven this yet)
 
-Range: ``-INT64_MAX - 1 to INT64_MAX``
+Range
+    ``-INT64_MAX - 1 to INT64_MAX``
 
-Overflow error: **no**
+Overflow error
+    **no**
 
 .. code-block:: php
 
@@ -1245,13 +1307,17 @@ web application - you should do it as part of your deployment process or applica
 XCache
 ~~~~~~
 
-Supports ``counterTTL``: **yes**
+Supports ``counterTTL``
+    **yes**
 
-Atomic: **yes**
+Atomic
+    **yes**
 
-Range: ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
+Range
+    ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
 
-Overflow error: **no**
+Overflow error
+    **no**
 
 .. code-block:: php
 
