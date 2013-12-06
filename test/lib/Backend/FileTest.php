@@ -46,6 +46,8 @@ class FileTest extends \Cachet\Test\IterableBackendTestCase
         $cache = new Cache('cache', $file);
         $cache->set('foo', 'bar');
         
+        // TODO: these hashes seem to be different between x86-64 and arm - the
+        // tests may not pass. This needs to be fixed.
         $itemFile = "{$this->path}/i41xif-cache/w/2/6/w26t3z-foo";
         $this->assertTrue(file_exists($itemFile));
         $item = unserialize(file_get_contents($itemFile));
