@@ -65,9 +65,9 @@ class APC implements Backend, Iterable
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
         $iter = new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
-        foreach ($iter as $item) {
-            yield $item['value']->key;
-        }
+        return new \Cachet\Util\MapIterator($iter, function($item) {
+            return $item['value']->key;
+        });
     }
 
     function items($cacheId)
@@ -75,8 +75,8 @@ class APC implements Backend, Iterable
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
         $iter = new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
-        foreach ($iter as $item) {
-            yield $item['value'];
-        }
+        return new \Cachet\Util\MapIterator($iter, function($item) {
+            return $item['value'];
+        });
     }
 }

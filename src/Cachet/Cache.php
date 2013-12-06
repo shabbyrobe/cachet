@@ -119,28 +119,37 @@ class Cache implements \ArrayAccess
     function keys()
     {
         $this->ensureIterable();
-        foreach ($this->items() as $item) {
-            yield $item->key;
-        }
+        return new Util\MapIterator($this->items(), function($item) {
+            return $item->key;
+        });
     }
 
     function values()
     {
         $this->ensureIterable();
-        foreach ($this->items() as $item) {
-            yield $item->key => $item->value;
-        }
+        return new Util\MapIterator(
+            $this->items(),
+            function($item, &$key) {
+                $key = $item->key;
+                return $item->value;
+            }
+        );
     }
 
     function items($all=false)
     {
         $this->ensureIterable();
-        foreach ($this->backend->items($this->id) as $key=>$item) {
+        $items = $this->backend->items($this->id);
+
+        $iter = new Util\MapIterator($items, function($item, &$key) use ($all) {
             $valid = $all || $this->validateItem($item);
-            if ($valid) {
-                yield $item->key => $item;
-            }
-        }
+            $key = $item->key;
+            return $valid ? $item : null;
+        });
+
+        return new \CallbackFilterIterator($iter, function($item) {
+            return $item instanceof Item;
+        });
     }
 
     private function ensureIterable()

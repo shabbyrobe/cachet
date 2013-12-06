@@ -51,33 +51,40 @@ class File implements Backend, Iterable
     function keys($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
-        $iter = $this->fileUtil->getIterator($filePath);
-        foreach ($iter as $cacheFile) {
-            if (!file_exists($cacheFile))
-                continue;
+        $fileIter = $this->fileUtil->getIterator($filePath);
 
-            $item = $this->decode(file_get_contents($cacheFile));
-            if (!$item)
-                throw new \UnexpectedValueException();
-
-            yield $item->key;
-        }
+        $iter = new \Cachet\Util\MapIterator($fileIter, function($cacheFile) {
+            $item = $this->yieldFile($cacheFile);
+            if ($item)
+                return $item->key;
+        });
+        return new \CallbackFilterIterator($iter, function($item) {
+            return $item !== null;
+        });
     }
 
     function items($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
-        $iter = $this->fileUtil->getIterator($filePath);
-        foreach ($iter as $cacheFile) {
-            if (!file_exists($cacheFile))
-                continue;
+        $fileIter = $this->fileUtil->getIterator($filePath);
+        $iter = new \Cachet\Util\MapIterator($fileIter, function($cacheFile) {
+            return $this->yieldFile($cacheFile);
+        });
+        return new \CallbackFilterIterator($iter, function($item) {
+            return $item instanceof Item;
+        });
+    }
 
-            $item = $this->decode(file_get_contents($cacheFile));
-            if (!$item)
-                throw new \UnexpectedValueException();
+    private function yieldFile($fullCacheFile)
+    {
+        if (!file_exists($fullCacheFile))
+            continue;
 
-            yield $item;
-        }
+        $item = $this->decode(file_get_contents($fullCacheFile));
+        if (!$item)
+            throw new \UnexpectedValueException();
+
+        return $item;
     }
 
     private function getFilePath($cacheId, $key=null)

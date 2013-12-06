@@ -61,13 +61,11 @@ class Cascading implements Backend, Iterable
 
     function keys($cacheId)
     {
-        foreach ($this->reverseBackends[0]->keys($cacheId) as $key)
-            yield $key;
+        return $this->reverseBackends[0]->keys($cacheId);
     }
 
     function items($cacheId)
     {
-        foreach ($this->reverseBackends[0]->items($cacheId) as $item)
-            yield $item;
+        return $this->reverseBackends[0]->items($cacheId);
     }
 }

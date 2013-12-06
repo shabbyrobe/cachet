@@ -51,18 +51,26 @@ class Sharding implements Backend, Iterable
 
     function keys($cacheId)
     {
+        $iter = new \AppendIterator();
         foreach ($this->backends as $backend) {
-            foreach ($backend->keys($cacheId) as $key)
-                yield $key;
+            $backendIter = $backend->keys($cacheId);
+            if (is_array($backendIter))
+                $backendIter = new \ArrayIterator($backendIter);
+            $iter->append($backendIter);
         }
+        return new \Cachet\Util\ReindexingIterator($iter);
     }
 
     function items($cacheId)
     {
+        $iter = new \AppendIterator();
         foreach ($this->backends as $backend) {
-            foreach ($backend->items($cacheId) as $item)
-                yield $item;
+            $backendIter = $backend->items($cacheId);
+            if (is_array($backendIter))
+                $backendIter = new \ArrayIterator($backendIter);
+            $iter->append($backendIter);
         }
+        return new \Cachet\Util\ReindexingIterator($iter);
     }
 
     private function selectBackend($cacheId, $key)

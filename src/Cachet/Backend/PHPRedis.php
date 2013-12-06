@@ -119,11 +119,12 @@ class PHPRedis implements Backend, Iterable
 
     function items($cacheId)
     {
-        foreach ($this->keys($cacheId) as $key) {
-            $item = $this->get($cacheId, $key);
-            if ($item)
-                yield $item;
-        }
+        $iter = new \Cachet\Util\MapIterator($this->keys($cacheId), function($item) use ($cacheId) {
+            return $this->get($cacheId, $item);
+        });
+        return new \CallbackFilterIterator($iter, function($item) {
+            return $item instanceof Item;
+        });
     }
 
     function decode($data)
