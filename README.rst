@@ -1,5 +1,5 @@
-Cachet - Pluggable Caching for PHP 5.5
-======================================
+Cachet - Pluggable Caching for PHP
+==================================
 
 ::
 
@@ -10,7 +10,7 @@ Cachet - Pluggable Caching for PHP 5.5
 
 Features:
 
-- PHP 5.5 only
+- Supports PHP 5.4 and above
 - Swappable backends_
 - Support for Redis_, MySQL_, Xcache_, APCu_, Memcached_, SQLite_ and others
 - Composite backends_ for cascading_ and sharding_
