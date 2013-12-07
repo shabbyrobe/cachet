@@ -2,11 +2,15 @@
 $base = realpath(__DIR__.'/../');
 define("BASE_PATH", $base);
 
-spl_autoload_register(function($class) use ($base) {
-    if (strpos($class, 'Cachet\Test')===0) {
-        require $base.'/test/lib/'.str_replace('\\', '/', substr($class, 11)).'.php';
-    }
-});
+spl_autoload_register(
+    function($class) use ($base) {
+        if (strpos($class, 'Cachet\Test')===0) {
+            require $base.'/test/lib/'.str_replace('\\', '/', substr($class, 11)).'.php';
+        }
+    },
+    true.
+    !!'prepend'
+);
 
 require $base.'/src/Cachet.php';
 Cachet::register();
