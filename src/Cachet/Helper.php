@@ -3,7 +3,7 @@ namespace Cachet;
 
 class Helper
 {
-    public static function hashMDHack($key)
+    public static function hashToInt32($key)
     {
         return hexdec(substr(md5($key), -8));
     }

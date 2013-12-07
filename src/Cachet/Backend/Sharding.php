@@ -7,8 +7,8 @@ use Cachet\Item;
 /**
  * Very simple sharding cache backend.
  * This does not tolerate changing the number of backends. You will
- * need to flush the entire cache if you do unless you want unpredictable
- * results.
+ * need to flush the entire cache if you want to add or remove them
+ * unless you're OK with the cache being partially invalidated.
  */
 class Sharding implements Backend, Iterable
 {
@@ -76,7 +76,7 @@ class Sharding implements Backend, Iterable
     private function selectBackend($cacheId, $key)
     {
         $hashValue = "$cacheId/$key";
-        $backendId = abs(crc32($hashValue)) % $this->backendCount;
+        $backendId = \Cachet\Helper::hashToInt32($hashValue) % $this->backendCount;
         return $this->backends[$backendId];
     }
 }

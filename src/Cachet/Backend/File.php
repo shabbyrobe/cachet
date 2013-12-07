@@ -92,7 +92,7 @@ class File implements Backend, Iterable
         $hashedCache = $this->createSafeKey($cacheId);
         $keyPath = "$hashedCache/";
 
-        if ($key) {
+        if ($key !== null) {
             $hashedKey = $this->createSafeKey($key);
 
             for ($i=0; $i<$this->keySplit; $i++) {
@@ -106,8 +106,11 @@ class File implements Backend, Iterable
 
     private function createSafeKey($key)
     {
-        $safeKey = preg_replace("/[^a-z\d_\-]/", "", strtolower($key));
-        $hashedKey = base_convert(abs(crc32($key)), 10, 36).($safeKey ? "-$safeKey" : '');
+        $safeKey = substr(preg_replace("/[^a-z\d_\-]/", "", strtolower($key)), 0, 50);
+
+        // crc32 is platform dependent? not that it should matter, but it makes testing
+        // quite tricky.
+        $hashedKey = base_convert(\Cachet\Helper::hashToInt32($key), 10, 36).($safeKey ? "-$safeKey" : '');
         return $hashedKey;
     }
 }
