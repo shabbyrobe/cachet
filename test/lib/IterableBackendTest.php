@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test;
 
-abstract class IterableBackendTestCase extends BackendTestCase
+trait IterableBackendTest
 {
     public function testKeys()
     {

@@ -7,8 +7,10 @@ use Cachet\Item;
 /**
  * @group backend
  */
-class CascadingTest extends \Cachet\Test\IterableBackendTestCase
+class CascadingTest extends \Cachet\Test\BackendTestCase
 {
+    use \Cachet\Test\IterableBackendTest;
+
     public function getBackend()
     {   
         $backend1 = new Backend\Memory();

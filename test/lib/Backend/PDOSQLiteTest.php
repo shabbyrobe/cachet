@@ -11,8 +11,10 @@ else {
     /**
      * @group backend
      */
-    class PDOSQLiteTest extends \Cachet\Test\IterableBackendTestCase
+    class PDOSQLiteTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+
         public function getBackend()
         {
             $backend = new Backend\PDO(array('dsn'=>'sqlite::memory:'));

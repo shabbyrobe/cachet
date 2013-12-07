@@ -7,8 +7,10 @@ use Cachet\Item;
 /**
  * @group backend
  */
-class ShardingTest extends \Cachet\Test\IterableBackendTestCase
+class ShardingTest extends \Cachet\Test\BackendTestCase
 {
+    use \Cachet\Test\IterableBackendTest;
+
     public function getBackend()
     {
         $backend1 = new Backend\Memory();
@@ -25,12 +27,12 @@ class ShardingTest extends \Cachet\Test\IterableBackendTestCase
         $backend3 = new Backend\Memory();
         $sharding = new Backend\Sharding(array($backend1, $backend2, $backend3));
     
-        // These keys are known to hash into the different backends.
+        // These keys are known to hash into the different backends in order.
         // The test is slightly brittle as a result - if the hashing algo changes,
         // new keys will have to be used.
         $key1 = 'a';
-        $key2 = 'g';
-        $key3 = 'i';
+        $key2 = 'q';
+        $key3 = 'c';
 
         $sharding->set(new Item('cache', $key1, 'yup'));
         $sharding->set(new Item('cache', $key2, 'qux'));

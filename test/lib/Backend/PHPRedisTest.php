@@ -18,8 +18,10 @@ else {
     /**
      * @group backend
      */
-    class PHPRedisTest extends \Cachet\Test\IterableBackendTestCase
+    class PHPRedisTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+
         public $backendPrefix = null;
 
         public function setUp()

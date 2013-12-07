@@ -25,6 +25,9 @@ class Memory implements Backend, Iterable
         if (!isset($this->data[$item->cacheId]))
             $this->data[$item->cacheId] = array();
 
+        if ($item->value instanceof \Closure)
+            throw new \Exception("Serialization of 'Closure' is not allowed");
+
         $this->data[$item->cacheId][$item->key] = $item;
     }
 

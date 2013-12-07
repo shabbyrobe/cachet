@@ -16,8 +16,10 @@ else {
     /**
      * @group backend
      */
-    class MemcacheWithKeyBackendTest extends \Cachet\Test\IterableBackendTestCase
+    class MemcacheWithKeyBackendTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+
         public function setUp()
         {
             $backend = $this->getBackend();

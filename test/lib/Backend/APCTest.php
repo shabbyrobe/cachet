@@ -11,8 +11,11 @@ else {
     /**
      * @group backend
      */
-    class APCTest extends \Cachet\Test\IterableBackendTestCase
+    class APCTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IterableBackendYieldMemoryTest;
+
         public $backendPrefix;
 
         public function getBackend()

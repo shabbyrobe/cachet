@@ -11,8 +11,11 @@ else {
     /**
      * @group backend
      */
-    class APCPrefixTest extends APCTest
+    class APCPrefixTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IterableBackendYieldMemoryTest;
+
         public function getBackend()
         {
             apc_clear_cache('user');

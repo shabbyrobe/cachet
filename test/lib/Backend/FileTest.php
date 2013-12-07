@@ -8,8 +8,11 @@ use Cachet\Item;
 /**
  * @group backend
  */
-class FileTest extends \Cachet\Test\IterableBackendTestCase
+class FileTest extends \Cachet\Test\BackendTestCase
 {
+    use \Cachet\Test\IterableBackendTest;
+    use \Cachet\Test\IterableBackendYieldMemoryTest;
+
     public function setUp()
     {
         $this->path = sys_get_temp_dir()."/".uniqid('', true);
@@ -46,9 +49,7 @@ class FileTest extends \Cachet\Test\IterableBackendTestCase
         $cache = new Cache('cache', $file);
         $cache->set('foo', 'bar');
         
-        // TODO: these hashes seem to be different between x86-64 and arm - the
-        // tests may not pass. This needs to be fixed.
-        $itemFile = "{$this->path}/i41xif-cache/w/2/6/w26t3z-foo";
+        $itemFile = "{$this->path}/1cwqkjo-cache/1/k/t/1ktddy0-foo";
         $this->assertTrue(file_exists($itemFile));
         $item = unserialize(file_get_contents($itemFile));
         $this->assertTrue($item instanceof Item);
@@ -61,7 +62,7 @@ class FileTest extends \Cachet\Test\IterableBackendTestCase
         $cache = new Cache('cache', $file);
         $cache->set('foo', 'bar');
 
-        $itemFile = "{$this->path}/i41xif-cache/w/2/6/w26t3z-foo";
+        $itemFile = "{$this->path}/1cwqkjo-cache/1/k/t/1ktddy0-foo";
         $perms = fileperms($itemFile) & 0x1FF;
         $this->assertEquals(0600, $perms);
     }
@@ -74,7 +75,7 @@ class FileTest extends \Cachet\Test\IterableBackendTestCase
         $cache->set('foo', 'bar');
         
         $current = "{$this->path}";
-        foreach (array("i41xif-cache", "w", "2", "6") as $part) {
+        foreach (array("1cwqkjo-cache", "1", "k", "t") as $part) {
             $current .= "/$part";
             $perms = fileperms($current) & 0x1FF;
             $this->assertEquals(0707, $perms);

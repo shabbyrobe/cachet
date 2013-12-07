@@ -20,8 +20,10 @@ else {
     /**
      * @group backend
      */
-    class PDOMySQLTest extends \Cachet\Test\IterableBackendTestCase
+    class PDOMySQLTest extends \Cachet\Test\BackendTestCase
     {
+        use \Cachet\Test\IterableBackendTest;
+
         public function getBackend()
         {
             if (!$this->backend) {
