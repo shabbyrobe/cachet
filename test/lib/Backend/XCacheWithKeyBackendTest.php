@@ -12,12 +12,6 @@ else {
     {
         use \Cachet\Test\IterableBackendTest;
 
-        public function setUp()
-        {
-            $backend = $this->getBackend();
-            $backend->connector->connect()->flush();
-        }
-        
         public function getBackend()
         {
             xcache_unset_by_prefix("cache");
