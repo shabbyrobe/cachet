@@ -33,7 +33,9 @@ abstract class IterationAdapter implements Backend, Iterable
         if (!$this->keyBackend)
             throw new \RuntimeException("Please call setKeyBackend() if you wish to iterate by key");
 
-        return $this->keyBackend->items($cacheId);
+        return new \Cachet\Util\MapIterator($this->keyBackend->items($cacheId), function($item) {
+            return $item->value;
+        });
     }
 
     function items($cacheId)
