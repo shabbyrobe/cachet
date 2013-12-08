@@ -122,9 +122,7 @@ class PDO implements Backend, Iterable
 
     function items($cacheId)
     {
-        $iter = new \Cachet\Util\MapIterator($this->keys($cacheId), function($item) use ($cacheId) {
-            return $this->get($cacheId, $item);
-        });
+        $iter = new Iterator\Fetching($cacheId, $this->keys($cacheId), $this);
         return new \CallbackFilterIterator($iter, function($item) {
             return $item instanceof Item;
         });
