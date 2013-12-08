@@ -25,6 +25,6 @@ class Fetching extends \IteratorIterator
 
     function current()
     {
-        return $this->backend->get($cacheId, parent::current()); 
+        return $this->backend->get($this->cacheId, parent::current()); 
     }
 }
