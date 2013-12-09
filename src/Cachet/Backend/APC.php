@@ -7,7 +7,7 @@ use Cachet\Item;
 
 class APC implements Backend, Iterable
 {
-    public $iteratorChunkSize = 100;
+    public $iteratorChunkSize = 50;
 
     public $prefix;
 
@@ -64,9 +64,10 @@ class APC implements Backend, Iterable
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        $iter = new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
-        return new \Cachet\Util\MapIterator($iter, function($item) {
-            return $item['value']->key;
+        $iter = new \APCIterator('user', $keyRegex, APC_ITER_KEY, $this->iteratorChunkSize);
+        $prefixLen = strlen($fullPrefix) + 1;
+        return new \Cachet\Util\MapIterator($iter, function($item) use ($prefixLen) {
+            return substr($item['key'], $prefixLen);
         });
     }
 
