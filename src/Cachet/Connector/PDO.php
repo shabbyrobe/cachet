@@ -66,6 +66,11 @@ class PDO
         return $this->engine;
     }
 
+    public function __clone()
+    {
+        return $this->disconnect();
+    }
+
     /**
      * Creates a Connector from an array of connection parameters.
      * @param array Parameters to use to create the connection
