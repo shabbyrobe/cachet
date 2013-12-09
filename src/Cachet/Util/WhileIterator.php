@@ -1,6 +1,21 @@
 <?php
 namespace Cachet\Util;
 
+/**
+ * This is useful for turning things like a PDOStatement into a rewindable iterator:
+ *
+ * $stmt = $pdo->prepare('...');
+ * $iter = new WhileIterator(
+ *     function() use ($stmt) {
+ *         $stmt->execute();
+ *     },
+ *     function(&$key, &$valid) {
+ *         $value = $stmt->fetch(\PDO::FETCH_ASSOC);
+ *         $valid = $value !== false;
+ *         return $value;
+ *     }
+ * );
+ */
 class WhileIterator implements \Iterator
 {
     private $current;

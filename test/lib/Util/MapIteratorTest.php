@@ -15,6 +15,17 @@ class MapIteratorTest extends \CachetTestCase
         $expected = ['z' => 'a', 'y' => 'b', 'x' => 'c'];
         $this->assertEquals($expected, $mapped);
     }
+
+    function testRewind()
+    {
+        $i = [1, 2, 3];
+        $iter = new MapIterator($i, function($item, &$key) {
+            return $item;
+        });
+        
+        $this->assertEquals($i, iterator_to_array($iter));
+        $this->assertEquals($i, iterator_to_array($iter));
+    }
     
     function testMapIteratorReindexesWhenKeyNotSetAndNotPresentInSignature()
     {
