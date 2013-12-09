@@ -13,6 +13,10 @@ class PHPRedis implements Backend, Iterable
 
     public $useBackendExpirations = true;
 
+    public $supportsScan = false;
+
+    public $scanBatchSize = 50;
+
     public function __construct($redis, $prefix=null)
     {
         if (!$redis instanceof \Cachet\Connector\PHPRedis)
@@ -103,25 +107,50 @@ class PHPRedis implements Backend, Iterable
 
     function keys($cacheId)
     {
-        $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId])."/";
-        $len = strlen($prefix);
         $redis = $this->connector->redis ?: $this->connector->connect();
-        $redisKeys = $redis->keys("$prefix*");
+        $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId])."/";
+        $prefixLen = strlen($prefix);
 
-        $keys = [];
-        foreach ($redisKeys as $key) {
-            $keys[] = substr($key, $len);
+        if ($this->supportsScan) {
+            $cursor = 0;
+            $iter = new \Cachet\Util\BatchingMapIterator(
+                function() use (&$cursor) {
+                    $cursor = 0;
+                },
+                function() use ($redis, &$cursor) {
+                    $batch = null;
+                    while (true) {
+                        $result = $redis->scan($cursor, "$prefix*", $this->scanBatchSize);
+                        $cursor = $result[0];
+                        if ($cursor == "0")
+                            break;
+
+                        $batch = [];
+                        foreach ($result[1] ?: [] as $key) {
+                            $batch[] = substr($key, $prefixLen);
+                        }
+                        if ($batch)
+                            break;
+                    }
+                    return $batch;
+                }
+            );
+            return $iter;
+        }   
+        else {
+            $redisKeys = $redis->keys("$prefix*");
+
+            $keys = [];
+            foreach ($redisKeys as $key) {
+                $keys[] = substr($key, $prefixLen);
+            }
+            return $keys;
         }
-
-        sort($keys);
-        return $keys;
     }
 
     function items($cacheId)
     {
-        $iter = new \Cachet\Util\MapIterator($this->keys($cacheId), function($item) use ($cacheId) {
-            return $this->get($cacheId, $item);
-        });
+        $iter = new Iterator\Fetching($cacheId, $this->keys($cacheId), $this);
         return new \CallbackFilterIterator($iter, function($item) {
             return $item instanceof Item;
         });
