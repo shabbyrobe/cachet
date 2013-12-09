@@ -124,6 +124,25 @@ function redis_create_testing()
     return $redis;
 }
 
+function pdo_mysql_tests_valid($namespace, $testClass)
+{
+    if (!extension_loaded('pdo') || !extension_loaded('pdo_mysql')) {
+        skip_test($namespace, $testClass, 'PDO MySQL extension not loaded');
+    }
+    elseif (!is_server_listening(
+        $GLOBALS['settings']['mysql']['host'], 
+        $GLOBALS['settings']['mysql']['port']
+    )) {
+        skip_test($namespace, $testClass, 'MySQL server not listening');
+    }
+    elseif (!isset($GLOBALS['settings']['mysql']['db'])) {
+        skip_test($namespace, $testClass, "Please set 'db' in the 'mysql' section of .cachettestrc");
+    }
+    else {
+        return true;
+    }
+}
+
 function throw_on_error()
 {
 	static $set=false;

@@ -11,6 +11,8 @@ class PDO implements Backend, Iterable
 
     public $cacheTablePrefix = 'cache_';
 
+    public $mysqlUnbufferedIteration = false;
+
     private $tables;
 
     function __construct($pdo)
@@ -113,11 +115,30 @@ class PDO implements Backend, Iterable
 
     function keys($cacheId)
     {
-        $pdo = $this->connector->pdo ?: $this->connector->connect();
-
         $tableName = $this->getTableName($cacheId);
-        $stmt = $pdo->query("SELECT cacheKey FROM `{$tableName}` ORDER BY cacheKey");
-        return $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
+        $sql = "SELECT cacheKey FROM `{$tableName}` ORDER BY cacheKey";
+
+        if ($this->connector->engine == 'mysql' && $this->mysqlUnbufferedIteration) {
+            $connector = clone $this->connector;
+            $pdo = $connector->connect();
+            $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+            $stmt = $pdo->prepare($sql);
+            return new \Cachet\Util\WhileIterator(
+                function () use ($stmt) {
+                    $stmt->execute();
+                },
+                function (&$key, &$valid) use ($stmt) {
+                    $value = $stmt->fetchColumn();
+                    $valid = $value !== false;
+                    return $value;
+                }
+            );
+        }
+        else {
+            $pdo = $this->connector->pdo ?: $this->connector->connect();
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
+        }
     }
 
     function items($cacheId)

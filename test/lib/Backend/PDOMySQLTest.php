@@ -4,19 +4,7 @@ namespace Cachet\Test\Backend;
 use Cachet\Backend;
 use Cachet\Cache;
 
-if (!extension_loaded('pdo') || !extension_loaded('pdo_mysql')) {
-    skip_test(__NAMESPACE__, 'PDOMySQLTest', 'PDO MySQL extension not loaded');
-}
-elseif (!is_server_listening(
-    $GLOBALS['settings']['mysql']['host'], 
-    $GLOBALS['settings']['mysql']['port']
-)) {
-    skip_test(__NAMESPACE__, 'PDOMySQLTest', 'MySQL server not listening');
-}
-elseif (!isset($GLOBALS['settings']['mysql']['db'])) {
-    skip_test(__NAMESPACE__, 'PDOMySQLTest', "Please set 'db' in the 'mysql' section of .cachettestrc");
-}
-else {
+if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLTest')) {
     /**
      * @group backend
      */
