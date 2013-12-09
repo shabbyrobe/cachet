@@ -12,9 +12,9 @@ Features:
 
 - Supports PHP 5.4 and above
 - Swappable backends_
-- Support for Redis_, MySQL_, Xcache_, APCu_, Memcached_, SQLite_ and others
+- Support for Redis_, MySQL_, Xcache_, APC_, APCu_, Memcached_, SQLite_ and others
 - Composite backends_ for cascading_ and sharding_
-- Generator-based iteration_ for backends (wherever possible)
+- Memory efficient iteration_ for backends (wherever possible)
 - Dynamic item expiration via dependencies_
 - Locking_ strategies for stampede protection
 - Atomic counters_
@@ -85,7 +85,7 @@ was actually found:
     
     <?php
     $cache->set('hmm', false);
-    if (!$cache->get('hmm)) {
+    if (!$cache->get('hmm')) {
         // this will also execute if the 'false' value was actually
         // retrieved from the cache
     }
@@ -96,7 +96,6 @@ was actually found:
         // it will not execute if values which evaluate to false were
         // retrieved from the cache.
     }
-
 
 Expire data dynamically with dependencies_:
     
@@ -195,9 +194,10 @@ Iteration
 ---------
 
 Caches can be iterated, but support is patchy. If the underlying backend supports listing keys,
-iteration is usually efficient. The **Cachet** APC backend makes use of the ``APCIterator`` class
-and is very efficient. XCache tries to send a HTTP authentication dialog when you try to list
-keys, and Memcached provides no means to iterate over keys at all.
+iteration is usually efficient. The **Cachet** APC_ backend_ makes use of the ``APCIterator`` class
+and is very efficient. XCache_ tries to send a HTTP authentication dialog when you try to list
+keys (even when you try and use it via the CLI!), and Memcached_ provides no means to iterate over
+keys at all.
 
 If a backend supports iteration, it will implement ``Cachet\Backend\Iterable``. Implementing this
 interface is not required, but all backends provided with **Cachet** do.  If the underlying backend
@@ -207,11 +207,11 @@ flushing, but has no impact on retrieval.
 
 The different types of iteration support provided by the backends are:
 
-**generator**
-  Iteration is implemented efficiently using a generator. Keys/items are only retrieved and yielded
-  as necessary. There should be no memory issues with generator-based iteration.
+**iterator**
+  Iteration is implemented efficiently using an ``Iterator`` class. Keys/items are only retrieved
+  and yielded as necessary. There should be no memory issues with this type of iteration.
 
-**fetcher**
+**key array + fetcher**
   All keys are retrieved in one hit. Items are retrieved one at a time directly from the backend.
   Millions of keys may cause memory issues.
 
@@ -222,8 +222,8 @@ The different types of iteration support provided by the backends are:
 **optional key backend**
   Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower as
   these operations need to be performed on both the backend and the key backend. Memory issues are
-  inherited from the key backend, so you should try to use a generator-based key backend wherever
-  possible.
+  inherited from the key backend, so you should try to use an ``Iterator`` based key backend
+  wherever possible.
   
   Key backend iteration is optional. If no key backend is supplied, iteration will fail.
 
@@ -283,7 +283,7 @@ APC
 Works with ``apc`` and ``apcu``.
 
 Iteration support
-    **generator**
+    **iterator**
 
 Backend expirations
     ``Cachet\Expiration\TTL``
@@ -307,7 +307,7 @@ PHPRedis
 Requires `phpredis <http://github.com/nicolasff/phpredis>`_ extension.
 
 Iteration support
-    **fetcher**
+    **key array + fetcher**
 
 Backend expirations
     - ``Cachet\Expiration\TTL``
@@ -352,7 +352,7 @@ If you use this cache, please do some performance crunching to see if it's actua
 no cache at all.
 
 Iteration support
-    **generator**
+    **iterator**
 
 Backend expirations
     **none**
@@ -459,7 +459,7 @@ PDO
 Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
 
 Iteration support
-    **fetcher**
+    **key array + fetcher** (or if using MySQL, optionally supports **iterator**)
 
 Backend expirations
     **none**
@@ -485,6 +485,15 @@ Backend expirations
     // Use an existing PDO (not recommended - doesn't support disconnection
     // or connect-on-demand):
     $backend = new Cachet\Backend\PDO(new PDO('sqlite:/tmp/pants.sqlite'));
+
+    // Use an unbuffered query for the key iteration (MySQL only):
+    $backend->mysqlUnbufferedIteration = true;
+
+
+The ``mysqlUnbufferedIteration`` gets rid of any memory issues and makes the ``PDO`` backend a first
+class iteration citizen. The catch is that an extra connection is made to the database. This
+connection will remain open as long as the iterator object returned by ``$backend->keys()`` or
+``$backend->items()`` is in scope. This option is disabled by default.
 
 
 Session
@@ -1063,7 +1072,7 @@ You can activate automatic garbage collection like so:
     Cachet\SessionHandler::$instance->runGc = true;
 
 
-For backends that don't use a generator for iteration, it is **strongly** recommended that you 
+For backends that don't use an ``Iterator`` for iteration_, it is **strongly** recommended that you
 implement garbage collection using a separate process rather than using PHP's gc probability
 mechanism.
 
