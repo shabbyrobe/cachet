@@ -9,6 +9,7 @@ class Cachet
         'Cachet\Backend\File'=>'Cachet/Backend/File.php',
         'Cachet\Backend\Iterable'=>'Cachet/Backend/Iterable.php',
         'Cachet\Backend\IterationAdapter'=>'Cachet/Backend/IterationAdapter.php',
+        'Cachet\Backend\Iterator\Fetching'=>'Cachet/Backend/Iterator/Fetching.php',
         'Cachet\Backend\Memcache'=>'Cachet/Backend/Memcache.php',
         'Cachet\Backend\Memory'=>'Cachet/Backend/Memory.php',
         'Cachet\Backend\PDO'=>'Cachet/Backend/PDO.php',
@@ -43,7 +44,11 @@ class Cachet
         'Cachet\Locker\SQLite'=>'Cachet/Locker/SQLite.php',
         'Cachet\Locker\Semaphore'=>'Cachet/Locker/Semaphore.php',
         'Cachet\SessionHandler'=>'Cachet/SessionHandler.php',
+        'Cachet\Util\BatchingMapIterator'=>'Cachet/Util/BatchingMapIterator.php',
         'Cachet\Util\File'=>'Cachet/Util/File.php',
+        'Cachet\Util\MapIterator'=>'Cachet/Util/MapIterator.php',
+        'Cachet\Util\ReindexingIterator'=>'Cachet/Util/ReindexingIterator.php',
+        'Cachet\Util\WhileIterator'=>'Cachet/Util/WhileIterator.php',
     );
 
     public static function register()
