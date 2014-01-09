@@ -486,14 +486,39 @@ Backend expirations
     // or connect-on-demand):
     $backend = new Cachet\Backend\PDO(new PDO('sqlite:/tmp/pants.sqlite'));
 
-    // Use an unbuffered query for the key iteration (MySQL only):
-    $backend->mysqlUnbufferedIteration = true;
+
+The PDO backend uses a separate table for each instance of ``Cachet\Cache``. The table
+name is based on the cache id prefixed with the value of ``PDO->cacheTablePrefix``,
+which defaults to ``cachet_``.
+
+.. code-block:: php
+ 
+    <?php
+    $backend->cacheTablePrefix = "foo_";
+
+
+The table needs to be initialised in order to be used. It is not recommended to do this inside your
+web application - you should do it as part of your deployment process or application setup:
+
+.. code-block:: php
+ 
+    <?php
+    $cache = new Cachet\Cache('pants', $backend);
+    $backend->ensureTableExistsForCache($cache);
+    $backend->ensureTableExistsForCache($cache->id);
+
 
 
 The ``mysqlUnbufferedIteration`` gets rid of any memory issues and makes the ``PDO`` backend a first
 class iteration citizen. The catch is that an extra connection is made to the database. This
 connection will remain open as long as the iterator object returned by ``$backend->keys()`` or
 ``$backend->items()`` is in scope. This option is disabled by default.
+
+.. code-block:: php
+ 
+    <?php
+    // Use an unbuffered query for the key iteration (MySQL only):
+    $backend->mysqlUnbufferedIteration = true;
 
 
 Session
