@@ -216,9 +216,12 @@ class Cache implements \ArrayAccess
                     $result = 'foundInLock';
                 }
             }
-            finally {
+            catch (\Exception $ex) {
                 $this->locker->release($this, $key);
+                $msg = $ex->getMessage();
+                throw new \RuntimeException("Blocking strategy failed: $msg", null, $ex);
             }
+            $this->locker->release($this, $key);
         }
         return $data;
     }
@@ -230,7 +233,7 @@ class Cache implements \ArrayAccess
     function safeNonblocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         if (!$this->locker)
-            throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+            throw new \UnexpectedValueException("Must set locker to use locking strategy");
 
         $this->ensureBackendExpirations(!'enabled');
 
@@ -254,9 +257,12 @@ class Cache implements \ArrayAccess
                         $result = 'foundInLock';
                     }
                 }
-                finally {
+                catch (\Exception $ex) {
                     $this->locker->release($this, $key);
+                    $msg = $ex->getMessage();
+                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", null, $ex);
                 }
+                $this->locker->release($this, $key);
             }
             elseif (!$item) {
                 // if another process has the lock and we have no stale item to return,
@@ -265,9 +271,12 @@ class Cache implements \ArrayAccess
                 try {
                     $item = $this->backend->get($this->id, $key);
                 }
-                finally {
+                catch (\Exception $ex) {
                     $this->locker->release($this, $key);
+                    $msg = $ex->getMessage();
+                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", null, $ex);
                 }
+                $this->locker->release($this, $key);
                 $result = 'foundWait';
             }
             else {
@@ -308,9 +317,12 @@ class Cache implements \ArrayAccess
                         $result = 'foundInLock';
                     }
                 }
-                finally {
+                catch (\Exception $ex) {
                     $this->locker->release($this, $key);
+                    $msg = $ex->getMessage();
+                    throw new \RuntimeException("Unsafe nonblocking strategy failed: $msg", null, $ex);
                 }
+                $this->locker->release($this, $key);
             }
             else {
                 $result = $item ? 'foundStale' : 'notFound';
