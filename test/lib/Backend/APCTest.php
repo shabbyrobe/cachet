@@ -9,12 +9,12 @@ elseif (ini_get('apc.enable_cli') != 1) {
 }
 else {
     /**
+     * @group apc
      * @group backend
      */
     class APCTest extends \Cachet\Test\BackendTestCase
     {
         use \Cachet\Test\IterableBackendTest;
-        use \Cachet\Test\IterableBackendYieldMemoryTest;
 
         public $backendPrefix;
 

@@ -16,6 +16,7 @@ trait IterableBackendYieldMemoryTest
     }
 
     /**
+     * @group slow
      * @dataProvider dataForIteratorMemoryGrowth
      * @medium
      */
