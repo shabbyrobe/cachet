@@ -497,28 +497,33 @@ which defaults to ``cachet_``.
     $backend->cacheTablePrefix = "foo_";
 
 
-The table needs to be initialised in order to be used. It is not recommended to do this inside your
-web application - you should do it as part of your deployment process or application setup:
+Tables are not created automatically. Call this to ensure the table exists for your cache:
 
 .. code-block:: php
  
     <?php
     $cache = new Cachet\Cache('pants', $backend);
     $backend->ensureTableExistsForCache($cache);
-    $backend->ensureTableExistsForCache($cache->id);
+
+If you are writing a web application, this should not be done on every request, it should
+be done as part of your deployment or setup process.
 
 
-
-The ``mysqlUnbufferedIteration`` gets rid of any memory issues and makes the ``PDO`` backend a first
-class iteration citizen. The catch is that an extra connection is made to the database. This
-connection will remain open as long as the iterator object returned by ``$backend->keys()`` or
-``$backend->items()`` is in scope. This option is disabled by default.
+The PDO backend uses a key array + fetcher for iteration by default, which is not immune
+from memory exhaustion problems. The ``mysqlUnbufferedIteration`` gets rid of any memory
+issues and makes the ``PDO`` backend a first class iteration citizen. The catch is that an
+extra connection is made to the database each time the cache is iterated. This connection
+will remain open as long as the iterator object returned by ``$backend->keys()`` or
+``$backend->items()`` is in scope.
 
 .. code-block:: php
  
     <?php
     // Use an unbuffered query for the key iteration (MySQL only):
     $backend->mysqlUnbufferedIteration = true;
+
+This option is disabled by default and is ignored if the underlying connector's engine is
+not MySQL.
 
 
 Session

@@ -164,6 +164,14 @@ class PDO implements Backend, Iterable
         return $this->tables[$cacheId];
     }
 
+    /**
+     * Tables are not created automatically. Call this to ensure the table exists
+     * for your cache. If you are writing a web application, this should not be done
+     * on every request.
+     * 
+     * @param $cache Cachet\Cache|string  
+     *        Accepts a cache instance or a string of the cache's ID
+     */
     public function ensureTableExistsForCache($cache)
     {
         $cacheId = $cache instanceof \Cachet\Cache ? $cache->id : $cache;
