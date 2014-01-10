@@ -11,12 +11,11 @@ branches:
     - develop
 
 before_script:
-  - composer install
   - echo -e "[mysql]\nuser=travis\nserver=127.0.0.1\ndb=cachettest" > .cachettestrc
   - mysql -u travis -e 'drop database if exists cachettest'
   - mysql -u travis -e 'create database if not exists cachettest'
   - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - echo "extension = memcached.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - echo "extension = apc.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-
+  - composer install
 
