@@ -1,6 +1,6 @@
 #!/bin/bash
 pecl config-set preferred_state beta
-printf \"yes\n\" | pecl install apcu
+printf \"yes\n\" | pecl install apc
 
 xcache_version=3.1.0
 wget http://xcache.lighttpd.net/pub/Releases/${xcache_version}/xcache-${xcache_version}.tar.gz
