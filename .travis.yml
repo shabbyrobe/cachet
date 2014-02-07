@@ -18,7 +18,7 @@ before_script:
   - echo -e "[mysql]\nuser=travis\nserver=127.0.0.1\ndb=cachettest" > .cachettestrc
   - mysql -u travis -e 'drop database if exists cachettest'
   - mysql -u travis -e 'create database if not exists cachettest'
-  - sh -c "if [[ \"$TRAVIS_PHP_VERSION\" != \"hhvm\" ]]; then pecl install apcu; fi"
+  - bash -c "if [[ \"$TRAVIS_PHP_VERSION\" != \"hhvm\" ]]; then pecl install apcu; fi"
   - phpenv config-add test/php-${TRAVIS_PHP_VERSION}.ini
   - composer install
 

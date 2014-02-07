@@ -17,8 +17,9 @@ else {
 
         public function setUp()
         {
+            $apcExtension = extension_loaded('apcu') ? 'apcu' : 'apc';
             $iniOpts = "-d ".implode(" -d ", [
-                'extension='.trim(`php-config --extension-dir`).'/apcu.so',
+                'extension='.trim(`php-config --extension-dir`).'/'.$apcExtension.'.so',
                 'session.use_trans_sid=1',
                 'session.use_only_cookies=0',
             ]);
