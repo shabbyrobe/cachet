@@ -18,8 +18,7 @@ before_script:
   - echo -e "[mysql]\nuser=travis\nserver=127.0.0.1\ndb=cachettest" > .cachettestrc
   - mysql -u travis -e 'drop database if exists cachettest'
   - mysql -u travis -e 'create database if not exists cachettest'
-  - pwd
-  - ls
+  - ls -la test
   - test/setup-${TRAVIS_PHP_VERSION}.sh
   - phpenv config-add test/php-${TRAVIS_PHP_VERSION}.ini
   - composer install
