@@ -3,7 +3,11 @@ language: php
 php:
   - "5.5"
   - "5.4"
-  - "5.3"
+  - "hhvm"
+
+services:
+  - redis-server
+  - memcached
 
 branches:
   only:
@@ -14,8 +18,7 @@ before_script:
   - echo -e "[mysql]\nuser=travis\nserver=127.0.0.1\ndb=cachettest" > .cachettestrc
   - mysql -u travis -e 'drop database if exists cachettest'
   - mysql -u travis -e 'create database if not exists cachettest'
-  - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - echo "extension = memcached.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - echo "extension = apc.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - pecl install apcu
+  - phpenv config-add test/php.ini
   - composer install
 
