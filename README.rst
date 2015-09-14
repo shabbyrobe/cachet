@@ -32,7 +32,7 @@ Install
 
     {
         "require": {
-            "shabbyrpbe/cachet": "1.3.*"
+            "shabbyrobe/cachet": "1.3.*"
         }
     }
 
