@@ -154,7 +154,7 @@ them in detail:
     
     // this dependency is just for demonstration/testing purposes.
     // iteration will not return this value as the dependency is invalid 
-    $cache->set('baz', 'qux' new Cachet\Dependency\Dummy(false));
+    $cache->set('baz', 'qux', new Cachet\Dependency\Dummy(false));
     
     foreach ($cache->values() as $key=>$value) {
         echo "$key: $value\n";
