@@ -2,7 +2,6 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
-use Cachet\Cache;
 
 if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLUnbufferedIteratorTest')) {
     /**

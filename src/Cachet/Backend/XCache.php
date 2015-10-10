@@ -1,7 +1,6 @@
 <?php
 namespace Cachet\Backend;
 
-use Cachet\Backend;
 use Cachet\Item;
 
 class XCache extends IterationAdapter

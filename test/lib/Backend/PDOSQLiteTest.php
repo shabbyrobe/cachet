@@ -2,7 +2,6 @@
 namespace Cachet\Test\Backend;
 
 use Cachet\Backend;
-use Cachet\Cache;
 
 if (!extension_loaded('pdo') || !extension_loaded('pdo_sqlite')) {
     skip_test(__NAMESPACE__, 'PDOSQLiteTest', 'PDO SQLite extension not loaded');
