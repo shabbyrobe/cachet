@@ -14,6 +14,9 @@ if (!defined('APCU_ITER_VALUE') && defined('APC_ITER_VALUE')) {
 if (!defined('APCU_ITER_KEY') && defined('APC_ITER_KEY')) {
     define('APCU_ITER_KEY', APC_ITER_KEY);
 }
+if (!class_exists('APCUIterator')) {
+    class_alias('APCIterator', 'APCUIterator', false);
+}
 
 /**
  * Starting with PHP 7.0, apcu removed the apc_* functions by default,
