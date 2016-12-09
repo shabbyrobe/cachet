@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test\Backend;
 
-if (!extension_loaded('apc') || !extension_loaded('apcu_bc')) {
+if (!extension_loaded('apc') && !extension_loaded('apcu_bc')) {
     skip_test(__NAMESPACE__, "APCPrefixTest", "Neither apc nor apcu_bc loaded");
 }
 elseif (ini_get('apc.enable_cli') != 1) {
