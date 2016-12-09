@@ -1,6 +1,8 @@
 <?php
 namespace Cachet\Test\Backend;
 
+use Cachet\Util\APCUIterator;
+
 if (!extension_loaded('apcu')) {
     skip_test(__NAMESPACE__, "APCUTest", "apcu extension not loaded");
 }
@@ -30,7 +32,7 @@ else {
             $backend = $this->getBackend();
             $dep = new \Cachet\Dependency\TTL(300);
             $backend->set(new \Cachet\Item('cache', 'foo', 'bar', $dep));
-            $iter = new \APCUIterator("~^{$this->backendPrefix}cache/foo$~");
+            $iter = new APCUIterator("~^{$this->backendPrefix}cache/foo$~");
             $ttl = $iter->current()['ttl'];
             
             // surely not longer than 2 seconds!
