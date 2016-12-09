@@ -2,10 +2,10 @@
 return [
     'lockerBlockingSemphore'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>function($workerState) {
-            $backend = new \Cachet\Backend\APC();
+            $backend = new \Cachet\Backend\APCU();
             $workerState->cache = new \Cachet\Cache('test', $backend);
             $workerState->cache->locker = new \Cachet\Locker\Semaphore('locker_single_hasher');
         },
@@ -15,7 +15,7 @@ return [
 
     'lockerBlockingFile'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>$bits['createFileLockerCache'],
         'test'=>$bits['blockingTest'],
@@ -24,7 +24,7 @@ return [
 
     'lockerSafeNonBlockingFile'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>function($workerState) use ($bits) {
             $cache = $bits['createFileLockerCache']($workerState);
@@ -48,7 +48,7 @@ return [
 
     'lockerUnsafeNonBlocking'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>function($workerState) use ($bits) {
             $cache = $bits['createFileLockerCache']($workerState);
@@ -84,17 +84,17 @@ return [
 
     'apcBrokenCounterTest'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>function($workerState) {
-            $workerState->counter = new \Cachet\Counter\APC;
+            $workerState->counter = new \Cachet\Counter\APCU;
         },
         'test'=>function($workerState) use ($config) {
             for ($i=0; $i<$config->counterRuns; $i++)
                 $workerState->counter->increment('count');
         },
         'check'=>function($workers, $responses, $parentState) use ($config) {
-            $count = apc_fetch('counter/count'); 
+            $count = apcu_fetch('counter/count'); 
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
                 return [false, "Count was $count, expected $expected"];
@@ -103,12 +103,12 @@ return [
         },
     ],
 
-    'apcLockedCounterTest'=>[
+    'apcuLockedCounterTest'=>[
         'setupParent'=>function() {
-            apc_clear_cache('user');
+            apcu_clear_cache('user');
         },
         'setupWorker'=>function($workerState) {
-            $workerState->counter = new \Cachet\Counter\APC;
+            $workerState->counter = new \Cachet\Counter\APCU;
             $workerState->counter->locker = new \Cachet\Locker\Semaphore();
         },
         'test'=>function($workerState) use ($config) {
@@ -116,7 +116,7 @@ return [
                 $workerState->counter->increment('count');
         },
         'check'=>function($workers, $responses, $parentState) use ($config) {
-            $count = apc_fetch('counter/count'); 
+            $count = apcu_fetch('counter/count'); 
             $expected = $config->workerCount * $config->counterRuns;
             if ($count != $expected)
                 return [false, "Count was $count, expected $expected"];
@@ -286,14 +286,14 @@ return [
 
     'safeCacheCounterTest'=>[
         'setupParent'=>function($parentState) {
-            apc_clear_cache('user');
-            $backend = new \Cachet\Backend\APC(); 
+            apcu_clear_cache('user');
+            $backend = new \Cachet\Backend\APCU(); 
             $cache = new \Cachet\Cache('safeCounter', $backend);
             $locker = new \Cachet\Locker\Semaphore();
             $parentState->counter = new \Cachet\Counter\SafeCache($cache, $locker);
         },
         'setupWorker'=>function($workerState) {
-            $backend = new \Cachet\Backend\APC(); 
+            $backend = new \Cachet\Backend\APCU(); 
             $cache = new \Cachet\Cache('safeCounter', $backend);
             $locker = new \Cachet\Locker\Semaphore();
             $workerState->counter = new \Cachet\Counter\SafeCache($cache, $locker);

@@ -6,14 +6,24 @@ use Cachet\Backend;
 use Cachet\Item;
 
 /**
- * @deprecated All pre-opcache versions of PHP are EOL as of 201612,
- *   so we can expect that all users of APC will eventually end up on
- *   APCU at some point. This class won't be removed for the forseeable
- *   future, but as the apc_* compatibility functions have been removed
- *   from the apcu extension for >= 7.0, the new class should be the way
- *   to go from now on for all new code.
+ * Starting with PHP 7.0, apcu removed the apc_* functions by default,
+ * moving them into a separate extension called apc_bc. 
+ *
+ * To allow libraries like this to maintain API compatibility with
+ * older PHP versions, we can slow down our own code by branching on version,
+ * introduce a useless abstraction, or ask for a compatibility extension to be
+ * installed. The latter would be a good solution, if only it didn't force
+ * the burden of the extra extension onto adopters of NEWER PHP versions (!).
+ *
+ * This is totally backwards. They should have made an extension for PHP <=5.6
+ * called apcu_fc which adds apcu_* to earlier versions, placing the burden
+ * back on people clinging to old versions.
+ *
+ * Sometimes a bit of copy/paste is better than an abstraction. I don't
+ * want to add a level of indirection to this, so I'm deprecating the
+ * APC class and will support the copypasta for the time being.
  */
-class APC implements Backend, Iterator
+class APCU implements Backend, Iterator
 {
     public $iteratorChunkSize = 50;
 
@@ -29,7 +39,7 @@ class APC implements Backend, Iterator
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        $item = apc_fetch($formattedKey);
+        $item = apcu_fetch($formattedKey);
         return $item ?: null;
     }
 
@@ -45,7 +55,7 @@ class APC implements Backend, Iterator
 
         // Item::compact() *increases* data usage!!
         // APCU uses significantly less memory when the Item instance is serialised directly
-        $stored = apc_store($formattedKey, $item, $ttl);
+        $stored = apcu_store($formattedKey, $item, $ttl);
 
         return $stored;
     }
@@ -53,7 +63,7 @@ class APC implements Backend, Iterator
     function delete($cacheId, $key)
     {
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
-        apc_delete($key);
+        apcu_delete($key);
     }
 
     function flush($cacheId)
@@ -65,7 +75,7 @@ class APC implements Backend, Iterator
             APC_ITER_VALUE,
             $this->iteratorChunkSize
         );
-        apc_delete($iter);
+        apcu_delete($iter);
     }
 
     function keys($cacheId)

@@ -13,11 +13,16 @@ Breaking Changes:
 - (v2.0) ``Cachet\Backend\Iterable`` renamed to ``Cachet\Backend\Iterator`` in
   response to PHP 7.1 backward incompatible changes.
 
+- (v2.0) ``Cachet\Backend\APC`` and ``Cachet\Counter\APC`` are deprecated due to
+  all PHP versions that don't support opcache being EOL. Use
+  ``Cachet\Backend\APCU`` and ``Cachet\Counter\APCU`` instead. The old classes
+  will not be removed for the time being.
+
 Features:
 
 - Supports PHP 5.4 and above
 - Swappable backends_
-- Support for Redis_, MySQL_, Xcache_, APC_, APCu_, Memcached_, SQLite_ and others
+- Support for Redis_, MySQL_, Xcache_, APCu_, Memcached_, SQLite_ and others
 - Composite backends_ for cascading_ and sharding_
 - Memory efficient iteration_ for backends (wherever possible)
 - Dynamic item expiration via dependencies_
@@ -62,7 +67,7 @@ Instantiate a backend and a cache:
 .. code-block:: php
     
     <?php
-    $backend = new Cachet\Backend\APC();
+    $backend = new Cachet\Backend\APCU();
     $cache = new Cachet\Cache('mycache', $backend);
 
 
@@ -94,7 +99,7 @@ was actually found:
         // this will also execute if the 'false' value was actually
         // retrieved from the cache
     }
-
+   
     $value = $cache->get('hmm', $found);
     if (!$found) {
         // this will only execute if no value was found in the cache.
@@ -126,7 +131,7 @@ locking_:
     $value = $cache->wrap('foo', function() use ($service, $param) {
         return $service->doSlowStuff($param); 
     });
-
+   
     $dataRetriever = function() use ($db) {
         return $db->query("SELECT * FROM table")->fetchAll();
     }
@@ -136,13 +141,13 @@ locking_:
     
     // With a Dependency
     $value = $cache->wrap('foo', new Cachet\Dependency\Permanent(), $dataRetriever);
-
+   
     // Set up a rotating pool of 4 file locks (using flock)
     $hasher = function($cache, $key) {
         return $cache->id."/".(abs(crc32($key)) % 4);
     };
     $cache->locker = new Cachet\Locker\File('/path/to/locks', $hasher);
-
+   
     // Stampede protection - the cache will stop and wait if another concurrent process 
     // is running the dataRetriever. This means that the cache ``set`` will only happen once:
     $value = $cache->blocking('foo', $dataRetriever);
@@ -172,23 +177,23 @@ Atomic counters_:
 .. code-block:: php
 
     <?php
-    $counter = new Cachet\Counter\APC();
-
+    $counter = new Cachet\Counter\APCU();
+   
     // returns 1
     $value = $counter->increment('foo');
-
+   
     // returns 2
     $value = $counter->increment('foo');
-
+   
     // returns 1
     $value = $counter->decrement('foo');
-
+   
     // returns 4
     $value = $counter->increment('foo', 3);
-
+   
     // force a counter's value
     $counter->set('foo', 100);
-
+   
     // inspect a counter's value
     $value = $counter->value('foo');
 
@@ -199,7 +204,7 @@ Iteration
 ---------
 
 Caches can be iterated, but support is patchy. If the underlying backend
-supports listing keys, iteration is usually efficient. The **Cachet** APC_
+supports listing keys, iteration is usually efficient. The **Cachet** APCU_
 backend_ makes use of the ``APCIterator`` class and is very efficient. XCache_
 tries to send a HTTP authentication dialog when you try to list keys (even when
 you try and use it via the CLI!), and Memcached_ provides no means to iterate
@@ -251,23 +256,24 @@ satisfy the interface than others.
 Different backends have varying degrees of support for the following features:
 
 Automatic Expirations
-    Some backends support automatic expiration for certain dependency_ types. When a backend supports
-    this functionality it will have a ``useBackendExpirations`` property, which defaults to ``true``.
+    Some backends support automatic expiration for certain dependency_ types.
+    When a backend supports this functionality it will have a
+    ``useBackendExpirations`` property, which defaults to ``true``.
     
-    For example, the APC backend will detect when a ``Cachet\Dependency\TTL`` is passed and
-    automatically use it for the third parameter to ``apc_store``, which accepts a TTL in seconds.
-    Other backends support different methods of unrolling dependency types. This will be documented
-    below. 
+    For example, the APCU backend will detect when a ``Cachet\Dependency\TTL``
+    is passed and automatically use it for the third parameter to ``apcu_store``,
+    which accepts a TTL in seconds.  Other backends support different methods of
+    unrolling dependency types. This will be documented below. 
 
-    Setting ``useBackendExpirations`` to false does not guarantee the backend will not expire cache
-    values under other circumstances.
+    Setting ``useBackendExpirations`` to false does not guarantee the backend
+    will not expire cache values under other circumstances.
 
 
 Iteration
     Backends should, but may not necessarily, implement
     ``Cache\Backend\Iterator``. Backends that do not can't be iterated. This
-    will be specified against each backend's documentation. Backends like APC or
-    Redis can rely on native methods for iterating over the keys, but the
+    will be specified against each backend's documentation. Backends like APCU
+    or Redis can rely on native methods for iterating over the keys, but the
     memcache daemon itself provides no such facility, and Xcache hides it behind
     some silly HTTP Basic authentication.
 
@@ -294,10 +300,14 @@ Iteration
 .. _apc:
 .. _apcu:
 
-APC
-~~~
+APCU
+~~~~
 
-Works with ``apc`` and ``apcu``.
+This supports the ``apcu`` extension only, without the backward compatibility
+functions.
+
+For legacy code requiring ``apc`` support, use ``Cachet\Backend\APC``, though it
+is deprecated. You should really upgrade to PHP >=7.0 and use ``apcu`` instead!
 
 Iteration support
     **iterator**
@@ -308,11 +318,11 @@ Backend expirations
 .. code-block:: php
 
     <?php
-    $backend = new Cachet\Backend\APC();
+    $backend = new Cachet\Backend\APCU();
     
     // Or with optional cache value prefix. Prefix has a forward slash appended:
-    $backend = new Cachet\Backend\APC("myprefix");
-
+    $backend = new Cachet\Backend\APCU("myprefix");
+   
     $backend->useBackendExpirations = true; 
 
 
@@ -604,22 +614,22 @@ Backend expiration
     
     <?php
     $memory = new Cachet\Backend\Memory();
-    $apc = new Cachet\Backend\APC();
+    $apcu = new Cachet\Backend\APCU();
     $pdo = new Cachet\Backend\PDO(array('dsn'=>'sqlite:/path/to/db.sqlite'));
-    $backend = new Cachet\Backend\Cascading(array($memory, $apc, $pdo));
+    $backend = new Cachet\Backend\Cascading(array($memory, $apcu, $pdo));
     $cache = new Cachet\Cache('pants', $backend);
     
-    // Value is cached into Memory, APC and PDO
+    // Value is cached into Memory, APCU and PDO
     $cache->set('foo', 'bar');
     
     // Prepare a little demonstration
     $memory->flush();
-    $apc->flush();
+    $apcu->flush();
     
     // Memory is queried and misses
-    // APC is queried and misses
+    // APCU is queried and misses
     // PDO is queried and hits
-    // Item is inserted into APC
+    // Item is inserted into APCU
     // Item is inserted into Memory
     $cache->get('foo');
 
@@ -960,9 +970,10 @@ TTL
 Permanent
 ~~~~~~~~~
 
-A cached item will never be expired by **Cachet**, even if a default dependency is provided by the
-Cache. This may be overridden by any environment-specific backend configuration (for example, the
-`apc.ttl <http://www.php.net/manual/en/apc.configuration.php#ini.apc.ttl>`_ ini setting):
+A cached item will never be expired by **Cachet**, even if a default dependency
+is provided by the Cache. This may be overridden by any environment-specific
+backend configuration (for example, the `apc.ttl
+<http://php.net/manual/en/apcu.configuration.php#ini.apcu.ttl>`_ ini setting):
 
 .. code-block:: php
 
@@ -972,7 +983,7 @@ Cache. This may be overridden by any environment-specific backend configuration 
     
     // this item will expire after 10 minutes
     $cache->set('foo', 'bar');
-
+   
     // this item will never expire
     $cache->set('foo', 'bar', new Cachet\Dependency\Permanent());
 
@@ -1006,17 +1017,18 @@ Supports invalidating items cached based on a file modification time.
 Cached Tag
 ~~~~~~~~~~
 
-This is very similar to the ``Mtime`` dependency, only instead of using simple file mtimes, it uses
-a secondary cache and checks that the value of a tag has not changed.
+This is very similar to the ``Mtime`` dependency, only instead of using simple
+file mtimes, it uses a secondary cache and checks that the value of a tag has
+not changed.
 
-This dependency is slightly more complicated to configure - it requires the secondary cache to be
-registered with the primary cache as a service.
+This dependency is slightly more complicated to configure - it requires the
+secondary cache to be registered with the primary cache as a service.
 
 .. code-block:: php
 
     <?php
-    $valueCache = new Cachet\Cache('value', new Cachet\Backend\APC());
-    $tagCache = new Cachet\Cache('value', new Cachet\Backend\APC());
+    $valueCache = new Cachet\Cache('value', new Cachet\Backend\APCU());
+    $tagCache = new Cachet\Cache('value', new Cachet\Backend\APCU());
     
     $tagCacheServiceId = 'tagCache';
     $valueCache->services[$tagCacheServiceId] = $tagCache;
@@ -1038,8 +1050,8 @@ registered with the primary cache as a service.
     $valueCache->get('baz');  // returns null
     
 
-Equality comparison is done in loose mode by default (``==``). You can enable strict mode
-comparison by passing a third boolean argument to the constructor:
+Equality comparison is done in loose mode by default (``==``). You can enable
+strict mode comparison by passing a third boolean argument to the constructor:
 
 .. code-block:: php
 
@@ -1184,27 +1196,31 @@ Counters implement the ``Cachet\Counter`` interface, and support the following A
     // You can increment an uninitialised counter:
     // $value == 1
     $value = $counter->increment('foo');
-
+   
     // You can also increment by a custom step value:
     // $value == 5
     $value = $counter->increment('foo', 4);
-
+   
     // $value = 4
     $decremented = $counter->decrement('foo');
-
+   
     // $value = 1
     $decremented = $counter->decrement('foo', 3);
-
+   
     // $value = 1
     $value = $counter->value('foo');
-
+   
     $counter->set('foo', 100);
 
 
-APC
-~~~
+APCU
+~~~~
 
-Works with ``apc`` and ``apcu``.
+This supports the ``apcu`` extension only, without the backward compatibility
+functions.
+
+For legacy code requiring ``apc`` support, use ``Cachet\Counter\APC``, though it
+is deprecated. You should really upgrade to PHP >=7.0 and use ``apcu`` instead!
 
 Supports ``counterTTL``
     **yes**
@@ -1221,18 +1237,18 @@ Overflow error
 .. code-block:: php
 
     <?php
-    $counter = new \Cachet\Counter\APC();
-
+    $counter = new \Cachet\Counter\APCU();
+   
     // Or with optional cache value prefix. Prefix has a forward slash appended.
-    $counter = new Cachet\Counter\APC('myprefix');
-
+    $counter = new Cachet\Counter\APCU('myprefix');
+   
     // TTL
     $counter->counterTTL = 86400;
-
+   
     // If you would like set operations to be atomic, pass a locker to the constructor
     // or assign to the ``locker`` property
     $counter->locker = new \Cachet\Locker\Semaphore();
-    $counter = new \Cachet\Counter\APC('myprefix', \Cachet\Locker\Semaphore());
+    $counter = new \Cachet\Counter\APCU('myprefix', \Cachet\Locker\Semaphore());
 
 
 PHPRedis
@@ -1399,13 +1415,15 @@ Atomic
 Range
     unlimited
 
-This counter simply combines a ``Cachet\Cache`` with a locker_ and either ``bcmath`` or ``gmp`` to
-get around the atomicity and range limitations of the other counters.
+This counter simply combines a ``Cachet\Cache`` with a locker_ and either
+``bcmath`` or ``gmp`` to get around the atomicity and range limitations of the
+other counters.
 
 It also supports dependencies_ of any type.
 
-It is a lot slower than using the APC or Redis backends, but faster than using the PDO-based
-backends (unless, of course, the cache that you use has a PDO-based backend itself).
+It is a lot slower than using the APCU or Redis backends, but faster than using
+the PDO-based backends (unless, of course, the cache that you use has a
+PDO-based backend itself).
 
 .. code-block:: php
 
@@ -1413,10 +1431,10 @@ backends (unless, of course, the cache that you use has a PDO-based backend itse
     $cache = new \Cachet\Cache('counter', $backend);
     $locker = new \Cachet\Locker\Semaphore();
     $counter = new \Cachet\Counter\SafeCache($cache, $locker);
-
+   
     // Simulate counterTTL
     $cache->dependency = new \Cachet\Dependency\TTL(3600);
-
+   
     // Or use any dependency you like
     $cache->dependency = new \Cachet\Dependency\Permanent();
 
@@ -1427,39 +1445,43 @@ Extending
 Backends
 ~~~~~~~~
 
-Custom backends are a snap to write - simply implement ``Cachet\Backend``. Please make sure you
-follow these guidelines:
+Custom backends are a snap to write - simply implement ``Cachet\Backend``.
+Please make sure you follow these guidelines:
 
-- Backends aren't meant to be used by themselves - they should be used by an instance of
-  ``Cachet\Cache``
+- Backends aren't meant to be used by themselves - they should be used by an
+  instance of ``Cachet\Cache``
 
-- It must be possible to use the same backend instance with more than one instance of
-  ``Cachet\Cache``.
+- It must be possible to use the same backend instance with more than one
+  instance of ``Cachet\Cache``.
 
-- ``get()`` must return an instance of ``Cachet\Item``. The backend must not check whether an item
-  is valid as ``Cachet\Cache`` depends on an item always being returned.
+- ``get()`` must return an instance of ``Cachet\Item``. The backend must not
+  check whether an item is valid as ``Cachet\Cache`` depends on an item always
+  being returned.
 
-- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at minimum. Anything else is
-  not strictly necessary, though useful.
+- Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at
+  minimum. Anything else is not strictly necessary, though useful.
 
-- ``set()`` must store enough information so that ``get()`` can return a fully populated instance
-  of ``Cachet\Item``. This usually means that if your backend can't support PHP objects directly,
-  you should just ``serialize()`` the ``Cachet\Item`` directly.
+- ``set()`` must store enough information so that ``get()`` can return a fully
+  populated instance of ``Cachet\Item``. This usually means that if your backend
+  can't support PHP objects directly, you should just ``serialize()`` the
+  ``Cachet\Item`` directly.
 
-You can reduce the size of the data placed into the backend by using ``Cachet\Item->compact()``
-and ``Cachet\Item::uncompact()``. This strips much of the redundant information from the cache item.
-YMMV - I was surprised to find that using ``Cachet\Item->compact()`` had the effect of *increasing*
-the memory used in APCU.
+You can reduce the size of the data placed into the backend by using
+``Cachet\Item->compact()`` and ``Cachet\Item::uncompact()``. This strips much of
+the redundant information from the cache item.  YMMV - I was surprised to find
+that using ``Cachet\Item->compact()`` had the effect of *increasing* the memory
+used in APCU.
 
 
 Dependencies
 ~~~~~~~~~~~~
 
-Dependencies are created by implementing ``Cachet\Dependency``. Dependencies are serialised and
-stored in the cacne alongside the value. A dependency is always passed a reference to the current
-cache when it is used, and care should be taken never to hold a reference to it, or any other
-objects that don't directly relate to the dependency's data as they will also be shoved into the
-cache, and trust me - you don't want that.
+Dependencies are created by implementing ``Cachet\Dependency``. Dependencies are
+serialised and stored in the cacne alongside the value. A dependency is always
+passed a reference to the current cache when it is used, and care should be
+taken never to hold a reference to it, or any other objects that don't directly
+relate to the dependency's data as they will also be shoved into the cache, and
+trust me - you don't want that.
 
 
 Development
@@ -1468,34 +1490,39 @@ Development
 Testing
 ~~~~~~~
 
-**Cachet** is exhaustively tested. As all backends and counters are expected to satisfy the same
-interface, for all but a very small number of (hopefully) well-documented exceptions, all of the
-functional test cases for these classes extend from
-``Cachet\Test\BackendTestCase`` and ``Cachet\Test\CounterTestCase`` respectively.
+**Cachet** is exhaustively tested. As all backends and counters are expected to
+satisfy the same interface, for all but a very small number of (hopefully)
+well-documented exceptions, all of the functional test cases for these classes
+extend from ``Cachet\Test\BackendTestCase`` and ``Cachet\Test\CounterTestCase``
+respectively.
 
-These tests are run from the root of the project by calling ``phpunit`` without arguments.
+These tests are run from the root of the project by calling ``phpunit`` without
+arguments.
 
-Some aspects of **Cachet** cannot be proven to work using simple unit or functional tests, for
-example lockers_ and counter_ atomicity. These are tested using a hacky but workable concurrency
-tester, which is run from the root of the project. You can get help on all of the available options
-like so::
+Some aspects of **Cachet** cannot be proven to work using simple unit or
+functional tests, for example lockers_ and counter_ atomicity. These are tested
+using a hacky but workable concurrency tester, which is run from the root of the
+project. You can get help on all of the available options like so::
 
     php test/concurrent.php -h
 
-Or just call it without arguments to run all of the concurrency tests using the default settings. It
-will exit with status ``0`` if all tests pass, or ``1`` if any of them fail.
+Or just call it without arguments to run all of the concurrency tests using the
+default settings. It will exit with status ``0`` if all tests pass, or ``1`` if
+any of them fail.
 
 Some of the tests are designed to fail, but these contain ``broken`` in their ID. You can exclude
 unsafe tests like so::
 
     php test/concurrent.php -x broken
 
-I have left the broken tests in to demonstrate conditions where the default behaviour may defy
-expectations. I am currently looking for a better way of reperesenting this in the tester.
+I have left the broken tests in to demonstrate conditions where the default
+behaviour may defy expectations. I am currently looking for a better way of
+reperesenting this in the tester.
 
-The concurrency tester has proven to be excellent at finding heisenbugs in **Cachet**. For this
-reason, it should be run many, many times under several different load conditions and on different
-architectures before we can decide that a build is safe to release.
+The concurrency tester has proven to be excellent at finding heisenbugs in
+**Cachet**. For this reason, it should be run many, many times under several
+different load conditions and on different architectures before we can decide
+that a build is safe to release.
 
 
 License

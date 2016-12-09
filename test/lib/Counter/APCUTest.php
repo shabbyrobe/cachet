@@ -1,23 +1,23 @@
 <?php
 namespace Cachet\Test\Counter;
 
-if (!extension_loaded('apc') || !extension_loaded('apcu')) {
-    skip_test(__NAMESPACE__, "APCTest", "Neither apc nor apcu loaded");
+if (!extension_loaded('apcu')) {
+    skip_test(__NAMESPACE__, "APCUTest", "apcu extension not loaded");
 }
 elseif (ini_get('apc.enable_cli') != 1) {
     skip_test(__NAMESPACE__, "APCTest", "apc.enable_cli must be set");
 }
 else {
     /**
-     * @group apc
+     * @group apcu
      * @group counter
      */
-    class APCTest extends \Cachet\Test\CounterTestCase
+    class APCUTest extends \Cachet\Test\CounterTestCase
     {
         public function getCounter()
         {
-            apc_clear_cache('user');
-            return new \Cachet\Counter\APC();
+            apcu_clear_cache('user');
+            return new \Cachet\Counter\APCU();
         }
 
         public function getMaximumCounterValue()
@@ -26,4 +26,5 @@ else {
         }
     }
 }
+
 

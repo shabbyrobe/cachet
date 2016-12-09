@@ -5,11 +5,8 @@ namespace Cachet\Counter;
  * Increments and decrements are not guaranteed to be fully atomic without a locker.
  * They are atomic if the value is already set, but if it isn't there's no protection
  * without a locker.
- *
- * @deprecated Use Cachet\Counter\APCU. See comments in Cachet\Backend\APCU and
- *    Cachet\Backend\APC for details.
  */
-class APC implements \Cachet\Counter
+class APCU implements \Cachet\Counter
 {
     public $prefix;
     public $counterTTL;
@@ -26,11 +23,11 @@ class APC implements \Cachet\Counter
 
     function set($key, $value)
     {
-        if (!is_numeric($value))
+        if (!is_numeric($value)) {
             throw new \InvalidArgumentException();
-
+        }
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
-        if (!apc_store($formattedKey, $value, $this->counterTTL)) {
+        if (!apcu_store($formattedKey, $value, $this->counterTTL)) {
             throw new \UnexpectedValueException("APC could not set the value at $formattedKey");
         }
     }
@@ -38,7 +35,7 @@ class APC implements \Cachet\Counter
     function value($key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
-        $value = apc_fetch($formattedKey);
+        $value = apcu_fetch($formattedKey);
         if (!is_numeric($value) && !is_bool($value) && $value !== null) {
             $type = \Cachet\Helper::getType($value);
             throw new \UnexpectedValueException(
@@ -56,29 +53,28 @@ class APC implements \Cachet\Counter
             $check = false;
             if ($this->locker) {
                 $this->locker->acquire($this->cacheId, $key);
-                $check = apc_fetch($formattedKey);
+                $check = apcu_fetch($formattedKey);
                 if ($check !== false)
                     $value = $method($formattedKey, abs($by), $success);
             }
-
             if ($check === false) {
                 $this->set($key, $by);
                 $value = $by;
             }
-
-            if ($this->locker)
+            if ($this->locker) {
                 $this->locker->release($this->cacheId, $key);
+            }
         }
         return $value;
     }
 
     function increment($key, $by=1)
     {
-        return $this->change('apc_inc', $key, $by);
+        return $this->change('apcu_inc', $key, $by);
     }
 
     function decrement($key, $by=1)
     {
-        return $this->change('apc_dec', $key, -$by);
+        return $this->change('apcu_dec', $key, -$by);
     }
 }

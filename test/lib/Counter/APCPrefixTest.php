@@ -9,6 +9,7 @@ elseif (ini_get('apc.enable_cli') != 1) {
 }
 else {
     /**
+     * @group apc
      * @group counter
      */
     class APCPrefixTest extends APCTest
