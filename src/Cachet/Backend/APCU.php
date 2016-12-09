@@ -4,6 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
+use Cachet\Util\APCUIterator;
 
 // as at 201612, there is some weirdness around these constants. the latest
 // version of APCU doesn't appear to have the appropriate APCU_* constants
@@ -13,9 +14,6 @@ if (!defined('APCU_ITER_VALUE') && defined('APC_ITER_VALUE')) {
 }
 if (!defined('APCU_ITER_KEY') && defined('APC_ITER_KEY')) {
     define('APCU_ITER_KEY', APC_ITER_KEY);
-}
-if (!class_exists('APCUIterator')) {
-    class_alias('APCIterator', 'APCUIterator', false);
 }
 
 /**
