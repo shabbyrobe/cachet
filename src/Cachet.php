@@ -7,7 +7,7 @@ class Cachet
         'Cachet\Backend\APC'=>'Cachet/Backend/APC.php',
         'Cachet\Backend\Cascading'=>'Cachet/Backend/Cascading.php',
         'Cachet\Backend\File'=>'Cachet/Backend/File.php',
-        'Cachet\Backend\Iterable'=>'Cachet/Backend/Iterable.php',
+        'Cachet\Backend\Iterator'=>'Cachet/Backend/Iterator.php',
         'Cachet\Backend\IterationAdapter'=>'Cachet/Backend/IterationAdapter.php',
         'Cachet\Backend\Iterator\Fetching'=>'Cachet/Backend/Iterator/Fetching.php',
         'Cachet\Backend\Memcache'=>'Cachet/Backend/Memcache.php',

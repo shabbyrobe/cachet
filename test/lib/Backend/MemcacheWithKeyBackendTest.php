@@ -18,7 +18,7 @@ else {
      */
     class MemcacheWithKeyBackendTest extends \Cachet\Test\BackendTestCase
     {
-        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IteratorBackendTest;
 
         public function setUp()
         {

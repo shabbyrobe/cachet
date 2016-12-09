@@ -10,8 +10,8 @@ use Cachet\Item;
  */
 class FileTest extends \Cachet\Test\BackendTestCase
 {
-    use \Cachet\Test\IterableBackendTest;
-    use \Cachet\Test\IterableBackendYieldMemoryTest;
+    use \Cachet\Test\IteratorBackendTest;
+    use \Cachet\Test\IteratorBackendYieldMemoryTest;
 
     public function setUp()
     {

@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Backend;
 
-interface Iterable
+interface Iterator
 {
     function keys($cacheId);
 

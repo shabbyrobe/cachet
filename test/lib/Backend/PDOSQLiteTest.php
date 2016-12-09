@@ -13,7 +13,7 @@ else {
      */
     class PDOSQLiteTest extends \Cachet\Test\BackendTestCase
     {
-        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IteratorBackendTest;
 
         public function getBackend()
         {

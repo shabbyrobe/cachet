@@ -1,7 +1,7 @@
 <?php
 namespace Cachet;
 
-use Cachet\Backend\Iterable;
+use Cachet\Backend\Iterator;
 use Cachet\Backend\IterationAdapter;
 
 class Cache implements \ArrayAccess
@@ -46,8 +46,9 @@ class Cache implements \ArrayAccess
 
         if ($item) {
             $found = $this->validateItem($item);
-            if ($found)
+            if ($found) {
                 $value = $item->value;
+            }
         }
         return $value;
     }
@@ -61,19 +62,21 @@ class Cache implements \ArrayAccess
     function set($key, $value, $dependencyOrDuration=null)
     {
         $dependency = null;
-        if (is_numeric($dependencyOrDuration))
+        if (is_numeric($dependencyOrDuration)) {
             $dependency = new Dependency\TTL($dependencyOrDuration);
-        elseif ($dependencyOrDuration != null)
+        } elseif ($dependencyOrDuration != null) {
             $dependency = $dependencyOrDuration;
+        }
 
-        if (!$dependency)
+        if (!$dependency) {
             $dependency = $this->dependency;
+        }
 
         $item = new Item($this->id, $key, $value, $dependency);
         if ($dependency) {
-            if (!$dependency instanceof Dependency)
+            if (!$dependency instanceof Dependency) {
                 throw new \InvalidArgumentException();
-
+            }
             $dependency->init($this, $item);
         }
 
@@ -92,22 +95,21 @@ class Cache implements \ArrayAccess
 
     function validateItem($item)
     {
-        if (!$item instanceof Item)
+        if (!$item instanceof Item) {
             return false;
+        }
 
         $valid = false;
-
         $dependency = $item->dependency ?: $this->dependency;
         if (!$dependency || ($dependency instanceof Dependency && $dependency->valid($this, $item))) {
             $valid = true;
         }
-
         return $valid;
     }
 
     function removeInvalid()
     {
-        $this->ensureIterable();
+        $this->ensureIterator();
         foreach ($this->backend->items($this->id) as $key=>$item) {
             $valid = $this->validateItem($item);
             if (!$valid) {
@@ -118,7 +120,7 @@ class Cache implements \ArrayAccess
 
     function keys()
     {
-        $this->ensureIterable();
+        $this->ensureIterator();
         return new Util\MapIterator($this->items(), function($item) {
             return $item->key;
         });
@@ -126,7 +128,7 @@ class Cache implements \ArrayAccess
 
     function values()
     {
-        $this->ensureIterable();
+        $this->ensureIterator();
         return new Util\MapIterator(
             $this->items(),
             function($item, &$key) {
@@ -138,7 +140,7 @@ class Cache implements \ArrayAccess
 
     function items($all=false)
     {
-        $this->ensureIterable();
+        $this->ensureIterator();
         $items = $this->backend->items($this->id);
 
         $iter = new Util\MapIterator($items, function($item, &$key) use ($all) {
@@ -152,9 +154,9 @@ class Cache implements \ArrayAccess
         });
     }
 
-    private function ensureIterable()
+    private function ensureIterator()
     {
-        if (!$this->backend instanceof Iterable) {
+        if (!$this->backend instanceof Iterator) {
             throw new \RuntimeException("This backend does not support iteration");
         }
         elseif ($this->backend instanceof IterationAdapter && !$this->backend->iterable()) {
@@ -169,13 +171,13 @@ class Cache implements \ArrayAccess
     {
         $argc = count($argv);
         $dependency = null;
-        if (is_callable($argv[1]))
+        if (is_callable($argv[1])) {
             list ($key, $callback, $dependency) = [$argv[0], $argv[1], null];
-        elseif (is_callable($argv[2]))
+        } elseif (is_callable($argv[2])) {
             list ($key, $callback, $dependency) = [$argv[0], $argv[2], $argv[1]];
-        else
+        } else {
             throw new \InvalidArgumentException();
-
+        }
         return [$key, $callback, $dependency];
     }
 
@@ -196,8 +198,9 @@ class Cache implements \ArrayAccess
 
     function blocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
-        if (!$this->locker)
+        if (!$this->locker) {
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+        }
 
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
         $found = false;
@@ -232,8 +235,9 @@ class Cache implements \ArrayAccess
      */
     function safeNonblocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
-        if (!$this->locker)
+        if (!$this->locker) {
             throw new \UnexpectedValueException("Must set locker to use locking strategy");
+        }
 
         $this->ensureBackendExpirations(!'enabled');
 
@@ -292,8 +296,9 @@ class Cache implements \ArrayAccess
      */
     function unsafeNonBlocking($key, $dependency, $callback=null, &$found=null, &$result=null)
     {
-        if (!$this->locker)
+        if (!$this->locker) {
             throw new \UnexpectedValueException("Must set a locker to use a locking strategy");
+        }
 
         $this->ensureBackendExpirations(!'enabled');
 
@@ -335,8 +340,9 @@ class Cache implements \ArrayAccess
 
     private function ensureBackendExpirations($status)
     {
-        if ($this->expiringBackend === null)
+        if ($this->expiringBackend === null) {
             $this->expiringBackend = property_exists($this->backend, 'useBackendExpirations');
+        }
 
         if ($this->expiringBackend) {
             if ($this->backend->useBackendExpirations != $status) {

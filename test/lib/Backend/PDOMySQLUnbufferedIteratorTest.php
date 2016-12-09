@@ -10,7 +10,7 @@ if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLUnbufferedIteratorTest')) {
      */
     class PDOMySQLUnbufferedIteratorTest extends PDOMySQLTest
     {
-        use \Cachet\Test\IterableBackendYieldMemoryTest;
+        use \Cachet\Test\IteratorBackendYieldMemoryTest;
 
         public function getBackend()
         {

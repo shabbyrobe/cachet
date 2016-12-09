@@ -8,6 +8,11 @@ Cachet - Pluggable Caching for PHP
       a flat capsule enclosing a dose of unpleasant-tasting medicine.
 
 
+Breaking Changes:
+
+- (v2.0) ``Cachet\Backend\Iterable`` renamed to ``Cachet\Backend\Iterator`` in
+  response to PHP 7.1 backward incompatible changes.
+
 Features:
 
 - Supports PHP 5.4 and above
@@ -193,39 +198,45 @@ Atomic counters_:
 Iteration
 ---------
 
-Caches can be iterated, but support is patchy. If the underlying backend supports listing keys,
-iteration is usually efficient. The **Cachet** APC_ backend_ makes use of the ``APCIterator`` class
-and is very efficient. XCache_ tries to send a HTTP authentication dialog when you try to list
-keys (even when you try and use it via the CLI!), and Memcached_ provides no means to iterate over
-keys at all.
+Caches can be iterated, but support is patchy. If the underlying backend
+supports listing keys, iteration is usually efficient. The **Cachet** APC_
+backend_ makes use of the ``APCIterator`` class and is very efficient. XCache_
+tries to send a HTTP authentication dialog when you try to list keys (even when
+you try and use it via the CLI!), and Memcached_ provides no means to iterate
+over keys at all.
 
-If a backend supports iteration, it will implement ``Cachet\Backend\Iterable``. Implementing this
-interface is not required, but all backends provided with **Cachet** do.  If the underlying backend
-doesn't support iteration (Memcache, for example), **Cachet** provides optional support for using a
-secondary backend which does support iteration for the keys. This slows down insertion, deletion and
-flushing, but has no impact on retrieval.
+If a backend supports iteration, it will implement ``Cachet\Backend\Iterator``.
+Implementing this interface is not required, but all backends provided with
+**Cachet** do.  If the underlying backend doesn't support iteration (Memcache,
+for example), **Cachet** provides optional support for using a secondary backend
+which does support iteration for the keys. This slows down insertion, deletion
+and flushing, but has no impact on retrieval.
 
 The different types of iteration support provided by the backends are:
 
 **iterator**
-  Iteration is implemented efficiently using an ``Iterator`` class. Keys/items are only retrieved
-  and yielded as necessary. There should be no memory issues with this type of iteration.
+  Iteration is implemented efficiently using an ``\\Iterator`` class. Keys/items
+  are only retrieved and yielded as necessary. There should be no memory issues
+  with this type of iteration.
 
 **key array + fetcher**
-  All keys are retrieved in one hit. Items are retrieved one at a time directly from the backend.
-  Millions of keys may cause memory issues.
+  All keys are retrieved in one hit. Items are retrieved one at a time directly
+  from the backend.  Millions of keys may cause memory issues.
 
 **all data**
-  Everything is returned in one hit. This is only applied to the in-memory cache or session cache,
-  where no other option is possible. Thousands of keys may cause memory issues.
+  Everything is returned in one hit. This is only applied to the in-memory cache
+  or session cache, where no other option is possible. Thousands of keys may
+  cause memory issues.
 
 **optional key backend**
-  Keys are stored in a secondary iterable backend. Setting, deleting and flushing will be slower as
-  these operations need to be performed on both the backend and the key backend. Memory issues are
+  Keys are stored in a secondary iterable backend. Setting, deleting and
+  flushing will be slower as these operations need to be performed on both the
+  backend and the key backend. Memory issues are
   inherited from the key backend, so you should try to use an ``Iterator`` based key backend
   wherever possible.
   
-  Key backend iteration is optional. If no key backend is supplied, iteration will fail.
+  Key backend iteration is optional. If no key backend is supplied, iteration
+  will fail.
 
 
 .. _backend:
@@ -253,25 +264,31 @@ Automatic Expirations
 
 
 Iteration
-    Backends should, but may not necessarily, implement ``Cache\Backend\Iterable``. Backends that do not
-    can't be iterated. This will be specified against each backend's documentation. Backends like APC or
-    Redis can rely on native methods for iterating over the keys, but the memcache daemon itself
-    provides no such facility, and Xcache hides it behind some silly HTTP Basic authentication.
+    Backends should, but may not necessarily, implement
+    ``Cache\Backend\Iterator``. Backends that do not can't be iterated. This
+    will be specified against each backend's documentation. Backends like APC or
+    Redis can rely on native methods for iterating over the keys, but the
+    memcache daemon itself provides no such facility, and Xcache hides it behind
+    some silly HTTP Basic authentication.
 
-    Backends that suffer from these limitations can extend from ``Cachet\Backend\IterationAdapter``,
-    which allows a second backend to be used for storing keys. This slows down setting, deleting and
-    flushing, but doesn't slow down getting items from the backend at all so it's not a bad tradeoff if
-    iteration is required and you're doing many more reads than writes.
+    Backends that suffer from these limitations can extend from
+    ``Cachet\Backend\IterationAdapter``, which allows a second backend to be
+    used for storing keys. This slows down setting, deleting and flushing, but
+    doesn't slow down getting items from the backend at all so it's not a bad
+    tradeoff if iteration is required and you're doing many more reads than
+    writes.
 
     There are some potential pitfalls with this approach:
 
-    - If an item disappears from the key backend, it may still exist in the backend itself. There is
-      no way to detect these values if the backend is not iterable. Make sure the type of backend you
-      select for the key backend doesn't auto-expire values under any circumstances, and if your
-      backend supports ``useBackendExpirations``, set it to ``false``.
+    - If an item disappears from the key backend, it may still exist in the
+      backend itself. There is no way to detect these values if the backend is not
+      iterable. Make sure the type of backend you select for the key backend
+      doesn't auto-expire values under any circumstances, and if your backend
+      supports ``useBackendExpirations``, set it to ``false``.
 
-    - The type of backend you can use for the key backend is quite limited - it must itself be
-      iterable, and it can't be a ``Cachet\Backend\IterationAdapter``.
+    - The type of backend you can use for the key backend is quite limited - it
+      must itself be iterable, and it can't be a
+      ``Cachet\Backend\IterationAdapter``.
 
 
 .. _apc:

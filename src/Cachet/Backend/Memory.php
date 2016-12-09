@@ -7,7 +7,7 @@ use Cachet\Item;
 /**
  * Ephemeral memory-backed cache implementation
  */
-class Memory implements Backend, Iterable
+class Memory implements Backend, Iterator
 {
     public $data = array();
 
@@ -22,12 +22,12 @@ class Memory implements Backend, Iterable
 
     function set(Item $item)
     {
-        if (!isset($this->data[$item->cacheId]))
+        if (!isset($this->data[$item->cacheId])) {
             $this->data[$item->cacheId] = array();
-
-        if ($item->value instanceof \Closure)
+        }
+        if ($item->value instanceof \Closure) {
             throw new \Exception("Serialization of 'Closure' is not allowed");
-
+        }
         $this->data[$item->cacheId][$item->key] = $item;
     }
 
@@ -43,17 +43,19 @@ class Memory implements Backend, Iterable
 
     function keys($cacheId)
     {
-        if (isset($this->data[$cacheId]))
+        if (isset($this->data[$cacheId])) {
             return array_keys($this->data[$cacheId]);
-        else
+        } else {
             return[];
+        }
     }
 
     function items($cacheId)
     {
-        if (isset($this->data[$cacheId]))
+        if (isset($this->data[$cacheId])) {
             return array_values($this->data[$cacheId]);
-        else
+        } else {
             return [];
+        }
     }
 }

@@ -10,7 +10,7 @@ use Cachet\Item;
  * need to flush the entire cache if you want to add or remove them
  * unless you're OK with the cache being partially invalidated.
  */
-class Sharding implements Backend, Iterable
+class Sharding implements Backend, Iterator
 {
     private $backends;
     private $backendCount;
@@ -18,9 +18,9 @@ class Sharding implements Backend, Iterable
     public function __construct($backends)
     {
         $count = count($backends);
-        if ($count < 2)
+        if ($count < 2) {
             throw new \InvalidArgumentException("No point sharding with less than two backends!");
-
+        }
         $this->backends = array_values($backends);
         $this->backendCount = $count;
     }
@@ -45,8 +45,9 @@ class Sharding implements Backend, Iterable
 
     function flush($cacheId)
     {
-        foreach ($this->backends as $backend)
+        foreach ($this->backends as $backend) {
             $backend->flush($cacheId);
+        }
     }
 
     function keys($cacheId)
@@ -54,8 +55,9 @@ class Sharding implements Backend, Iterable
         $iter = new \AppendIterator();
         foreach ($this->backends as $backend) {
             $backendIter = $backend->keys($cacheId);
-            if (is_array($backendIter))
+            if (is_array($backendIter)) {
                 $backendIter = new \ArrayIterator($backendIter);
+            }
             $iter->append($backendIter);
         }
         return new \Cachet\Util\ReindexingIterator($iter);
@@ -66,8 +68,9 @@ class Sharding implements Backend, Iterable
         $iter = new \AppendIterator();
         foreach ($this->backends as $backend) {
             $backendIter = $backend->items($cacheId);
-            if (is_array($backendIter))
+            if (is_array($backendIter)) {
                 $backendIter = new \ArrayIterator($backendIter);
+            }
             $iter->append($backendIter);
         }
         return new \Cachet\Util\ReindexingIterator($iter);

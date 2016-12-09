@@ -20,7 +20,7 @@ else {
      */
     class PHPRedisTest extends \Cachet\Test\BackendTestCase
     {
-        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IteratorBackendTest;
 
         public $backendPrefix = null;
 

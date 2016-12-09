@@ -9,7 +9,7 @@ use Cachet\Item;
  */
 class CascadingTest extends \Cachet\Test\BackendTestCase
 {
-    use \Cachet\Test\IterableBackendTest;
+    use \Cachet\Test\IteratorBackendTest;
 
     public function getBackend()
     {   

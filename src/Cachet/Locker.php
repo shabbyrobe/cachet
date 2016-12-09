@@ -21,10 +21,11 @@ abstract class Locker
 
     function getLockKey($cacheId, $key)
     {
-        if ($this->keyHasher)
+        if ($this->keyHasher) {
             return call_user_func($this->keyHasher, $cacheId, $key);
-        else
+        } else {
             return "$cacheId/$key";
+        }
     }
 
     function __destruct()

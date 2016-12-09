@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class File implements Backend, Iterable
+class File implements Backend, Iterator
 {
     /**
      * How many intermediate directories to insert into the key path
@@ -55,8 +55,9 @@ class File implements Backend, Iterable
 
         $iter = new \Cachet\Util\MapIterator($fileIter, function($cacheFile) {
             $item = $this->yieldFile($cacheFile);
-            if ($item)
+            if ($item) {
                 return $item->key;
+            }
         });
         return new \CallbackFilterIterator($iter, function($item) {
             return $item !== null;
@@ -77,12 +78,13 @@ class File implements Backend, Iterable
 
     private function yieldFile($fullCacheFile)
     {
-        if (!file_exists($fullCacheFile))
-            continue;
-
+        if (!file_exists($fullCacheFile)) {
+            return null;
+        }
         $item = $this->decode(file_get_contents($fullCacheFile));
-        if (!$item)
+        if (!$item) {
             throw new \UnexpectedValueException();
+        }
 
         return $item;
     }

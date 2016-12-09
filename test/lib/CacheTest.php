@@ -51,7 +51,7 @@ class CacheTest extends \CachetTestCase
         $this->assertEquals(['1', '2', '3'], $found);
     }
     
-    public function testKeysGeneratorFailsWhenIterationAdapterNotIterable()
+    public function testKeysGeneratorFailsWhenIterationAdapterNotIterator()
     {
         $backend = $this->getMockBuilder('Cachet\Backend\IterationAdapter')
             ->setMethods(['iterable'])
@@ -63,7 +63,7 @@ class CacheTest extends \CachetTestCase
         $keys = iterator_to_array($cache->keys());
     }
     
-    public function testKeysGeneratorFailsWhenNotIterable()
+    public function testKeysGeneratorFailsWhenNotIterator()
     {
         $backend = $this->getMockBuilder('Cachet\Backend')
             ->getMockForAbstractClass()
@@ -332,15 +332,7 @@ class CacheTest extends \CachetTestCase
         $item = $this->backend->get('cache', 'foo');
         $this->assertTrue($item->dependency instanceof Dependency\TTL);
     }
-    
-    /**
-     * @expectedException PHPUnit_Framework_Error_Warning
-     */
-    public function testWrapInvalidArguments1()
-    {
-        $this->cache->wrap('nope');
-    }
-    
+
     /**
      * @expectedException InvalidArgumentException
      */

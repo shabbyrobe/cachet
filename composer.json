@@ -1,8 +1,8 @@
 {
     "name": "shabbyrobe/cachet",
-    "description": "Pluggable Caching for PHP 5.4",
+    "description": "Pluggable Caching for PHP 5.4 or greater",
     "keywords": ["php", "caching", "cache"],
-    "version": "1.4.2",
+    "version": "2.0.0-alpha1",
     "license": "MIT",
     "homepage": "http://k3jw.com/code/cachet/",
     "authors": [
@@ -15,7 +15,7 @@
     	"php": ">=5.4.0"
     },
     "require-dev": {
-    	"phpunit/phpunit": "3.7.*"
+    	"phpunit/phpunit": "5.*"
     },
     "autoload": {
      	"psr-0": { "Cachet": "src/" }

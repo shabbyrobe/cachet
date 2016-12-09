@@ -10,7 +10,7 @@ if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLTest')) {
      */
     class PDOMySQLTest extends \Cachet\Test\BackendTestCase
     {
-        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IteratorBackendTest;
 
         public function getBackend()
         {

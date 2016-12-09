@@ -5,7 +5,7 @@ use Cachet\Backend;
 use Cachet\Connector;
 use Cachet\Item;
 
-class PDO implements Backend, Iterable
+class PDO implements Backend, Iterator
 {
     public $connector;
 
@@ -54,8 +54,9 @@ class PDO implements Backend, Iterable
         $tableName = $this->getTableName($item->cacheId);
 
         $expiryTimestamp = null;
-        if ($item->dependency && method_exists($item->dependency, 'getExpiryTimestamp'))
+        if ($item->dependency && method_exists($item->dependency, 'getExpiryTimestamp')) {
             $expiryTimestamp = $item->dependency->getExpiryTimestamp();
+        }
 
         $itemData = $item->compact();
         unset($itemData[Item::COMPACT_CACHE_ID]);
@@ -101,11 +102,11 @@ class PDO implements Backend, Iterable
 
         $tableName = $this->getTableName($cacheId);
 
-        if ($this->connector->engine == 'mysql')
+        if ($this->connector->engine == 'mysql') {
             $result = $pdo->exec("TRUNCATE TABLE `{$tableName}`");
-        else
+        } else {
             $result = $pdo->exec("DELETE FROM `{$tableName}`");
-
+        }
         if ($result === false) {
             throw new \UnexpectedValueException(
                 "Cache $cacheId flush query failed: ".implode(' ', $pdo->errorInfo())

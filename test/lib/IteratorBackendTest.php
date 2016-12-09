@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test;
 
-trait IterableBackendTest
+trait IteratorBackendTest
 {
     public function testKeys()
     {

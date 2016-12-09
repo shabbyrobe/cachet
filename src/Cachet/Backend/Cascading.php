@@ -4,7 +4,7 @@ namespace Cachet\Backend;
 use Cachet\Backend;
 use Cachet\Item;
 
-class Cascading implements Backend, Iterable
+class Cascading implements Backend, Iterator
 {
     private $backends;
     private $reverseBackends;

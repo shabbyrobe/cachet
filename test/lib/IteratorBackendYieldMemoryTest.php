@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test;
 
-trait IterableBackendYieldMemoryTest
+trait IteratorBackendYieldMemoryTest
 {
     function dataForIteratorMemoryGrowth()
     {

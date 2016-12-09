@@ -11,7 +11,7 @@ use Cachet\Backend;
  * This can slow down cache set and delete operations significantly, but has
  * no bearing on get operations.
  */
-abstract class IterationAdapter implements Backend, Iterable
+abstract class IterationAdapter implements Backend, Iterator
 {
     protected $keyBackend;
 
@@ -20,19 +20,19 @@ abstract class IterationAdapter implements Backend, Iterable
         return !!$this->keyBackend;
     }
 
-    public function setKeyBackend(Iterable $backend)
+    public function setKeyBackend(Iterator $backend)
     {
-        if ($backend instanceof static)
+        if ($backend instanceof static) {
             throw new \InvalidArgumentException("Key backend must not be an iteration adapter backend");
-
+        }
         $this->keyBackend = $backend;
     }
 
     function keys($cacheId)
     {
-        if (!$this->keyBackend)
+        if (!$this->keyBackend) {
             throw new \RuntimeException("Please call setKeyBackend() if you wish to iterate by key");
-
+        }
         return new \Cachet\Util\MapIterator($this->keyBackend->items($cacheId), function($item) {
             return $item->value;
         });
@@ -63,9 +63,9 @@ abstract class IterationAdapter implements Backend, Iterable
 
     function delete($cacheId, $key)
     {
-        if ($this->keyBackend)
+        if ($this->keyBackend) {
             $this->keyBackend->delete($cacheId, $key);
-
+        }
         $this->deleteFromStore($cacheId, $key);
     }
 

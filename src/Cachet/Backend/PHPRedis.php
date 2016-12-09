@@ -5,7 +5,7 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
-class PHPRedis implements Backend, Iterable
+class PHPRedis implements Backend, Iterator
 {
     public $connector;
 
@@ -15,11 +15,11 @@ class PHPRedis implements Backend, Iterable
 
     public function __construct($redis, $prefix=null)
     {
-        if (!$redis instanceof \Cachet\Connector\PHPRedis)
+        if (!$redis instanceof \Cachet\Connector\PHPRedis) {
             $this->connector = new \Cachet\Connector\PHPRedis($redis);
-        else
+        } else {
             $this->connector = $redis;
-
+        }
         $this->prefix = $prefix;
     }
 
@@ -130,7 +130,8 @@ class PHPRedis implements Backend, Iterable
     function decode($data)
     {
         $itemData = @unserialize($data);
-        if ($itemData)
+        if ($itemData) {
             return Item::uncompact($itemData);
+        }
     }
 }

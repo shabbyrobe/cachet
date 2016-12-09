@@ -10,7 +10,7 @@ else {
      */
     class XCacheWithKeyBackendTest extends XCacheTest
     {
-        use \Cachet\Test\IterableBackendTest;
+        use \Cachet\Test\IteratorBackendTest;
 
         public function getBackend()
         {
