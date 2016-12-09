@@ -5,6 +5,13 @@ use Cachet\Dependency;
 use Cachet\Backend;
 use Cachet\Item;
 
+// as at 201612, there is some weirdness around these constants. the latest
+// version of APCU doesn't appear to have the appropriate APCU_* constants
+// defined, even though the documentation references them.
+if (!defined('APCU_ITER_VALUE') && defined('APC_ITER_VALUE')) {
+    define('APCU_ITER_VALUE', APC_ITER_VALUE);
+}
+
 /**
  * Starting with PHP 7.0, apcu removed the apc_* functions by default,
  * moving them into a separate extension called apc_bc. 
