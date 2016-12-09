@@ -30,7 +30,7 @@ else {
             $backend = $this->getBackend();
             $dep = new \Cachet\Dependency\TTL(300);
             $backend->set(new \Cachet\Item('cache', 'foo', 'bar', $dep));
-            $iter = new \APCIterator('user', "~^{$this->backendPrefix}cache/foo$~");
+            $iter = new \APCUIterator('user', "~^{$this->backendPrefix}cache/foo$~");
             $ttl = $iter->current()['ttl'];
             
             // surely not longer than 2 seconds!

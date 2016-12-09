@@ -69,7 +69,7 @@ class APCU implements Backend, Iterator
     function flush($cacheId)
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
-        $iter = new \APCIterator(
+        $iter = new \APCUIterator(
             'user',
             "~^".preg_quote($fullPrefix, "~")."~",
             APC_ITER_VALUE,
@@ -82,7 +82,7 @@ class APCU implements Backend, Iterator
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        $iter = new \APCIterator('user', $keyRegex, APC_ITER_KEY, $this->iteratorChunkSize);
+        $iter = new \APCUIterator('user', $keyRegex, APC_ITER_KEY, $this->iteratorChunkSize);
         $prefixLen = strlen($fullPrefix) + 1;
         return new \Cachet\Util\MapIterator($iter, function($item) use ($prefixLen) {
             return substr($item['key'], $prefixLen);
@@ -93,7 +93,7 @@ class APCU implements Backend, Iterator
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
         $keyRegex = "~^".preg_quote($fullPrefix, "~")."~";
-        $iter = new \APCIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
+        $iter = new \APCUIterator('user', $keyRegex, APC_ITER_VALUE, $this->iteratorChunkSize);
         return new \Cachet\Util\MapIterator($iter, function($item) {
             return $item['value'];
         });
