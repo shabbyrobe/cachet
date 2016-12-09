@@ -11,6 +11,9 @@ use Cachet\Item;
 if (!defined('APCU_ITER_VALUE') && defined('APC_ITER_VALUE')) {
     define('APCU_ITER_VALUE', APC_ITER_VALUE);
 }
+if (!defined('APCU_ITER_KEY') && defined('APC_ITER_KEY')) {
+    define('APCU_ITER_KEY', APC_ITER_KEY);
+}
 
 /**
  * Starting with PHP 7.0, apcu removed the apc_* functions by default,
