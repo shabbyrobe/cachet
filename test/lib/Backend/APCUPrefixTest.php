@@ -18,7 +18,7 @@ else {
 
         public function getBackend()
         {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
             $this->backendPrefix = 'prefix/';
             $backend = new \Cachet\Backend\APCU('prefix');
             return $backend;

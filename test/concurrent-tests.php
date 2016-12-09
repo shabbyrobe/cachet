@@ -2,7 +2,7 @@
 return [
     'lockerBlockingSemphore'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>function($workerState) {
             $backend = new \Cachet\Backend\APCU();
@@ -15,7 +15,7 @@ return [
 
     'lockerBlockingFile'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>$bits['createFileLockerCache'],
         'test'=>$bits['blockingTest'],
@@ -24,7 +24,7 @@ return [
 
     'lockerSafeNonBlockingFile'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>function($workerState) use ($bits) {
             $cache = $bits['createFileLockerCache']($workerState);
@@ -48,7 +48,7 @@ return [
 
     'lockerUnsafeNonBlocking'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>function($workerState) use ($bits) {
             $cache = $bits['createFileLockerCache']($workerState);
@@ -84,7 +84,7 @@ return [
 
     'apcBrokenCounterTest'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>function($workerState) {
             $workerState->counter = new \Cachet\Counter\APCU;
@@ -105,7 +105,7 @@ return [
 
     'apcuLockedCounterTest'=>[
         'setupParent'=>function() {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
         },
         'setupWorker'=>function($workerState) {
             $workerState->counter = new \Cachet\Counter\APCU;
@@ -286,7 +286,7 @@ return [
 
     'safeCacheCounterTest'=>[
         'setupParent'=>function($parentState) {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
             $backend = new \Cachet\Backend\APCU(); 
             $cache = new \Cachet\Cache('safeCounter', $backend);
             $locker = new \Cachet\Locker\Semaphore();

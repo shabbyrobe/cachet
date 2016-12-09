@@ -20,7 +20,7 @@ else {
 
         public function getBackend()
         {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
             $backend = new \Cachet\Backend\APCU();
             return $backend;
         }

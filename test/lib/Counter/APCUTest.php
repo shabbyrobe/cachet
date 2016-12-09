@@ -16,7 +16,7 @@ else {
     {
         public function getCounter()
         {
-            apcu_clear_cache('user');
+            apcu_clear_cache();
             return new \Cachet\Counter\APCU();
         }
 
