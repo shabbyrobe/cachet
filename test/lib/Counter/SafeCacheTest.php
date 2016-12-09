@@ -19,13 +19,16 @@ else {
         }
        
         /**
+         * Not quite sure exactly what I was testing here, but it looks like
+         * it never worked. Might be ensuring that we can exceed certain fixed
+         * width sizes, but really I'm not sure at all.
          * @dataProvider dataForRangeInfinite
          */
         public function testRangeInfinite($a, $b)
         {
             $counter = $this->getCounter();
-            $result = $counter->increment('count', $a);
-            $this->assertEquals($b, $a);
+            $counter->set('count', $a);
+            $result = $counter->increment('count');
             $this->assertEquals($b, $counter->value('count'));
         }
 

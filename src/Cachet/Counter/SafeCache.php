@@ -13,7 +13,7 @@ class SafeCache implements \Cachet\Counter
     {
         $this->locker = $locker;
         $this->cache = $cache;
-             
+
         if (extension_loaded('bcmath')) {
             $this->addCallback = 'bcadd';
             $this->subCallback = 'bcsub';
