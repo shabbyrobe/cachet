@@ -9,5 +9,6 @@ if (extension_loaded('apcu')) {
 } else {
     throw new \Exception('No supported backend available for session testing');
 }
+
 $cache = new Cachet\Cache('session', $backend);
 Cachet\SessionHandler::register($cache);

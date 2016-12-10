@@ -24,7 +24,7 @@ else {
                 'session.use_only_cookies=0',
             ]);
             $cmd = "php -n $iniOpts -S localhost:1999";
-            
+
             $p = proc_open(
                 $cmd, 
                 [["pipe", "r"], ["pipe", "w"], ["pipe", "w"]], 
@@ -53,12 +53,12 @@ else {
             }
             $this->p = $p;
         }
-        
+
         public function tearDown()
         {
             proc_terminate($this->p);
         }
-        
+
         public function testSetGet()
         {
             $key = uniqid('key-', true);
@@ -71,7 +71,7 @@ else {
             $out = file_get_contents("{$this->url}/get.php?PHPSESSID=$sessId&key=$key");
             $this->assertEquals($value, $out);
         }
-        
+
         public function testConcurrentSessions()
         {
             $sessId1 = md5(uniqid('sess-', true));
