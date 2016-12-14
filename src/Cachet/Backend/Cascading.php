@@ -18,23 +18,28 @@ class Cascading implements Backend, Iterator
         $this->reverseBackends = array_reverse($backends);
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return \Cachet\Item
+     */
     function get($cacheId, $key)
     {
         $item = null;
         $missedBackends = array();
         foreach ($this->backends as $backend) {
             $item = $backend->get($cacheId, $key);
-            if ($item)
+            if ($item) {
                 break;
-            else
+            } else {
                 $missedBackends[] = $backend;
+            }
         }
-
         if ($item) {
-            foreach (array_reverse($missedBackends) as $missedBackend)
+            foreach (array_reverse($missedBackends) as $missedBackend) {
                 $missedBackend->set($item);
+            }
         }
-
         return $item;
     }
 
@@ -45,6 +50,11 @@ class Cascading implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         foreach ($this->reverseBackends as $backend) {
@@ -52,6 +62,10 @@ class Cascading implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         foreach ($this->reverseBackends as $backend) {
@@ -59,11 +73,19 @@ class Cascading implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator
+     */
     function keys($cacheId)
     {
         return $this->reverseBackends[0]->keys($cacheId);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator
+     */
     function items($cacheId)
     {
         return $this->reverseBackends[0]->items($cacheId);

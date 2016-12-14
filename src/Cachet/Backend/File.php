@@ -12,11 +12,17 @@ class File implements Backend, Iterator
      */
     public $keySplit = 3;
 
+    private $fileUtil;
+
     public function __construct($basePath, $fileOptions=[])
     {
         $this->fileUtil = new \Cachet\Util\File($basePath, $fileOptions);
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $data = $this->fileUtil->read($this->getFilePath($cacheId, $key), $found);
@@ -31,12 +37,21 @@ class File implements Backend, Iterator
         $this->fileUtil->write($filePath, serialize($item));
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         $filePath = $this->getFilePath($cacheId, $key);
         $this->fileUtil->delete($filePath);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
@@ -48,6 +63,10 @@ class File implements Backend, Iterator
         return @unserialize($fileContents);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
@@ -64,6 +83,10 @@ class File implements Backend, Iterator
         });
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         $filePath = $this->getFilePath($cacheId);
@@ -110,9 +133,13 @@ class File implements Backend, Iterator
     {
         $safeKey = substr(preg_replace("/[^a-z\d_\-]/", "", strtolower($key)), 0, 50);
 
-        // crc32 is platform dependent? not that it should matter, but it makes testing
-        // quite tricky.
-        $hashedKey = base_convert(\Cachet\Helper::hashToInt32($key), 10, 36).($safeKey ? "-$safeKey" : '');
+        // crc32 is platform dependent? not that it should matter, but it makes
+        // testing quite tricky.
+        // cast is for phan.
+        $hashedKey =
+            base_convert((string)\Cachet\Helper::hashToInt32($key), 10, 36).
+            ($safeKey ? "-$safeKey" : '');
+
         return $hashedKey;
     }
 }

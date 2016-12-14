@@ -22,9 +22,9 @@ class TTL implements Dependency
 
     function valid(Cache $cache, Item $item)
     {
-        if ($this->ttlSeconds == 0)
+        if ($this->ttlSeconds == 0) {
             return true;
-
+        }
         return ($this->getCurrentTime() - $item->timestamp) < $this->ttlSeconds;
     }
 

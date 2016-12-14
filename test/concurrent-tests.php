@@ -62,8 +62,8 @@ return [
             $ret = [$result, $start, microtime(true)];
             
             // 10000 is the locker key. this is brittle.
-            $cache->locker->acquire($cache, 10000);
-            $cache->locker->release($cache, 10000);
+            $cache->locker->acquire($cache->id, 10000);
+            $cache->locker->release($cache->id, 10000);
             $out = $workerState->cache->get('value');
             $ret[] = $out; 
             return $ret;

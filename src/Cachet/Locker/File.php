@@ -13,6 +13,11 @@ class File extends \Cachet\Locker
         $this->fileUtil = new \Cachet\Util\File($basePath, $fileOptions);
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return bool
+     */
     function acquire($cacheId, $key, $block=true)
     {
         $name = $this->getLockKey($cacheId, $key);
@@ -28,6 +33,10 @@ class File extends \Cachet\Locker
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function release($cacheId, $key)
     {
         $name = $this->getLockKey($cacheId, $key);

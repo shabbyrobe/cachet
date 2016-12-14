@@ -12,6 +12,10 @@ class XCache implements \Cachet\Counter
         $this->prefix = $prefix;
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $formatted = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
@@ -25,12 +29,22 @@ class XCache implements \Cachet\Counter
         return (int) $value ?: 0;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         $formatted = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
         xcache_set($formatted, $value, $this->counterTTL);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         $formatted = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);
@@ -38,6 +52,11 @@ class XCache implements \Cachet\Counter
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         $formatted = \Cachet\Helper::formatKey([$this->prefix, 'counter', $key]);

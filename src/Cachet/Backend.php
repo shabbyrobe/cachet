@@ -21,7 +21,7 @@ interface Backend
      *
      * @param string $cacheId
      * @param string $key
-     * @return Cachet\Item|null
+     * @return Item|null
      */
     function get($cacheId, $key);
 

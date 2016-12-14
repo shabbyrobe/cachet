@@ -15,8 +15,9 @@ spl_autoload_register(
 require $base.'/src/Cachet.php';
 Cachet::register();
 
-if (!class_exists('PHPUnit_Framework_Exception'))
-    require_once 'PHPUnit/Autoload.php';
+if (!class_exists('PHPUnit_Framework_Exception')) {
+    require_once BASE_PATH.'/vendor/autoload.php';
+}
 
 $GLOBALS['settings'] = [
     'redis'=>[

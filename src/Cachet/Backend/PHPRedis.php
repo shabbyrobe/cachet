@@ -26,10 +26,10 @@ class PHPRedis implements Backend, Iterator
     public function set(Item $item)
     {
         if ($this->useBackendExpirations && $item->dependency instanceof Dependency\TTL) {
-            $this->setWithTTL($item);
+            $this->setWithTTL($item, $item->dependency);
         }
         elseif ($this->useBackendExpirations && $item->dependency instanceof Dependency\Time) {
-            $this->setWithExpireTime($item);
+            $this->setWithExpireTime($item, $item->dependency);
         }
         else {
             $redis = $this->connector->redis ?: $this->connector->connect();
@@ -40,10 +40,10 @@ class PHPRedis implements Backend, Iterator
         }
     }
 
-    private function setWithTTL($item)
+    private function setWithTTL($item, Dependency\TTL $dependency)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
-        $ttl = $item->dependency->ttlSeconds;
+        $ttl = $dependency->ttlSeconds;
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
 
@@ -53,10 +53,10 @@ class PHPRedis implements Backend, Iterator
         $query->exec();
     }
 
-    private function setWithExpireTime($item)
+    private function setWithExpireTime($item, Dependency\Time $dependency)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $item->cacheId, $item->key]);
-        $time = $item->dependency->time;
+        $time = $dependency->time;
         $item->dependency = null;
         $formattedItem = $this->formatItem($item);
 
@@ -72,6 +72,10 @@ class PHPRedis implements Backend, Iterator
         return serialize($item->compact());
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     public function get($cacheId, $key)
     {
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
@@ -82,6 +86,11 @@ class PHPRedis implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     public function delete($cacheId, $key)
     {
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
@@ -89,6 +98,10 @@ class PHPRedis implements Backend, Iterator
         $redis->delete(array($key));
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
@@ -101,6 +114,10 @@ class PHPRedis implements Backend, Iterator
         $query->exec();
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         $prefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId])."/";
@@ -117,6 +134,10 @@ class PHPRedis implements Backend, Iterator
         return $keys;
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         $iter = new \Cachet\Util\MapIterator($this->keys($cacheId), function($item) use ($cacheId) {

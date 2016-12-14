@@ -8,15 +8,18 @@ use Cachet\Item;
 
 class Memcache extends IterationAdapter
 {
+    /** @var Connector\Memcache */
     public $connector;
 
     public $unsafeFlush = false;
 
+    /** @var string|null */
     public $prefix;
 
     public $useBackendExpirations = true;
 
-    public function __construct($memcache=null)
+    /** @param Connector\Memcache|array|string $memcache */
+    public function __construct($memcache)
     {
         $this->connector = $memcache instanceof Connector\Memcache
             ? $memcache
@@ -24,6 +27,10 @@ class Memcache extends IterationAdapter
         ;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
@@ -31,8 +38,9 @@ class Memcache extends IterationAdapter
         $encoded = $memcache->get($formattedKey);
 
         $item = null;
-        if ($encoded)
+        if ($encoded) {
             $item = @unserialize($encoded);
+        }
 
         return $item ?: null;
     }

@@ -11,8 +11,13 @@ namespace Cachet\Counter;
  */
 class APC implements \Cachet\Counter
 {
+    /** @var string */
     public $prefix;
+
+    /** @var int */
     public $counterTTL;
+
+    /** @var \Cachet\Locker */
     public $locker;
 
     private $cacheId = 'counter';
@@ -24,10 +29,16 @@ class APC implements \Cachet\Counter
         $this->locker = $locker;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
-        if (!is_numeric($value))
+        if (!is_numeric($value)) {
             throw new \InvalidArgumentException();
+        }
 
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
         if (!apc_store($formattedKey, $value, $this->counterTTL)) {
@@ -35,6 +46,10 @@ class APC implements \Cachet\Counter
         }
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
@@ -57,8 +72,9 @@ class APC implements \Cachet\Counter
             if ($this->locker) {
                 $this->locker->acquire($this->cacheId, $key);
                 $check = apc_fetch($formattedKey);
-                if ($check !== false)
+                if ($check !== false) {
                     $value = $method($formattedKey, abs($by), $success);
+                }
             }
 
             if ($check === false) {
@@ -66,17 +82,28 @@ class APC implements \Cachet\Counter
                 $value = $by;
             }
 
-            if ($this->locker)
+            if ($this->locker) {
                 $this->locker->release($this->cacheId, $key);
+            }
         }
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         return $this->change('apc_inc', $key, $by);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         return $this->change('apc_dec', $key, -$by);

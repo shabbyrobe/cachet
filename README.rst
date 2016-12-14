@@ -18,6 +18,11 @@ Breaking Changes:
   ``Cachet\Backend\APCU`` and ``Cachet\Counter\APCU`` instead. The old classes
   will not be removed for the time being.
 
+- (v2.0.1) ``Cachet\Backend\Memcache`` used to have some possible, untested,
+  undocumented support for the abandoned ``memcache`` extension as well as the
+  actively supported ``memcached`` extension. ``memcache`` support has been
+  removed, ``memcached`` support remains.
+
 Features:
 
 - Supports PHP 5.4 and above
@@ -46,14 +51,15 @@ Install
         }
     }
 
-You can also download **Cachet** directly from the `GitHub <http://github.com/shabbyrobe/cachet>`_
-page.
+You can also download **Cachet** directly from the `GitHub
+<http://github.com/shabbyrobe/cachet>`_ page.
 
 
 Usage
 -----
 
-**Cachet** is compatible with any PSR-0 autoloader. A simple autoloader is provided.
+**Cachet** is compatible with any PSR-0 autoloader. A simple autoloader is
+provided.
 
 .. code-block:: php
 
@@ -88,8 +94,8 @@ Basic operations (``set``, ``get``, ``delete``, ``has``, ``flush``):
     $cache->set('foo', null);
 
 
-Many "falsey" values are valid cache values, for e.g. ``null`` and ``false``. Find out if a value
-was actually found:
+Many "falsey" values are valid cache values, for e.g. ``null`` and ``false``.
+Find out if a value was actually found:
 
 .. code-block:: php
     
@@ -122,8 +128,8 @@ Expire data dynamically with dependencies_:
     $cache->get('foo') == 'bar';   // false
 
 
-Cachet provides a convenient way to wrap getting and setting using strategies_ with optional
-locking_:
+Cachet provides a convenient way to wrap getting and setting using strategies_
+with optional locking_:
 
 .. code-block:: php
 
@@ -153,8 +159,8 @@ locking_:
     $value = $cache->blocking('foo', $dataRetriever);
 
 
-Iteration_ - this is tricky and loaded with caveats. See the iteration_ section below that describes
-them in detail:
+Iteration_ - this is tricky and loaded with caveats. See the iteration_ section
+below that describes them in detail:
 
 .. code-block:: php
 
@@ -236,9 +242,8 @@ The different types of iteration support provided by the backends are:
 **optional key backend**
   Keys are stored in a secondary iterable backend. Setting, deleting and
   flushing will be slower as these operations need to be performed on both the
-  backend and the key backend. Memory issues are
-  inherited from the key backend, so you should try to use an ``Iterator`` based key backend
-  wherever possible.
+  backend and the key backend. Memory issues are inherited from the key backend,
+  so you should try to use an ``Iterator`` based key backend wherever possible.
   
   Key backend iteration is optional. If no key backend is supplied, iteration
   will fail.
@@ -250,8 +255,8 @@ The different types of iteration support provided by the backends are:
 Backends
 --------
 
-Cache backends must implement ``Cache\Backend``, though some backends have to work a bit harder to
-satisfy the interface than others.
+Cache backends must implement ``Cache\Backend``, though some backends have to
+work a bit harder to satisfy the interface than others.
 
 Different backends have varying degrees of support for the following features:
 
@@ -259,11 +264,12 @@ Automatic Expirations
     Some backends support automatic expiration for certain dependency_ types.
     When a backend supports this functionality it will have a
     ``useBackendExpirations`` property, which defaults to ``true``.
-    
+
     For example, the APCU backend will detect when a ``Cachet\Dependency\TTL``
-    is passed and automatically use it for the third parameter to ``apcu_store``,
-    which accepts a TTL in seconds.  Other backends support different methods of
-    unrolling dependency types. This will be documented below. 
+    is passed and automatically use it for the third parameter to
+    ``apcu_store``, which accepts a TTL in seconds.  Other backends support
+    different methods of unrolling dependency types. This will be documented
+    below. 
 
     Setting ``useBackendExpirations`` to false does not guarantee the backend
     will not expire cache values under other circumstances.
@@ -369,14 +375,14 @@ Backend expirations
 File
 ~~~~
 
-Filesystem-backed cache. This has only been tested on OS X and Linux but may work on Windows (and
-probably should - please file a bug report if it doesn't).
+Filesystem-backed cache. This has only been tested on OS X and Linux but may
+work on Windows (and probably should - please file a bug report if it doesn't).
 
-The cache is not particularly fast. Flushing and iteration can be very, very slow indeed, but should
-not suffer from memory issues.
+The cache is not particularly fast. Flushing and iteration can be very, very
+slow indeed, but should not suffer from memory issues.
 
-If you use this cache, please do some performance crunching to see if it's actually any faster than
-no cache at all.
+If you use this cache, please do some performance crunching to see if it's
+actually any faster than no cache at all.
 
 Iteration support
     **iterator**
@@ -404,8 +410,7 @@ Backend expirations
 Memcache
 ~~~~~~~~
 
-Requires ``memcached`` PHP extension. May eventually support both ``memcached`` and the ``memcache``
-extension.
+Requires ``memcached`` PHP extension.
 
 Iteration support
     **optional key backend**.
@@ -423,13 +428,14 @@ Backend expirations
     $memcached = new Memcached();
     $memcached->addServer('127.0.0.1');
     $backend = new Cachet\Backend\Memcached($memcached);
-
+   
     $backend->useBackendExpirations = true; 
 
 
-Flushing is not supported by default, but works properly when a key backend is provided. If you
-don't wish to use a key backend, you can activate unsafe flush mode, which will simply flush your
-entire memcache instance regardless of which cache it was called against.
+Flushing is not supported by default, but works properly when a key backend is
+provided. If you don't wish to use a key backend, you can activate unsafe flush
+mode, which will simply flush your entire memcache instance regardless of which
+cache it was called against.
 
 .. code-block:: php
 
@@ -483,7 +489,8 @@ Backend expirations
 PDO
 ~~~
 
-Supports MySQL and SQLite. Patches for other database support are welcome, provided they are simple.
+Supports MySQL and SQLite. Patches for other database support are welcome,
+provided they are simple.
 
 Iteration support
     **key array + fetcher** (or if using MySQL, optionally supports **iterator**)
@@ -514,9 +521,9 @@ Backend expirations
     $backend = new Cachet\Backend\PDO(new PDO('sqlite:/tmp/pants.sqlite'));
 
 
-The PDO backend uses a separate table for each instance of ``Cachet\Cache``. The table
-name is based on the cache id prefixed with the value of ``PDO->cacheTablePrefix``,
-which defaults to ``cachet_``.
+The PDO backend uses a separate table for each instance of ``Cachet\Cache``. The
+table name is based on the cache id prefixed with the value of
+``PDO->cacheTablePrefix``, which defaults to ``cachet_``.
 
 .. code-block:: php
  
@@ -524,7 +531,8 @@ which defaults to ``cachet_``.
     $backend->cacheTablePrefix = "foo_";
 
 
-Tables are not created automatically. Call this to ensure the table exists for your cache:
+Tables are not created automatically. Call this to ensure the table exists for
+your cache:
 
 .. code-block:: php
  
@@ -532,16 +540,17 @@ Tables are not created automatically. Call this to ensure the table exists for y
     $cache = new Cachet\Cache('pants', $backend);
     $backend->ensureTableExistsForCache($cache);
 
-If you are writing a web application, this should not be done on every request, it should
-be done as part of your deployment or setup process.
+If you are writing a web application, this should not be done on every request,
+it should be done as part of your deployment or setup process.
 
 
-The PDO backend uses a key array + fetcher for iteration by default, which is not immune
-from memory exhaustion problems. The ``mysqlUnbufferedIteration`` gets rid of any memory
-issues and makes the ``PDO`` backend a first class iteration citizen. The catch is that an
-extra connection is made to the database each time the cache is iterated. This connection
-will remain open as long as the iterator object returned by ``$backend->keys()`` or
-``$backend->items()`` is in scope.
+The PDO backend uses a key array + fetcher for iteration by default, which is
+not immune from memory exhaustion problems. The ``mysqlUnbufferedIteration``
+gets rid of any memory issues and makes the ``PDO`` backend a first class
+iteration citizen. The catch is that an extra connection is made to the database
+each time the cache is iterated. This connection will remain open as long as the
+iterator object returned by ``$backend->keys()`` or ``$backend->items()`` is in
+scope.
 
 .. code-block:: php
  
@@ -549,16 +558,17 @@ will remain open as long as the iterator object returned by ``$backend->keys()``
     // Use an unbuffered query for the key iteration (MySQL only):
     $backend->mysqlUnbufferedIteration = true;
 
-This option is disabled by default and is ignored if the underlying connector's engine is
-not MySQL.
+This option is disabled by default and is ignored if the underlying connector's
+engine is not MySQL.
 
 
 Session
 ~~~~~~~
 
-Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked growth.
-``session_start()`` will be called automatically if it hasn't yet been called, so if you would like
-to customise the session startup, call ``session_start()`` yourself beforehand.
+Uses the PHP ``$_SESSION`` as the cache. Care should be taken to avoid unchecked
+growth.  ``session_start()`` will be called automatically if it hasn't yet been
+called, so if you would like to customise the session startup, call
+``session_start()`` yourself beforehand.
 
 Iteration support
     **all data**
@@ -597,10 +607,12 @@ Backend expiration
 Cascading
 ~~~~~~~~~
 
-Allows multiple backends to be traversed in priority order. If a value is found in a lower priority
-backend, it is inserted into every backend above it in the list.
+Allows multiple backends to be traversed in priority order. If a value is found
+in a lower priority backend, it is inserted into every backend above it in the
+list.
 
-This works best when the fastest backend has the highest priority (earlier in the list).
+This works best when the fastest backend has the highest priority (earlier in
+the list).
 
 Values are set in all caches in reverse priority order.
 
@@ -639,8 +651,9 @@ Backend expiration
 Sharding
 ~~~~~~~~
 
-Allows the cache to choose one of several backends for each key. The same backend is guaranteed to
-be chosen for the same key, provided the list of backends is always the same.
+Allows the cache to choose one of several backends for each key. The same
+backend is guaranteed to be chosen for the same key, provided the list of
+backends is always the same.
 
 Iteration support
     Each backend is iterated fully.
@@ -674,8 +687,9 @@ Backend expiration
 Strategies
 ----------
 
-``Cachet\Cache`` provides a series of strategy methods. Most of them require a locker implementation
-to be supplied to the cache. They all follow the same general API::
+``Cachet\Cache`` provides a series of strategy methods. Most of them require a
+locker implementation to be supplied to the cache. They all follow the same
+general API::
 
     $cache->strategyName(string $key, callable $dataRetriever);
     $cache->strategyName(string $key, int $ttl, callable $dataRetriever);
@@ -683,8 +697,8 @@ to be supplied to the cache. They all follow the same general API::
     
 There are some minor exceptions for certain strategies which are noted below.
 
-Most of the strategies interact with a locker_, and some strategies require that if a backend
-supports ``useBackendExpirations``, that it be set to ``false``.
+Most of the strategies interact with a locker_, and some strategies require that
+if a backend supports ``useBackendExpirations``, that it be set to ``false``.
 
 
 Wrap
@@ -698,9 +712,10 @@ Backend expirations
 API deviation
     **no**
 
-The simplest caching strategy provided by **Cachet** is the ``wrap`` strategy. It doesn't do
-anything to prevent stampedes, but it does not require a locker and can make your code much more
-concise by reducing boilerplate. When using ``wrap``, you can turn the following code:
+The simplest caching strategy provided by **Cachet** is the ``wrap`` strategy.
+It doesn't do anything to prevent stampedes, but it does not require a locker
+and can make your code much more concise by reducing boilerplate. When using
+``wrap``, you can turn the following code:
 
 .. code-block:: php
 
@@ -721,8 +736,9 @@ With this:
         return $service->findExpensiveValue($blahBlahBlah);
     };
 
-I find this dramatically improves readability by keeping the caching boilerplate out of the way,
-particularly when the surrounding logic or set logic gets a little more complicated.
+I find this dramatically improves readability by keeping the caching boilerplate
+out of the way, particularly when the surrounding logic or set logic gets a
+little more complicated.
 
 
 Blocking
@@ -737,14 +753,15 @@ Backend expirations
 API deviation
     **no**
 
-This requires a locker_. In the event of a cache miss, a request will try to acquire the lock before
-calling the data retrieval function. The lock will be released after the data is retrieved. Any
-concurrent request which causes a cache miss will block until the request which has acquired the
-lock releases it.
+This requires a locker_. In the event of a cache miss, a request will try to
+acquire the lock before calling the data retrieval function. The lock will be
+released after the data is retrieved. Any concurrent request which causes a
+cache miss will block until the request which has acquired the lock releases it.
 
-This strategy shouldn't be adversely affected when ``useBackendExpirations`` is set to ``true`` if
-the backend supports it, though if your cache items frequently expire after only a couple of
-seconds you'll probably have a bad time.
+This strategy shouldn't be adversely affected when ``useBackendExpirations`` is
+set to ``true`` if the backend supports it, though if your cache items
+frequently expire after only a couple of seconds you'll probably have a bad
+time.
 
 .. code-block:: php
 
@@ -757,7 +774,8 @@ seconds you'll probably have a bad time.
     });
     echo sprintf("%s %s end\n", microtime(true), uniqid('', true));
 
-The following code would output something like this (the uniqids would be slightly more complex)::
+The following code would output something like this (the uniqids would be
+slightly more complex)::
 
     1381834595 1 start
     1381834599 2 start
@@ -777,13 +795,13 @@ Backend expirations
 API deviation
     **no**
 
-This requires a locker_. If the cache misses, the first request will acquire the lock and run the
-data retriever function. Subsequent requests will return a stale value if one is available,
-otherwise it will block until the first request finishes, thus guaranteeing a value is always
-returned.
+This requires a locker_. If the cache misses, the first request will acquire the
+lock and run the data retriever function. Subsequent requests will return a
+stale value if one is available, otherwise it will block until the first request
+finishes, thus guaranteeing a value is always returned.
 
-This strategy will fail if the backend has the ``useBackendExpirations`` property and it is set to
-``true``.
+This strategy will fail if the backend has the ``useBackendExpirations``
+property and it is set to ``true``.
 
 .. code-block:: php
 
@@ -806,16 +824,17 @@ Backend expirations
 API deviation
     **yes**
 
-This requires a locker_. If the cache misses, the first request will acquire the lock and run the
-data retriever function. Subsequent requests will return a stale value if one is available,
-otherwise they will return nothing immediately.
+This requires a locker_. If the cache misses, the first request will acquire the
+lock and run the data retriever function. Subsequent requests will return a
+stale value if one is available, otherwise they will return nothing immediately.
 
-The API for this strategy is slightly different to the others as it does not guarantee a value will
-be returned, so it provides an optional output parameter ``$found`` to signal that the method has
-returned without retrieving or setting a value:
+The API for this strategy is slightly different to the others as it does not
+guarantee a value will be returned, so it provides an optional output parameter
+``$found`` to signal that the method has returned without retrieving or setting
+a value:
 
-This strategy will fail if the backend has the ``useBackendExpirations`` property and it is set to
-``true``.
+This strategy will fail if the backend has the ``useBackendExpirations``
+property and it is set to ``true``.
 
 .. code-block:: php
 
@@ -825,11 +844,11 @@ This strategy will fail if the backend has the ``useBackendExpirations`` propert
     $dataRetriever = function() use ($params) {
         return do_slow_stuff($params);
     };
-
+   
     $value = $cache->unsafeNonBlocking('key', $dataRetriever);
     $value = $cache->unsafeNonBlocking('key', $ttl, $dataRetriever);
     $value = $cache->unsafeNonBlocking('key', $dependency, $dataRetriever);
-
+   
     $value = $cache->unsafeNonBlocking('key', $dataRetriever, null, $found);
     $value = $cache->unsafeNonBlocking('key', $ttl, $dataRetriever, $found);
     $value = $cache->unsafeNonBlocking('key', $dependency, $dataRetriever, $found);
@@ -842,13 +861,15 @@ This strategy will fail if the backend has the ``useBackendExpirations`` propert
 Lockers
 -------
 
-Lockers handle managing synchronisation between requests in the various caching strategies_. They
-must be able to support blocking on acquire, and should be able to support a non-blocking acquire.
+Lockers handle managing synchronisation between requests in the various caching
+strategies_. They must be able to support blocking on acquire, and should be
+able to support a non-blocking acquire.
 
-Lockers are passed the cache and the key when acquired by a strategy_. This can be used raw if you
-want one lock for every cache key, but if you want to keep the number of locks down, you can pass a
-callable as the ``$keyHasher`` argument to the locker's constructor. You can use this to return a
-less complex version of the key.
+Lockers are passed the cache and the key when acquired by a strategy_. This can
+be used raw if you want one lock for every cache key, but if you want to keep
+the number of locks down, you can pass a callable as the ``$keyHasher`` argument
+to the locker's constructor. You can use this to return a less complex version
+of the key.
 
 .. code-block:: php
     
@@ -860,9 +881,10 @@ less complex version of the key.
 
 .. warning:: 
 
-    Lockers do not support timeouts. None of the current locking implemientations allow timeouts, so
-    you'll have to rely on a carefully tuned ``max_execution_time`` property for "safety" in the
-    case of deadlocks. This may change in future, but cannot change for the existing locker
+    Lockers do not support timeouts. None of the current locking
+    implemientations allow timeouts, so you'll have to rely on a carefully tuned
+    ``max_execution_time`` property for "safety" in the case of deadlocks. This
+    may change in future, but cannot change for the existing locker
     implementations until platform support improves (which it probably won't).
 
 
@@ -872,8 +894,8 @@ File
 Supported locking modes
     **blocking** or **non-blocking**
 
-Uses ``flock`` to handle locking. Requires a dedicated, writable directory in which locks will be
-stored.
+Uses ``flock`` to handle locking. Requires a dedicated, writable directory in
+which locks will be stored.
 
 .. code-block:: php
     
@@ -893,8 +915,8 @@ The file locker supports the same array of options as ``Cachet\Backend\File``:
         'dirPerms'=>0777,    // Important: must be octal
     ]);
 
-If the ``$keyHasher`` returns a value that contains ``/`` characters, they are converted into path
-segments (i.e. ``mkdir -p``).
+If the ``$keyHasher`` returns a value that contains ``/`` characters, they are
+converted into path segments (i.e. ``mkdir -p``).
 
 
 Semaphore
@@ -903,8 +925,9 @@ Semaphore
 Supported locking modes
     **blocking**
 
-Uses PHP's `semaphore <http://php.net/manual/en/book.sem.php>`_ functions to provide locking. PHP
-must be compiled with ``--enable-sysvsem`` for this to work.
+Uses PHP's `semaphore <http://php.net/manual/en/book.sem.php>`_ functions to
+provide locking. PHP must be compiled with ``--enable-sysvsem`` for this to
+work.
 
 This locker **does not** support non-blocking acquire.
 
@@ -920,20 +943,21 @@ This locker **does not** support non-blocking acquire.
 Dependencies
 ------------
 
-**Cachet** supports the notion of cache dependencies - an object implementing ``Cachet\Dependency``
-is serialised with your cache value and checked on retrieval. Any serialisable code can be used in
-a dependency, so this opens up a large range of invalidation possibilities beyond what TTL can
-accomplish.
+**Cachet** supports the notion of cache dependencies - an object implementing
+``Cachet\Dependency`` is serialised with your cache value and checked on
+retrieval. Any serialisable code can be used in a dependency, so this opens up a
+large range of invalidation possibilities beyond what TTL can accomplish.
 
-Dependencies can be passed per-item using ``Cachet\Cache->set($key, $value, $dependency)``, or
-using the ``Cachet\Cache->set($key, $value, $ttl)`` shorthand. The shorthand is equivalent to
-``$cache->set($key, $value, new Cachet\Dependency\TTL($ttl))``.
+Dependencies can be passed per-item using ``Cachet\Cache->set($key, $value,
+$dependency)``, or using the ``Cachet\Cache->set($key, $value, $ttl)``
+shorthand. The shorthand is equivalent to ``$cache->set($key, $value, new
+Cachet\Dependency\TTL($ttl))``.
 
-Without a dependency, a cached item will stay cached until it is removed manually or until the
-underlying backend decides to remove it of its own accord.
+Without a dependency, a cached item will stay cached until it is removed
+manually or until the underlying backend decides to remove it of its own accord.
 
-You can assign a dependency to be used as the default for an entire cache if none is provided for
-an item:
+You can assign a dependency to be used as the default for an entire cache if
+none is provided for an item:
 
 .. code-block:: php
     
@@ -952,9 +976,9 @@ an item:
 
 .. warning::
 
-    Just because an item has expired does not mean it has been removed. Expired items will be
-    removed on retrieval, but garbage collection is a manual process that should be performed by a
-    separate process.
+    Just because an item has expired does not mean it has been removed. Expired
+    items will be removed on retrieval, but garbage collection is a manual
+    process that should be performed by a separate process.
     
 
 TTL
@@ -1058,20 +1082,20 @@ strict mode comparison by passing a third boolean argument to the constructor:
     <?php
     $dependency = new Cachet\Dependency\CachedTag($tagCacheServiceId, 'tag', !!'strict');
 
-Strict mode uses ``===`` for everything except objects, for which it uses ``==``. This is because
-``===`` will never match ``true`` for objects as it compares references only; the values to be
-compared have each been retrieved from separate caches so they are highly unlikely to ever share a
-reference.
+Strict mode uses ``===`` for everything except objects, for which it uses
+``==``. This is because ``===`` will never match ``true`` for objects as it
+compares references only; the values to be compared have each been retrieved
+from separate caches so they are highly unlikely to ever share a reference.
 
 
 Composite
 ~~~~~~~~~
 
-Checks many dependencies. Can be set to be valid when any dependency is valid, or when all
-dependencies are valid.
+Checks many dependencies. Can be set to be valid when any dependency is valid,
+or when all dependencies are valid.
 
-**All** mode: the following will be considered valid if **both** the item is less than 5 minutes old
-**and** the file ``/path/to/file`` has not been touched.
+**All** mode: the following will be considered valid if **both** the item is
+less than 5 minutes old **and** the file ``/path/to/file`` has not been touched.
 
 .. code-block:: php
 
@@ -1082,8 +1106,8 @@ dependencies are valid.
     ));
 
 
-**Any** mode: The following will be considered valid when **either** the item is less than 5 minutes
-old **or** the file ``/path/to/file`` has not been touched.
+**Any** mode: The following will be considered valid when **either** the item is
+less than 5 minutes old **or** the file ``/path/to/file`` has not been touched.
 
 .. code-block:: php
 
@@ -1114,10 +1138,11 @@ Session Handler
     $_SESSION['foo'] = 'bar';
 
 
-By default, ``Cachet\SessionHandler`` does nothing when the ``gc`` (garbage collect) method is
-called. This is because cache iteration can't be relied upon to be performant - this is a backend
-specific characteristic and can vary wildly (see the iteration_ section for more details) and it
-is up to the developer to be aware of this when selecting a backend. 
+By default, ``Cachet\SessionHandler`` does nothing when the ``gc`` (garbage
+collect) method is called. This is because cache iteration can't be relied upon
+to be performant - this is a backend specific characteristic and can vary wildly
+(see the iteration_ section for more details) and it is up to the developer to
+be aware of this when selecting a backend. 
 
 You can activate automatic garbage collection like so:
 
@@ -1131,22 +1156,25 @@ You can activate automatic garbage collection like so:
     Cachet\SessionHandler::$instance->runGc = true;
 
 
-For backends that don't use an ``Iterator`` for iteration_, it is **strongly** recommended that you
-implement garbage collection using a separate process rather than using PHP's gc probability
-mechanism.
+For backends that don't use an ``Iterator`` for iteration_, it is **strongly**
+recommended that you implement garbage collection using a separate process
+rather than using PHP's gc probability mechanism.
 
 The following backends should **not** be used with the ``SessionHandler``:
 
 ``Cachet\Backend\File``
-    This will raise a warning. I can't see any way that PHP's default file session mechanism isn't
-    superior to this backend - they essentially do the same thing only one is implemented in C and
-    seriously battle tested, and the other is not.
+    This will raise a warning. I can't see any way that PHP's default file
+    session mechanism isn't superior to this backend - they essentially do the
+    same thing only one is implemented in C and seriously battle tested, and the
+    other is not.
 
 ``Cachet\Backend\Session``
-    This will raise an exception. You can't use the session for storing sessions.
+    This will raise an exception. You can't use the session for storing
+    sessions.
 
 ``Cachet\Backend\Memory``
-    This can't possibly work either - the data will disappear when the request is complete.
+    This can't possibly work either - the data will disappear when the request
+    is complete.
 
 
 .. _counter:
@@ -1155,40 +1183,48 @@ The following backends should **not** be used with the ``SessionHandler``:
 Counters
 --------
 
-Some backends provide methods for incrementing or decrementing an integer atomically. Cachet
-attempts to provide a consistent interface to this functionality.
+Some backends provide methods for incrementing or decrementing an integer
+atomically. Cachet attempts to provide a consistent interface to this
+functionality.
 
 Unfortunately, it doesn't always succeed. There are some catches (like always):
 
-- In some cases, though the backend's increment and decrement methods work atomcally, they require
-  you to set the value before you can use it in a way which is not atomic. The **Cachet** counter
-  interface allows you to call increment if there is no value already set.
+- In some cases, though the backend's increment and decrement methods work
+  atomcally, they require you to set the value before you can use it in a way
+  which is not atomic. The **Cachet** counter interface allows you to call
+  increment if there is no value already set.
 
-  Unfortunately, this means that multiple concurrent processes can call ``$backend->increment()``
-  and see that nothing is there before one of those processes has a chance to call ``set`` to
-  initialise the counter. Counters that exhibit this behaviour can be passed an optional locker_ to
-  mitigate this problem.
+  Unfortunately, this means that multiple concurrent processes can call
+  ``$backend->increment()`` and see that nothing is there before one of those
+  processes has a chance to call ``set`` to initialise the counter. Counters
+  that exhibit this behaviour can be passed an optional locker_ to mitigate this
+  problem.
 
 - All of the backends support decrementing below zero except Memcache.
 
-- Several backends have limits on the maximum counter value and will overflow if this value is
-  reached. There has not been enough testing done yet to determine what the maximum value for each
-  counter backend is, and it may be platform and build dependent. An estimate has been provided, but
-  this is based on the ARM architeture. YMMV.
+- Several backends have limits on the maximum counter value and will overflow if
+  this value is reached. There has not been enough testing done yet to determine
+  what the maximum value for each counter backend is, and it may be platform and
+  build dependent. An estimate has been provided, but this is based on the ARM
+  architeture. YMMV.
 
-- Counters do not support dependencies, but some counters do allow a single TTL to be specified for
-  all counters. This is indicated by the presence of a ``$backend->counterTTL`` property.
+- Counters do not support dependencies, but some counters do allow a single TTL
+  to be specified for all counters. This is indicated by the presence of a
+  ``$backend->counterTTL`` property.
 
-- There does exist the fabled Counter class that is atomic, does not overflow and supports any type
-  of cache dependency (``Cachet\Counter\SafeCache``). Unfortunately, it is *slow* and it requires a
-  locker. Fast, secure, cheap, stable, good. Pick two.
+- There does exist the fabled Counter class that is atomic, does not overflow
+  and supports any type of cache dependency (``Cachet\Counter\SafeCache``).
+  Unfortunately, it is *slow* and it requires a locker. Fast, secure, cheap,
+  stable, good. Pick two.
 
-Why aren't counters just a part of ``Cachet\Cache``? I tried to do it that way first, but after
-spending a bit of time hacking and unable to escape the feeling that I was wrecking things that were
-nice and clean to support it, I realised that it was a separate responsibility deserving its own
-hierarchy. There also isn't a clean 1-to-1 relationship between counters and backends.
+Why aren't counters just a part of ``Cachet\Cache``? I tried to do it that way
+first, but after spending a bit of time hacking and unable to escape the feeling
+that I was wrecking things that were nice and clean to support it, I realised
+that it was a separate responsibility deserving its own hierarchy. There also
+isn't a clean 1-to-1 relationship between counters and backends.
 
-Counters implement the ``Cachet\Counter`` interface, and support the following API:
+Counters implement the ``Cachet\Counter`` interface, and support the following
+API:
 
 .. code-block:: php
 
@@ -1271,12 +1307,13 @@ Overflow error
     <?php
     $redis = new \Cachet\Connector\PHPRedis('127.0.0.1');
     $counter = new \Cachet\Counter\PHPRedis($redis);
-
+   
     // Or with optional cache value prefix. Prefix has a forward slash appended.
     $counter = new \Cachet\Counter\PHPRedis($redis, 'prefix');
 
-Redis itself does support applying a TTL to a counter, but I haven't come up with the best way to
-implement it atomically yet. Consider it a work in progress.
+Redis itself does support applying a TTL to a counter, but I haven't come up
+with the best way to implement it atomically yet. Consider it a work in
+progress.
 
 
 Memcache
@@ -1300,7 +1337,7 @@ Overflow error
     // Construct by passing anything that \Cachet\Connector\Memcache accepts as its first
     // constructor argument:
     $counter = new \Cachet\Counter\Memcache('127.0.0.1');
-
+   
     // Construct by passing in a connector. This allows you to share a connector instance 
     // with a cache backend:
     $memcache = new \Cachet\Connector\Memcache('127.0.0.1');
@@ -1309,10 +1346,10 @@ Overflow error
     
     // Optional cache value prefix. Prefix has a forward slash appended.
     $counter = new \Cachet\Counter\Memcache($memcache, 'prefix');
-
+   
     // TTL
     $counter->counterTTL = 86400;
-
+   
     // If you would like set operations to be atomic, pass a locker to the constructor
     // or assign to the ``locker`` property
     $counter->locker = $locker;
@@ -1322,10 +1359,12 @@ Overflow error
 PDOSQLite and PDOMySQL
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Unlike the PDO cache backend, different database engines require very different queries for counter
-operations. If your PDO engine is sqlite, use ``Cachet\Counter\PDOSQLite``. If your PDO engine is
-MySQL, use ``Cachet\Counter\PDOMySQL``. ``PDOSQLite`` may be compatible with other database backends
-(though this is untested), but ``PDOMySQL`` uses MySQL-specific queries.
+Unlike the PDO cache backend, different database engines require very different
+queries for counter operations. If your PDO engine is sqlite, use
+``Cachet\Counter\PDOSQLite``. If your PDO engine is MySQL, use
+``Cachet\Counter\PDOMySQL``. ``PDOSQLite`` may be compatible with other database
+backends (though this is untested), but ``PDOMySQL`` uses MySQL-specific
+queries.
 
 The table name defaults to ``cachet_counter`` for all counters. This can be changed.
 
@@ -1350,7 +1389,7 @@ Overflow error
     $counter = new \Cachet\Counter\PDOMySQL([
         'dsn'=>'mysql:host=localhost', 'user'=>'user', 'password'=>'password'
     ]);
-
+   
     // Construct by passing in a connector. This allows you to share a connector instance 
     // with a cache backend:
     $connector = new \Cachet\Connector\PDO('sqlite::memory:');
@@ -1358,17 +1397,18 @@ Overflow error
    
     $connector = new \Cachet\Connector\PDO(['dsn'=>'mysql:host=localhost', ...]);
     $counter = new \Cachet\Counter\PDOMySQL($connector);
-
+   
     $backend = new \Cachet\Backend\PDO($connector);
-
+   
     // Use a specific table name
     $counter->tableName = 'my_custom_table';
     $counter = new \Cachet\Counter\PDOSQLite($connector, 'my_custom_table');
     $counter = new \Cachet\Counter\PDOMySQL($connector, 'my_custom_table');
 
 
-The table needs to be initialised in order to be used. It is not recommended to do this inside your
-web application - you should do it as part of your deployment process or application setup:
+The table needs to be initialised in order to be used. It is not recommended to
+do this inside your web application - you should do it as part of your
+deployment process or application setup:
 
 .. code-block:: php
 
@@ -1395,10 +1435,10 @@ Overflow error
 
     <?php
     $counter = new \Cachet\Counter\XCache();
-
+   
     // Optional cache value prefix. Prefix has a forward slash appended.
     $counter = new \Cachet\Counter\XCache('prefix');
-
+   
     // TTL
     $counter->counterTTL = 86400;
 
@@ -1449,22 +1489,22 @@ Custom backends are a snap to write - simply implement ``Cachet\Backend``.
 Please make sure you follow these guidelines:
 
 - Backends aren't meant to be used by themselves - they should be used by an
-  instance of ``Cachet\Cache``
+instance of ``Cachet\Cache``
 
 - It must be possible to use the same backend instance with more than one
-  instance of ``Cachet\Cache``.
+instance of ``Cachet\Cache``.
 
 - ``get()`` must return an instance of ``Cachet\Item``. The backend must not
-  check whether an item is valid as ``Cachet\Cache`` depends on an item always
-  being returned.
+check whether an item is valid as ``Cachet\Cache`` depends on an item always
+being returned.
 
 - Make sure you fully implement ``get()``, ``set()`` and ``delete()`` at
-  minimum. Anything else is not strictly necessary, though useful.
+minimum. Anything else is not strictly necessary, though useful.
 
 - ``set()`` must store enough information so that ``get()`` can return a fully
-  populated instance of ``Cachet\Item``. This usually means that if your backend
-  can't support PHP objects directly, you should just ``serialize()`` the
-  ``Cachet\Item`` directly.
+populated instance of ``Cachet\Item``. This usually means that if your backend
+can't support PHP objects directly, you should just ``serialize()`` the
+``Cachet\Item`` directly.
 
 You can reduce the size of the data placed into the backend by using
 ``Cachet\Item->compact()`` and ``Cachet\Item::uncompact()``. This strips much of
@@ -1510,8 +1550,8 @@ Or just call it without arguments to run all of the concurrency tests using the
 default settings. It will exit with status ``0`` if all tests pass, or ``1`` if
 any of them fail.
 
-Some of the tests are designed to fail, but these contain ``broken`` in their ID. You can exclude
-unsafe tests like so::
+Some of the tests are designed to fail, but these contain ``broken`` in their
+ID. You can exclude unsafe tests like so::
 
     php test/concurrent.php -x broken
 

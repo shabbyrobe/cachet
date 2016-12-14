@@ -16,6 +16,10 @@ class PHPRedis implements \Cachet\Counter
         $this->prefix = $prefix;
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $redis = $this->connector->redis ?: $this->connector->connect();
@@ -30,6 +34,11 @@ class PHPRedis implements \Cachet\Counter
         return (int) $value ?: 0;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         $redis = $this->connector->redis ?: $this->connector->connect();
@@ -37,6 +46,11 @@ class PHPRedis implements \Cachet\Counter
         $redis->set($key, $value);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         $redis = $this->connector->redis ?: $this->connector->connect();
@@ -44,6 +58,11 @@ class PHPRedis implements \Cachet\Counter
         return $redis->incrBy($key, $by);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         $redis = $this->connector->redis ?: $this->connector->connect();

@@ -15,6 +15,10 @@ class XCache extends IterationAdapter
         $this->prefix = $prefix;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);

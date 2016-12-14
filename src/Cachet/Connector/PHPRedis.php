@@ -3,8 +3,10 @@ namespace Cachet\Connector;
 
 class PHPRedis
 {
+    /** @var \Redis|null */
     public $redis;
 
+    /** @var array */
     private $redisInfo;
 
     function __construct($redis)
@@ -13,12 +15,12 @@ class PHPRedis
             $this->redis = $redis;
         }
         else {
-            if (is_string($redis))
+            if (is_string($redis)) {
                 $redis = ['host'=>$redis];
-
-            if (isset($redis['db']))
+            }
+            if (isset($redis['db'])) {
                 $redis['database'] = $redis['db'];
-
+            }
             $this->redisInfo = array_merge(
                 [
                     'host'=>null,
@@ -34,9 +36,9 @@ class PHPRedis
 
     function connect()
     {
-        if ($this->redis)
+        if ($this->redis) {
             return $this->redis;
-
+        }
         if (!$this->redisInfo) {
             throw new \RuntimeException(
                 "Can't reconnect to Redis when passing a Redis instance to the constructor"
@@ -45,14 +47,14 @@ class PHPRedis
 
         $this->redis = new \Redis();
         $info = $this->redisInfo;
-        if (!$info['persistent'])
+        if (!$info['persistent']) {
             $this->redis->connect($info['host'], $info['port'], $info['timeout']);
-        else
+        } else {
             $this->redis->pconnect($info['host'], $info['port'], $info['timeout']);
-
-        if ($info['database'])
+        }
+        if ($info['database']) {
             $this->redis->select($info['database']);
-
+        }
         return $this->redis;
     }
 

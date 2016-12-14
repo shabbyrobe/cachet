@@ -21,6 +21,11 @@ class APCU implements \Cachet\Counter
         $this->locker = $locker;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         if (!is_numeric($value)) {
@@ -32,6 +37,10 @@ class APCU implements \Cachet\Counter
         }
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
@@ -68,11 +77,21 @@ class APCU implements \Cachet\Counter
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         return $this->change('apcu_inc', $key, $by);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         return $this->change('apcu_dec', $key, -$by);

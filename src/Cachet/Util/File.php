@@ -7,6 +7,8 @@ class File
     public $group;
     public $filePerms;
     public $dirPerms;
+
+    /** @var string */
     public $basePath;
 
     /**
@@ -16,8 +18,9 @@ class File
 
     public function __construct($basePath, $options=array())
     {
-        if (!is_writable($basePath))
+        if (!is_writable($basePath)) {
             throw new \InvalidArgumentException("Base path must be writable");
+        }
 
         $this->basePath = $basePath;
         $this->user = isset($options['user']) ? $options['user'] : null;
@@ -25,8 +28,9 @@ class File
         $this->filePerms = isset($options['filePerms']) ? $options['filePerms'] : null;
         $this->dirPerms = isset($options['dirPerms']) ? $options['dirPerms'] : null;
 
-        if ($unknown = array_diff(array_keys($options), array('user', 'group', 'filePerms', 'dirPerms')))
+        if ($unknown = array_diff(array_keys($options), array('user', 'group', 'filePerms', 'dirPerms'))) {
             throw new \InvalidArgumentException("Unknown options: ".implode(', ', $unknown));
+        }
     }
 
     function read($path, &$found=null)
@@ -34,9 +38,9 @@ class File
         $found = false;
         $fullPath = $this->resolvePath($path);
         if (file_exists($fullPath)) {
-            if (!is_file($fullPath))
+            if (!is_file($fullPath)) {
                 throw new \UnexpectedValueException();
-
+            }
             $found = true;
             return file_get_contents($fullPath);
         }
@@ -81,17 +85,20 @@ class File
     function delete($path)
     {
         $fullPath = $this->resolvePath($path);
-        if (file_exists($fullPath))
+        if (file_exists($fullPath)) {
             unlink($fullPath);
+        }
     }
 
     function flush($path)
     {
         $iter = $this->getIterator($path);
-        if (!$iter)
+        if (!$iter) {
             return;
+        }
 
         $lastDir = null;
+
         foreach ($iter as $item) {
             if ($item->isFile()) {
                 $currentDir = dirname($item);
@@ -104,7 +111,8 @@ class File
             if ($this->purgeEmptyDirs) {
                 if ($lastDir != null && $currentDir != $lastDir) {
                     if (count(glob("$lastDir/*")) === 0) {
-                        rmdir($lastDir);
+                        // this cast is to quieten phan, which can't verify the guard clauses yet.
+                        rmdir((string)$lastDir);
                     }
                 }
                 $lastDir = $currentDir;
@@ -133,18 +141,22 @@ class File
 
     private function applySettings($name, $file=true)
     {
-        if ($this->user)
+        if ($this->user) {
             chown($name, $this->user);
-        if ($this->group)
+        }
+        if ($this->group) {
             chown($name, $this->group);
+        }
 
         if ($file) {
-            if ($this->filePerms)
+            if ($this->filePerms) {
                 chmod($name, $this->filePerms);
+            }
         }
         else {
-            if ($this->dirPerms)
+            if ($this->dirPerms) {
                 chmod($name, $this->dirPerms);
+            }
         }
     }
 

@@ -20,6 +20,10 @@ class PDO implements Backend, Iterator
         $this->connector = $pdo instanceof Connector\PDO ? $pdo : new Connector\PDO($pdo);
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
@@ -74,11 +78,16 @@ class PDO implements Backend, Iterator
         $params = [$item->key, $keyHash, serialize($itemData), $item->timestamp, $expiryTimestamp];
         if ($stmt->execute($params) === false) {
             throw new \UnexpectedValueException(
-                "Cache $cacheId set query failed: ".implode(' ', $stmt->errorInfo())
+                "Cache {$item->cacheId} set query failed: ".implode(' ', $stmt->errorInfo())
             );
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
@@ -96,6 +105,10 @@ class PDO implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
@@ -114,6 +127,10 @@ class PDO implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         $tableName = $this->getTableName($cacheId);
@@ -142,6 +159,10 @@ class PDO implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         $iter = new Iterator\Fetching($cacheId, $this->keys($cacheId), $this);
@@ -155,6 +176,10 @@ class PDO implements Backend, Iterator
         return hash('sha256', $key);
     }
 
+    /**
+     * @param string $cacheId
+     * @return string
+     */
     private function getTableName($cacheId)
     {
         if (!isset($this->tables[$cacheId])) {
@@ -170,7 +195,7 @@ class PDO implements Backend, Iterator
      * for your cache. If you are writing a web application, this should not be done
      * on every request.
      * 
-     * @param $cache Cachet\Cache|string  
+     * @param \Cachet\Cache|string $cache
      *        Accepts a cache instance or a string of the cache's ID
      */
     public function ensureTableExistsForCache($cache)

@@ -5,6 +5,9 @@ use Cachet\Backend;
 
 class Fetching extends \IteratorIterator
 {
+    private $cacheId;
+    private $backend;
+
     function __construct($cacheId, $keyIterator, Backend $backend)
     {
         if (is_array($keyIterator))

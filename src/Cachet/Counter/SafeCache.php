@@ -3,10 +3,16 @@ namespace Cachet\Counter;
 
 class SafeCache implements \Cachet\Counter
 {
+    /** @var \Cachet\Cache */
     public $cache;
+
+    /** @var \Cachet\Locker */
     public $locker;
 
+    /** @var callable */
     public $addCallback;
+
+    /** @var callable */
     public $subCallback;
 
     public function __construct(\Cachet\Cache $cache, \Cachet\Locker $locker)
@@ -31,6 +37,10 @@ class SafeCache implements \Cachet\Counter
         }
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $formattedKey = \Cachet\Helper::formatKey(['counter', $key]);
@@ -38,12 +48,22 @@ class SafeCache implements \Cachet\Counter
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         $formattedKey = \Cachet\Helper::formatKey(['counter', $key]);
         $this->cache->set($formattedKey, $value);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         $addCallback = $this->addCallback;
@@ -55,6 +75,11 @@ class SafeCache implements \Cachet\Counter
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         $subCallback = $this->subCallback;

@@ -26,7 +26,6 @@ class MapIterator implements \Iterator
             $map = $this->map;
             $key = null;
             $this->current = $map($current, $key);
-            $this->index;
 
             $this->key = $key === null ? $this->index++ : $key;
         }

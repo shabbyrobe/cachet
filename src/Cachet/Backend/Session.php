@@ -13,6 +13,10 @@ class Session implements Backend, Iterator
         $this->baseKey = $baseKey ?: 'cache';
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         if (session_id() === '') {
@@ -33,6 +37,11 @@ class Session implements Backend, Iterator
         $_SESSION[$this->baseKey][$item->cacheId][$item->key] = $item;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         if (session_id() === '') {
@@ -41,6 +50,10 @@ class Session implements Backend, Iterator
         unset($_SESSION[$this->baseKey][$cacheId][$key]);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         if (session_id() === '') {
@@ -49,6 +62,10 @@ class Session implements Backend, Iterator
         unset($_SESSION[$this->baseKey][$cacheId]);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         if (session_id() === '') {
@@ -61,6 +78,10 @@ class Session implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         if (session_id() === '') {

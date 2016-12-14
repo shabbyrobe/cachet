@@ -8,14 +8,17 @@ class Helper
         return hexdec(substr(md5($key), -8));
     }
 
-    public static function formatKey($parts)
+    public static function formatKey(array $parts)
     {
         $parts = array_filter($parts);
         return implode('/', $parts);
     }
 
+    /**
+     * @suppress PhanTypeMismatchArgumentInternal
+     */
     public static function getType($arg)
     {
-        return is_object($input) ? get_class($input) : gettype($input);
+        return is_object($arg) ? get_class($arg) : gettype($arg);
     }
 }

@@ -6,21 +6,18 @@ use Cachet\Backend\IterationAdapter;
 
 class Cache implements \ArrayAccess
 {
+    /** @var string */
     public $id;
 
-    /**
-     * @var Cachet\Backend
-     */
+    /** @var Backend */
     public $backend;
 
-    /**
-     * @var Cachet\Locker
-     */
+    /** @var Locker */
     public $locker;
 
     /**
      * Default dependency to use when none passed
-     * @var Cachet\Dependency
+     * @var Dependency
      */
     public $dependency;
 
@@ -31,6 +28,9 @@ class Cache implements \ArrayAccess
 
     private $expiringBackend;
 
+    /**
+     * @param string $id
+     */
     public function __construct($id, Backend $backend, Dependency $dependency=null)
     {
         $this->id = $id;
@@ -38,6 +38,9 @@ class Cache implements \ArrayAccess
         $this->dependency = $dependency;
     }
 
+    /**
+     * @param string $key
+     */
     function get($key, &$found=null)
     {
         $item = $this->backend->get($this->id, $key);
@@ -53,12 +56,21 @@ class Cache implements \ArrayAccess
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @return bool
+     */
     function has($key)
     {
         $item = $this->get($key, $found);
         return $found;
     }
 
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
     function set($key, $value, $dependencyOrDuration=null)
     {
         $dependency = null;
@@ -83,16 +95,26 @@ class Cache implements \ArrayAccess
         return $this->backend->set($item);
     }
 
+    /**
+     * @param string $key
+     * @return void
+     */
     function delete($key)
     {
         return $this->backend->delete($this->id, $key);
     }
 
+    /**
+     * @return void
+     */
     function flush()
     {
         return $this->backend->flush($this->id);
     }
 
+    /**
+     * @param Item $item
+     */
     function validateItem($item)
     {
         if (!$item instanceof Item) {
@@ -118,6 +140,9 @@ class Cache implements \ArrayAccess
         }
     }
 
+    /**
+     * @return \Iterator
+     */
     function keys()
     {
         $this->ensureIterator();
@@ -126,6 +151,9 @@ class Cache implements \ArrayAccess
         });
     }
 
+    /**
+     * @return \Iterator
+     */
     function values()
     {
         $this->ensureIterator();
@@ -138,6 +166,9 @@ class Cache implements \ArrayAccess
         );
     }
 
+    /**
+     * @return \Iterator
+     */
     function items($all=false)
     {
         $this->ensureIterator();
@@ -181,6 +212,11 @@ class Cache implements \ArrayAccess
         return [$key, $callback, $dependency];
     }
 
+    /**
+     * @param string $key
+     * @param callable|Dependency $dependencyOrCallback
+     * @return mixed
+     */
     function wrap($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         list ($key, $callback, $dependency) = $this->strategyArgs(func_get_args());
@@ -196,6 +232,11 @@ class Cache implements \ArrayAccess
         return $data;
     }
 
+    /**
+     * @param string $key
+     * @param callable|Dependency $dependencyOrCallback
+     * @return mixed
+     */
     function blocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
         if (!$this->locker) {
@@ -207,7 +248,7 @@ class Cache implements \ArrayAccess
         $result = 'found';
         $data = $this->get($key, $found);
         if (!$found) {
-            $this->locker->acquire($this, $key);
+            $this->locker->acquire($this->id, $key);
             try {
                 $data = $this->get($key, $found);
                 if (!$found) {
@@ -220,11 +261,11 @@ class Cache implements \ArrayAccess
                 }
             }
             catch (\Exception $ex) {
-                $this->locker->release($this, $key);
+                $this->locker->release($this->id, $key);
                 $msg = $ex->getMessage();
-                throw new \RuntimeException("Blocking strategy failed: $msg", null, $ex);
+                throw new \RuntimeException("Blocking strategy failed: $msg", 0, $ex);
             }
-            $this->locker->release($this, $key);
+            $this->locker->release($this->id, $key);
         }
         return $data;
     }
@@ -232,6 +273,10 @@ class Cache implements \ArrayAccess
     /**
      * If the locker is locked, this will return a stale item if one
      * is available, or block until an item becomes available.
+     *
+     * @param string $key
+     * @param callable|Dependency $dependencyOrCallback
+     * @return mixed
      */
     function safeNonblocking($key, $dependencyOrCallback, $callback=null, &$result=null)
     {
@@ -248,7 +293,7 @@ class Cache implements \ArrayAccess
 
         $result = 'found';
         if (!$item || $stale) {
-            if ($this->locker->acquire($this, $key, !'block')) {
+            if ($this->locker->acquire($this->id, $key, !'block')) {
                 try {
                     $item = $this->backend->get($this->id, $key);
                     if (!$item || !$this->validateItem($item)) {
@@ -262,25 +307,25 @@ class Cache implements \ArrayAccess
                     }
                 }
                 catch (\Exception $ex) {
-                    $this->locker->release($this, $key);
+                    $this->locker->release($this->id, $key);
                     $msg = $ex->getMessage();
-                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", null, $ex);
+                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", 0, $ex);
                 }
-                $this->locker->release($this, $key);
+                $this->locker->release($this->id, $key);
             }
             elseif (!$item) {
                 // if another process has the lock and we have no stale item to return,
                 // block until one becomes available.
-                $this->locker->acquire($this, $key);
+                $this->locker->acquire($this->id, $key);
                 try {
                     $item = $this->backend->get($this->id, $key);
                 }
                 catch (\Exception $ex) {
-                    $this->locker->release($this, $key);
+                    $this->locker->release($this->id, $key);
                     $msg = $ex->getMessage();
-                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", null, $ex);
+                    throw new \RuntimeException("Safe nonblocking strategy failed: $msg", 0, $ex);
                 }
-                $this->locker->release($this, $key);
+                $this->locker->release($this->id, $key);
                 $result = 'foundWait';
             }
             else {
@@ -293,6 +338,10 @@ class Cache implements \ArrayAccess
     /**
      * If the locker is locked, this will return a stale item if one
      * is available, or null if one is not.
+     *
+     * @param string $key
+     * @param callable|Dependency $dependencyOrCallback
+     * @return mixed
      */
     function unsafeNonBlocking($key, $dependency, $callback=null, &$found=null, &$result=null)
     {
@@ -309,7 +358,7 @@ class Cache implements \ArrayAccess
 
         $result = 'found';
         if (!$item || $stale) {
-            if ($this->locker->acquire($this, $key, !'block')) {
+            if ($this->locker->acquire($this->id, $key, !'block')) {
                 try {
                     $item = $this->backend->get($this->id, $key);
                     if (!$item) {
@@ -323,11 +372,11 @@ class Cache implements \ArrayAccess
                     }
                 }
                 catch (\Exception $ex) {
-                    $this->locker->release($this, $key);
+                    $this->locker->release($this->id, $key);
                     $msg = $ex->getMessage();
-                    throw new \RuntimeException("Unsafe nonblocking strategy failed: $msg", null, $ex);
+                    throw new \RuntimeException("Unsafe nonblocking strategy failed: $msg", 0, $ex);
                 }
-                $this->locker->release($this, $key);
+                $this->locker->release($this->id, $key);
             }
             else {
                 $result = $item ? 'foundStale' : 'notFound';
@@ -354,21 +403,34 @@ class Cache implements \ArrayAccess
         }
     }
 
+    /**
+     * @param string $key
+     */
     function offsetGet($key)
     {
         return $this->get($key, $value);
     }
 
+    /**
+     * @param string $key
+     * @param mixed $value
+     */
     function offsetSet($key, $value)
     {
         return $this->set($key, $value);
     }
 
+    /**
+     * @param string $key
+     */
     function offsetExists($key)
     {
         return $this->has($key);
     }
 
+    /**
+     * @param string $key
+     */
     function offsetUnset($key)
     {
         $this->delete($key);

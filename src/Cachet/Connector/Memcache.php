@@ -3,23 +3,31 @@ namespace Cachet\Connector;
 
 class Memcache
 {
+    /** @var \Memcached|null */
     public $memcache;
 
     private $servers = [];
+
+    /** @var callable|null */
     private $creatorCallback = null;
+
+    /** @var string|null */
     private $persistentId;
 
-    private static $useMemcached = null;
-
+    /**
+     * @param \Memcached|array|string $memcache
+     * @param string $persistentId
+     */
     public function __construct($memcache, $persistentId=null)
     {
-        if ($memcache instanceof \Memcached || $memcache instanceof \Memcache) {
+        if ($memcache instanceof \Memcached) {
             $this->memcache = $memcache;
         }
         else {
             $this->persistentId = $persistentId;
-            if (is_string($memcache))
+            if (is_string($memcache)) {
                 $memcache = [['server'=>$memcache]];
+            }
             if (is_array($memcache)) {
                 foreach ($memcache as $server) {
                     $this->servers[] = array_merge(
@@ -31,11 +39,9 @@ class Memcache
                         $server
                     );
                 }
-            }
-            elseif (is_callable($memcache)) {
+            } elseif (is_callable($memcache)) {
                 $this->creatorCallback = $memcache;
-            }
-            else {
+            } else {
                 throw new \InvalidArgumentException();
             }
         }
@@ -48,28 +54,11 @@ class Memcache
                 $this->memcache = call_user_func($this->creatorCallback, $this);
             }
             elseif ($this->servers) {
-                if (static::$useMemcached === null) {
-                    static::detectMemcache();
-                }
-
-                if (static::$useMemcached) {
-                    $this->memcache = $this->persistentId
-                        ? new \Memcached($this->persistentId)
-                        : new \Memcached()
-                    ;
-                    $this->memcache->addServers($this->servers);
-                }
-                else {
-                    $this->memcache = new \Memcache();
-                    foreach ($this->servers as $server) {
-                        $this->memcache->addServer(
-                            $server['host'],
-                            $server['port'],
-                            !!$this->persistentId,
-                            $server['weight'] ?: null
-                        );
-                    }
-                }
+                $this->memcache = $this->persistentId
+                    ? new \Memcached($this->persistentId)
+                    : new \Memcached()
+                ;
+                $this->memcache->addServers($this->servers);
             }
             else {
                 throw new \RuntimeException(
@@ -82,20 +71,7 @@ class Memcache
 
     function disconnect()
     {
-        if ($this->memcache instanceof \Memcached)
-            $this->memcache->quit();
-        elseif ($this->memchace instanceof \Memcache)
-            $this->memcache->close();
+        $this->memcache->quit();
         $this->memcache = null;
-    }
-
-    private static function detectMemcache()
-    {
-        if (extension_loaded('memcached'))
-            static::$useMemcached = true;
-        elseif (extension_loaded('memcache'))
-            static::$useMemcached = false;
-        else
-            throw new \RuntimeException("Neither memcached nor memcache extensions loaded");
     }
 }

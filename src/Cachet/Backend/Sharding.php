@@ -25,6 +25,10 @@ class Sharding implements Backend, Iterator
         $this->backendCount = $count;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $backend = $this->selectBackend($cacheId, $key);
@@ -37,12 +41,21 @@ class Sharding implements Backend, Iterator
         return $backend->set($item);
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         $backend = $this->selectBackend($cacheId, $key);
         return $backend->delete($cacheId, $key);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         foreach ($this->backends as $backend) {
@@ -50,6 +63,10 @@ class Sharding implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         $iter = new \AppendIterator();
@@ -63,6 +80,10 @@ class Sharding implements Backend, Iterator
         return new \Cachet\Util\ReindexingIterator($iter);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         $iter = new \AppendIterator();

@@ -143,7 +143,8 @@ class CacheTest extends \CachetTestCase
     {
         $this->cache->deleteInvalid = false;
         
-        $item = new Item('cache', 'key', 'value', 'Not a dependency');
+        $item = new Item('cache', 'key', 'value');
+        $item->dependency = 'Not a dependency';
         $this->backend->set($item);
         
         $item = $this->cache->get('key', $found);

@@ -59,6 +59,11 @@ class PDOMySQL implements \Cachet\Counter
         return hash('sha256', $key);
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         $pdo = $this->connector->pdo ?: $this->connector->connect();
@@ -88,6 +93,10 @@ class PDOMySQL implements \Cachet\Counter
         }
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $table = trim(preg_replace("/[`]/", "", $this->tableName));
@@ -103,11 +112,21 @@ class PDOMySQL implements \Cachet\Counter
         return $stmt->fetchColumn() ?: 0;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         return $this->change($key, $by);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         return $this->change($key, -$by);

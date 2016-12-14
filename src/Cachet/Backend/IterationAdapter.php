@@ -28,6 +28,10 @@ abstract class IterationAdapter implements Backend, Iterator
         $this->keyBackend = $backend;
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         if (!$this->keyBackend) {
@@ -38,6 +42,10 @@ abstract class IterationAdapter implements Backend, Iterator
         });
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         $fetching = new Iterator\Fetching($cacheId, $this->keys($cacheId), $this);
@@ -61,6 +69,11 @@ abstract class IterationAdapter implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         if ($this->keyBackend) {
@@ -69,6 +82,10 @@ abstract class IterationAdapter implements Backend, Iterator
         $this->deleteFromStore($cacheId, $key);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         // the keys in the backend will probably be needed to flush the store.

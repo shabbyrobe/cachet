@@ -19,7 +19,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertTrue($composite->valid($cache, new Item()));
+        $this->assertTrue($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testAllModeInvalidWhenOneInvalid()
@@ -35,7 +35,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertFalse($composite->valid($cache, new Item()));
+        $this->assertFalse($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testAllModeInvalidWhenAllInvalid()
@@ -51,7 +51,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertFalse($composite->valid($cache, new Item()));
+        $this->assertFalse($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testAnyModeValidWhenAllValid()
@@ -67,7 +67,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertTrue($composite->valid($cache, new Item()));
+        $this->assertTrue($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testAnyModeValidWhenOneInvalid()
@@ -83,7 +83,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertTrue($composite->valid($cache, new Item()));
+        $this->assertTrue($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testAnyModeInvalidWhenAllInvalid()
@@ -99,7 +99,7 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $this->assertFalse($composite->valid($cache, new Item()));
+        $this->assertFalse($composite->valid($cache, new Item('a', 'b', 'c')));
     }
     
     public function testInit()
@@ -125,6 +125,6 @@ class CompositeTest extends \PHPUnit_Framework_TestCase
             ->getMock()
         ;
         
-        $composite->init($cache, new Item());
+        $composite->init($cache, new Item('a', 'b', 'c'));
     }
 }

@@ -37,6 +37,11 @@ class APCU implements Backend, Iterator
         $this->prefix = $prefix;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return \Cachet\Item|null
+     */
     function get($cacheId, $key)
     {
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
@@ -57,16 +62,26 @@ class APCU implements Backend, Iterator
         // Item::compact() *increases* data usage!!
         // APCU uses significantly less memory when the Item instance is serialised directly
         $stored = apcu_store($formattedKey, $item, $ttl);
-
-        return $stored;
+        if (!$stored) {
+            throw new \RuntimeException("APCU: key {$item->key} failed to store in {$item->cacheId}");
+        }
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         apcu_delete($key);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
@@ -78,6 +93,10 @@ class APCU implements Backend, Iterator
         apcu_delete($iter);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator
+     */
     function keys($cacheId)
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);
@@ -89,6 +108,10 @@ class APCU implements Backend, Iterator
         });
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator
+     */
     function items($cacheId)
     {
         $fullPrefix = \Cachet\Helper::formatKey([$this->prefix, $cacheId]);

@@ -11,6 +11,10 @@ class Memory implements Backend, Iterator
 {
     public $data = array();
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     */
     function get($cacheId, $key)
     {
         $item = null;
@@ -31,16 +35,29 @@ class Memory implements Backend, Iterator
         $this->data[$item->cacheId][$item->key] = $item;
     }
 
+    /**
+     * @param string $cacheId
+     * @param string $key
+     * @return void
+     */
     function delete($cacheId, $key)
     {
         unset($this->data[$cacheId][$key]);
     }
 
+    /**
+     * @param string $cacheId
+     * @return void
+     */
     function flush($cacheId)
     {
         unset($this->data[$cacheId]);
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function keys($cacheId)
     {
         if (isset($this->data[$cacheId])) {
@@ -50,6 +67,10 @@ class Memory implements Backend, Iterator
         }
     }
 
+    /**
+     * @param string $cacheId
+     * @return \Iterator|array
+     */
     function items($cacheId)
     {
         if (isset($this->data[$cacheId])) {

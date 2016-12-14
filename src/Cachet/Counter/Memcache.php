@@ -8,10 +8,19 @@ class Memcache implements \Cachet\Counter
     const NOT_FOUND = 16;
     const INVALID_ARGUMENTS = 38;
 
+    /** @var int|null */
     public $counterTTL = null;
+
+    /** @var string|null */
     public $prefix;
 
+    /** @var \Cachet\Locker|null */
+    public $locker;
+
     private $cacheId = 'counter';
+
+    /** @var Connector\Memcache */
+    private $connector;
 
     public function __construct($memcache, $prefix=null, $locker=null)
     {
@@ -23,14 +32,24 @@ class Memcache implements \Cachet\Counter
         $this->locker = $locker;
     }
 
+    /**
+     * @param string $key
+     * @param int $value
+     * @return void
+     */
     function set($key, $value)
     {
         $memcache = $this->connector->memcache ?: $this->connector->connect();
         $formattedKey = \Cachet\Helper::formatKey([$this->prefix, $this->cacheId, $key]);
-        if (!$memcache->set($formattedKey, $value, $this->counterTTL))
+        if (!$memcache->set($formattedKey, $value, $this->counterTTL)) {
             throw $this->memcacheException($memcache, "Could not set value");
+        }
     }
 
+    /**
+     * @param string $key
+     * @return int
+     */
     function value($key)
     {
         $memcache = $this->connector->memcache ?: $this->connector->connect();
@@ -47,12 +66,12 @@ class Memcache implements \Cachet\Counter
         $value = $memcache->$method($formattedKey, abs($by));
         if ($value === false) {
             if ($memcache->getResultCode() == self::NOT_FOUND) {
-                if ($method == 'decrement')
+                if ($method == 'decrement') {
                     throw new \OutOfBoundsException("Memcache counters cannot be decremented past 0");
-
+                }
                 $value = $this->initialise($memcache, $method, $key, $formattedKey, $by);
             }
-            else{
+            else {
                 throw $this->memcacheException($memcache);
             }
         }
@@ -68,8 +87,9 @@ class Memcache implements \Cachet\Counter
         if ($this->locker) {
             $this->locker->acquire($this->cacheId, $key);
             $check = $memcache->get($formattedKey);
-            if ($check !== false)
+            if ($check !== false) {
                 $value = $memcache->$method($formattedKey, abs($by));
+            }
         }
 
         if ($check === false) {
@@ -77,17 +97,28 @@ class Memcache implements \Cachet\Counter
             $value = $by;
         }
 
-        if ($this->locker)
+        if ($this->locker) {
             $this->locker->release($this->cacheId, $key);
+        }
 
         return $value;
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function increment($key, $by=1)
     {
         return $this->change('increment', $key, $by);
     }
 
+    /**
+     * @param string $key
+     * @param int $by
+     * @return int
+     */
     function decrement($key, $by=1)
     {
         return $this->change('decrement', $key, -$by);
@@ -105,7 +136,7 @@ class Memcache implements \Cachet\Counter
         if (!is_numeric($value) && !is_bool($value) && $value !== null) {
             $type = \Cachet\Helper::getType($value);
             throw new \UnexpectedValueException(
-                "Memcache counter expected numeric value, found $type at key $key"
+                "Memcache counter expected numeric value, found $type at key $formattedKey"
             );
         }
     }

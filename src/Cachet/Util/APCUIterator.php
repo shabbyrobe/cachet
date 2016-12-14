@@ -18,14 +18,26 @@ if (!defined('APCU_LIST_ACTIVE') && defined('APC_LIST_ACTIVE')) {
 }
 
 if (class_exists('APCUIterator')) {
+    /**
+     * @suppress PhanRedefineClass
+     */
     class APCUIterator extends \APCUIterator {}
 }
-else {
+elseif (class_exists('APCIterator')) {
+    /**
+     * @suppress PhanRedefineClass
+     */
     class APCUIterator extends \APCIterator
     { 
-        public function __construct($search=null, $format=APCU_ITER_ALL, $chunkSize=100, $list=APCU_LIST_ACTIVE)
+        public function __construct(
+            $search=null, $format=APCU_ITER_ALL, 
+            $chunkSize=100, $list=APCU_LIST_ACTIVE)
         {
             parent::__construct("user", $search, $format, $chunkSize, $list);
         }
     }
+}
+else {
+    throw new \Exception("Could not create Cachet\Util\APCUIterator".
+        "class from the available extensions");
 }
