@@ -42,17 +42,12 @@ Features:
 Install
 -------
 
-**Cachet** can be installed using `Composer <http://getcomposer.org>`_ by ensuring your
-``composer.json`` file contains the following::
+**Cachet** can be installed using `Composer <http://getcomposer.org>`_:: 
 
-    {
-        "require": {
-            "shabbyrobe/cachet": "1.3.*"
-        }
-    }
+    composer require shabbyrobe/cachet:2.0.*
 
 You can also download **Cachet** directly from the `GitHub
-<http://github.com/shabbyrobe/cachet>`_ page.
+Releases <https://github.com/shabbyrobe/cachet/releases>`_ page.
 
 
 Usage
