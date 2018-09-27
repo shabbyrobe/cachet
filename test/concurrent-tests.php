@@ -125,27 +125,6 @@ return [
         },
     ],
 
-    'xcacheCounterTest'=>[
-        'setupParent'=>function() {
-            xcache_unset_by_prefix('counter/');
-        },
-        'setupWorker'=>function($workerState) {
-            $workerState->counter = new \Cachet\Counter\XCache;
-        },
-        'test'=>function($workerState) use ($config) {
-            for ($i=0; $i<$config->counterRuns; $i++)
-                $workerState->counter->increment('count');
-        },
-        'check'=>function($workers, $responses, $parentState) use ($config) {
-            $count = xcache_get('counter/count'); 
-            $expected = $config->workerCount * $config->counterRuns;
-            if ($count != $expected)
-                return [false, "Count was $count, expected $expected"];
-            else
-                return [true];
-        },
-    ],
-
     'memcacheBrokenCounterTest'=>[
         'setupParent'=>function($parentState) {
             $memcached = memcached_create_testing();

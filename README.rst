@@ -27,7 +27,7 @@ Features:
 
 - Supports PHP 5.4 and above
 - Swappable backends_
-- Support for Redis_, MySQL_, Xcache_, APCu_, Memcached_, SQLite_ and others
+- Support for Redis_, MySQL_, APCu_, Memcached_, SQLite_ and others
 - Composite backends_ for cascading_ and sharding_
 - Memory efficient iteration_ for backends (wherever possible)
 - Dynamic item expiration via dependencies_
@@ -165,7 +165,7 @@ below that describes them in detail:
     
     // this dependency is just for demonstration/testing purposes.
     // iteration will not return this value as the dependency is invalid 
-    $cache->set('baz', 'qux' new Cachet\Dependency\Dummy(false));
+    $cache->set('baz', 'qux', new Cachet\Dependency\Dummy(false));
     
     foreach ($cache->values() as $key=>$value) {
         echo "$key: $value\n";
@@ -206,10 +206,8 @@ Iteration
 
 Caches can be iterated, but support is patchy. If the underlying backend
 supports listing keys, iteration is usually efficient. The **Cachet** APCU_
-backend_ makes use of the ``APCIterator`` class and is very efficient. XCache_
-tries to send a HTTP authentication dialog when you try to list keys (even when
-you try and use it via the CLI!), and Memcached_ provides no means to iterate
-over keys at all.
+backend_ makes use of the ``APCIterator`` class and is very efficient.
+Memcached_ provides no means to iterate over keys at all.
 
 If a backend supports iteration, it will implement ``Cachet\Backend\Iterator``.
 Implementing this interface is not required, but all backends provided with
@@ -275,8 +273,7 @@ Iteration
     ``Cache\Backend\Iterator``. Backends that do not can't be iterated. This
     will be specified against each backend's documentation. Backends like APCU
     or Redis can rely on native methods for iterating over the keys, but the
-    memcache daemon itself provides no such facility, and Xcache hides it behind
-    some silly HTTP Basic authentication.
+    memcache daemon itself provides no such facility.
 
     Backends that suffer from these limitations can extend from
     ``Cachet\Backend\IterationAdapter``, which allows a second backend to be
@@ -575,26 +572,6 @@ Backend expiration
 
     <?php
     $session = new Cachet\Backend\Session();
-
-
-.. _xcache:
-
-XCache
-~~~~~~
-
-Iteration support
-    **optional key backend**
-
-Backend expiration
-    ``Cache\Dependency\TTL`` 
-
-.. code-block:: php
-
-    <?php
-    $backend = new Cachet\Backend\XCache();
-    
-    // Or with optional cache value prefix. Prefix has a forward slash appended:
-    $backend = new Cachet\Backend\XCache("myprefix");
 
 
 .. _cascading:
@@ -1409,33 +1386,6 @@ deployment process or application setup:
 
     <?php
     $counter->ensureTableExists();
-
-
-XCache
-~~~~~~
-
-Supports ``counterTTL``
-    **yes**
-
-Atomic
-    **yes**
-
-Range
-    ``-PHP_INT_MAX - 1 to PHP_INT_MAX``
-
-Overflow error
-    **no**
-
-.. code-block:: php
-
-    <?php
-    $counter = new \Cachet\Counter\XCache();
-   
-    // Optional cache value prefix. Prefix has a forward slash appended.
-    $counter = new \Cachet\Counter\XCache('prefix');
-   
-    // TTL
-    $counter->counterTTL = 86400;
 
 
 SafeCache
