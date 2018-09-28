@@ -1,6 +1,5 @@
 <?php
-require __DIR__.'/../src/Cachet.php';
-Cachet::register();
+require __DIR__.'/../vendor/autoload.php';
 
 $pdo = new Cachet\Backend\PDO(function() {
     return new PDO('sqlite:/tmp/db.sqlite');

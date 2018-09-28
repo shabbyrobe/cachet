@@ -1,6 +1,5 @@
 <?php
-require __DIR__.'/../../../src/Cachet.php';
-Cachet::register();
+require __DIR__.'/../../../vendor/autoload.php';
 
 if (extension_loaded('apcu')) {
     $backend = new Cachet\Backend\APCU();
