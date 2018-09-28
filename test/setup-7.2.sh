@@ -1,3 +1,2 @@
 #!/bin/bash
-
-# APCu already installed with 7.2 on Travis
+printf "yes\\n" | pecl install -f apcu

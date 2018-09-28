@@ -1,2 +1,2 @@
 #!/bin/bash
-printf "yes\\n" | pecl install apcu
+printf "yes\\n" | pecl install -f apcu
