@@ -1,6 +1,9 @@
 Cachet - Pluggable Caching for PHP
 ==================================
 
+.. image:: https://travis-ci.org/shabbyrobe/cachet.svg?branch=master
+       :target: https://travis-ci.org/shabbyrobe/cachet
+
 ::
 
     cachet |ˈkaʃeɪ|
