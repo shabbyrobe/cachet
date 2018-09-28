@@ -105,6 +105,7 @@ class Cache implements \ArrayAccess
     }
 
     /**
+     * Flush all entries out of the cache, leaving it pristine and clear.
      * @return void
      */
     function flush()

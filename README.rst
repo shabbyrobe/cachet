@@ -8,20 +8,24 @@ Cachet - Pluggable Caching for PHP
       a flat capsule enclosing a dose of unpleasant-tasting medicine.
 
 
-Breaking Changes:
+Significant Changes:
+
+- (v3.0.0) ``Cachet\Backend\APC`` removed, ``Cachet\Backend\XCache`` removed.  If you need
+  these two backends, version 2 will still work. Support for PHP < 5.6 has been dropped.
+  Added an adapter to support PSR-16's ``SimpleCache`` via
+  ``Cachet\Simple\Cache``.
+
+- (v2.0.1) ``Cachet\Backend\Memcache`` used to have some possible, untested, undocumented
+  support for the abandoned ``memcache`` extension as well as the actively supported
+  ``memcached`` extension. ``memcache`` support has been removed, ``memcached`` support
+  remains.
+
+- (v2.0) ``Cachet\Backend\APC`` and ``Cachet\Counter\APC`` are deprecated due to
+  all PHP versions that don't support opcache being EOL. Use ``Cachet\Backend\APCU`` and
+  ``Cachet\Counter\APCU`` instead. The old classes will not be removed for the time being.
 
 - (v2.0) ``Cachet\Backend\Iterable`` renamed to ``Cachet\Backend\Iterator`` in
   response to PHP 7.1 backward incompatible changes.
-
-- (v2.0) ``Cachet\Backend\APC`` and ``Cachet\Counter\APC`` are deprecated due to
-  all PHP versions that don't support opcache being EOL. Use
-  ``Cachet\Backend\APCU`` and ``Cachet\Counter\APCU`` instead. The old classes
-  will not be removed for the time being.
-
-- (v2.0.1) ``Cachet\Backend\Memcache`` used to have some possible, untested,
-  undocumented support for the abandoned ``memcache`` extension as well as the
-  actively supported ``memcached`` extension. ``memcache`` support has been
-  removed, ``memcached`` support remains.
 
 Features:
 
@@ -44,7 +48,7 @@ Install
 
 **Cachet** can be installed using `Composer <http://getcomposer.org>`_:: 
 
-    composer require shabbyrobe/cachet:2.0.*
+    composer require shabbyrobe/cachet:3.0.*
 
 You can also download **Cachet** directly from the `GitHub
 Releases <https://github.com/shabbyrobe/cachet/releases>`_ page.
@@ -52,16 +56,6 @@ Releases <https://github.com/shabbyrobe/cachet/releases>`_ page.
 
 Usage
 -----
-
-**Cachet** is compatible with any PSR-0 autoloader. A simple autoloader is
-provided.
-
-.. code-block:: php
-
-    <?php
-    require 'path/to/cachet/src/Cachet.php';
-    Cachet::register();
-
 
 Instantiate a backend and a cache:
 
@@ -197,6 +191,35 @@ Atomic counters_:
    
     // inspect a counter's value
     $value = $counter->value('foo');
+
+
+PSR-16 Support
+--------------
+
+Cachet supports `PSR-16 <https://www.php-fig.org/psr/psr-16>`_, which is a PHP-FIG
+recommendation for a simple caching interface. Cachet was created as an almost direct
+reaction to the unreasonable overreach of the earlier `PSR-6
+<https://www.php-fig.org/psr/psr-6/>`_ proposal, so it's heartening to see a better
+alternative.
+
+PSR-16 is a lowest-common-denominator attempt to provide an interface to disparate cache
+APIs like Cachet, which is itself a lowest-common-denominator attempt to provide an
+interface to disparate caching backends like Redis, APCU, etc, so by the time you hit an
+interface like ``Psr\SimpleCache\Cache``, you've shed an awful lot of features (like
+Iterators, locking, the ability to tell the difference between "null" and "not set"). I
+wouldn't necessarily recommend using a PSR-16 interface over using Cachet's API directly,
+but it might be useful in certain circumstances and, unlike ``PSR-6``, it's easy to
+implement, so if you consider it useful, here you go!  Enjoy!
+
+To use the adapter, create a ``Cachet\Cache`` just like usual and wrap it in a
+``Cachet\Simple\Cache``:
+
+.. code-block:: php
+
+    <?php
+    $backend = new Cachet\Backend\APCU();
+    $cache = new Cachet\Cache('mycache', $backend);
+    $simple = new Cachet\Simple\Cache($cache);
 
 
 .. _iteration:

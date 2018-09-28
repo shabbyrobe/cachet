@@ -2,22 +2,7 @@
 $base = realpath(__DIR__.'/../');
 define("BASE_PATH", $base);
 
-spl_autoload_register(
-    function($class) use ($base) {
-        if (strpos($class, 'Cachet\Test')===0) {
-            require $base.'/test/lib/'.str_replace('\\', '/', substr($class, 11)).'.php';
-        }
-    },
-    true.
-    !!'prepend'
-);
-
-require $base.'/src/Cachet.php';
-Cachet::register();
-
-if (!class_exists('PHPUnit_Framework_Exception')) {
-    require_once BASE_PATH.'/vendor/autoload.php';
-}
+require BASE_PATH.'/vendor/autoload.php';
 
 $GLOBALS['settings'] = [
     'redis'=>[
