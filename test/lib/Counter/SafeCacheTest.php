@@ -2,7 +2,7 @@
 namespace Cachet\Test\Counter;
 
 // TODO: should test both bcmath and gmp versions
-if (!extension_loaded('bcmath') || !extension_loaded('gmp')) {
+if (!extension_loaded('bcmath') && !extension_loaded('gmp')) {
     skip_test(__NAMESPACE__, "SafeCacheTest", "Neither bcmath nor gmp loaded");
 }
 else {

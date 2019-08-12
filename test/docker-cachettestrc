@@ -1,0 +1,14 @@
+[redis]
+host = redis
+port = 6379
+
+[memcached]
+host = memcached
+port = 11211
+
+[mysql]
+host = mysql
+port = 3306
+db = cachet
+user = dev
+password = dev_password

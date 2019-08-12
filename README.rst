@@ -1491,7 +1491,12 @@ well-documented exceptions, all of the functional test cases for these classes
 extend from ``Cachet\Test\BackendTestCase`` and ``Cachet\Test\CounterTestCase``
 respectively.
 
-These tests are run from the root of the project by calling ``phpunit`` without
+An experimental `docker-compose.yml` file is available in the root of the project.
+You can run all the tests against a bunch of preconfigured testing backends like so::
+
+    ./run-tests.sh
+
+For development, tests are run from the root of the project by calling ``phpunit`` without
 arguments.
 
 Some aspects of **Cachet** cannot be proven to work using simple unit or

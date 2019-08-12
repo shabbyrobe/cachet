@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=GawridibTu
+      - MYSQL_USER=dev
+      - MYSQL_DATABASE=cachet
+      - MYSQL_PASSWORD=dev_password
+      - MYSQL_ROOT_HOST=%
+  redis:
+    image: redis:5
+    ports:
+      - "6740:6739"
+  memcached:
+    image: memcached
+    ports:
+      - "11212:11211"
+
+  php71:
+    volumes: [ ".:/cachet" ]
+    build: { context: "test/", dockerfile: Dockerfile.php71 }
+  php72:
+    volumes: [ ".:/cachet" ]
+    build: { context: "test/", dockerfile: Dockerfile.php72 }
+  php73:
+    volumes: [ ".:/cachet" ]
+    build: { context: "test/", dockerfile: Dockerfile.php73 }

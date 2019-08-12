@@ -20,8 +20,17 @@ $GLOBALS['settings'] = [
     ],
 ];
 
-if (file_exists($base.'/.cachettestrc')) {
-    foreach (parse_ini_file($base.'/.cachettestrc', !!'sections') as $section=>$items) {
+if (getenv('CACHET_CONFIG')) {
+    $cachetConfigFile = getenv('CACHET_CONFIG');
+    if (!file_exists($cachetConfigFile)) {
+        throw new RuntimeException("missing config file $cachetConfigFile");
+    }
+} else {
+    $cachetConfigFile = $base.'/.cachettestrc';
+}
+
+if (file_exists($cachetConfigFile)) {
+    foreach (parse_ini_file($cachetConfigFile, !!'sections') as $section=>$items) {
         $GLOBALS['settings'][$section] = array_merge($GLOBALS['settings'][$section], $items);
     }
 }
