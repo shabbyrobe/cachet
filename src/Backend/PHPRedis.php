@@ -95,7 +95,7 @@ class PHPRedis implements Backend, Iterator
     {
         $key = \Cachet\Helper::formatKey([$this->prefix, $cacheId, $key]);
         $redis = $this->connector->redis ?: $this->connector->connect();
-        $redis->delete(array($key));
+        $redis->del(array($key));
     }
 
     /**

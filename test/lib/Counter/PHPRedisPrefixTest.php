@@ -19,8 +19,8 @@ else {
         public function getCounter()
         {
             $redis = redis_create_testing();
-            $redis->delete('prefix/counter/value');
-            $redis->delete('prefix/counter/value2');
+            $redis->del('prefix/counter/value');
+            $redis->del('prefix/counter/value2');
             return new \Cachet\Counter\PHPRedis($redis, 'prefix');
         }
     }
