@@ -1,6 +1,7 @@
 language: php
 
 php:
+  - "7.3"
   - "7.2"
   - "7.1"
   - "7.0"
@@ -9,6 +10,7 @@ php:
 services:
   - redis-server
   - memcached
+  - mysql
 
 branches:
   only:
@@ -20,7 +22,7 @@ before_script:
   - echo -e "[mysql]\nuser=travis\nserver=127.0.0.1\ndb=cachettest" > .cachettestrc
   - mysql -u travis -e 'drop database if exists cachettest'
   - mysql -u travis -e 'create database if not exists cachettest'
-  - test -f test/setup-${TRAVIS_PHP_VERSION}.sh && test/setup-${TRAVIS_PHP_VERSION}.sh || test/setup.sh
+  - test -f test/setup-${TRAVIS_PHP_VERSION}.sh && test/setup-${TRAVIS_PHP_VERSION}.sh
   - test -f test/php-${TRAVIS_PHP_VERSION}.ini && phpenv config-add test/php-${TRAVIS_PHP_VERSION}.ini || phpenv config-add test/php.ini
   - composer install
 
