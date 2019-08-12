@@ -109,7 +109,7 @@ class PHPRedis implements Backend, Iterator
         $keys = $redis->keys("$prefix*");
         $query = $redis->multi(\Redis::PIPELINE);
         foreach ($keys as $key) {
-            $query->delete($key);
+            $query->del($key);
         }
         $query->exec();
     }
