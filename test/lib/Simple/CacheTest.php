@@ -3,7 +3,7 @@ namespace Cachet\Test\Simple;
 
 class SimpleCacheTest extends \CachetTestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         $this->backend = new \Cachet\Backend\Memory();
         $this->innerCache = new \Cachet\Cache('cache', $this->backend);
@@ -26,19 +26,15 @@ class SimpleCacheTest extends \CachetTestCase
         $this->assertEquals($get, 'default');
     }
 
-    /**
-     * @expectedException Psr\SimpleCache\InvalidArgumentException
-     */
     public function testGetWithInvalidKeyFails()
     {
+        $this->expectException(\Psr\SimpleCache\InvalidArgumentException::class);
         $this->cache->get('{}');
     }
 
-    /**
-     * @expectedException Psr\SimpleCache\InvalidArgumentException
-     */
     public function testSetWithInvalidKeyFails()
     {
+        $this->expectException(\Psr\SimpleCache\InvalidArgumentException::class);
         $this->cache->set('{}', 'foo');
     }
 

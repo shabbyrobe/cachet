@@ -24,7 +24,7 @@ else {
 
         public $backendPrefix = null;
 
-        public function setUp()
+        public function setUp(): void
         {
             $this->redis = $this->getRedis();
             $this->redis->flushDb();

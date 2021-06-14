@@ -6,7 +6,7 @@ use Cachet\Item;
 
 class CacheTest extends \CachetTestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         $this->backend = new \Cachet\Backend\Memory();
         $this->cache = new \Cachet\Cache('cache', $this->backend);
@@ -59,7 +59,8 @@ class CacheTest extends \CachetTestCase
         ;
         $backend->expects($this->any())->method('iterable')->will($this->returnValue(false));
         $cache = new \Cachet\Cache('cache', $backend);
-        $this->setExpectedException('RuntimeException', "This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.");
+        $this->expectException('RuntimeException');
+        $this->expectExceptionMessage('This backend supports iteration, but only with a secondary key backend. Please call setKeyBackend() and rebuild your cache.');
         $keys = iterator_to_array($cache->keys());
     }
     
@@ -69,7 +70,8 @@ class CacheTest extends \CachetTestCase
             ->getMockForAbstractClass()
         ;
         $cache = new \Cachet\Cache('cache', $backend);
-        $this->setExpectedException('RuntimeException', "This backend does not support iteration");
+        $this->expectException('RuntimeException');
+        $this->expectExceptionMessage('This backend does not support iteration');
         $keys = iterator_to_array($cache->keys());
     }
     
@@ -334,11 +336,9 @@ class CacheTest extends \CachetTestCase
         $this->assertTrue($item->dependency instanceof Dependency\TTL);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testWrapInvalidArguments5()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $this->cache->wrap('nope', 'nope', 'nope', $nope, 'nope');
     }
     

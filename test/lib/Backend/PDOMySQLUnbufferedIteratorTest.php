@@ -19,7 +19,7 @@ if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLUnbufferedIteratorTest')) {
             return $backend;
         }
 
-        public function setUp()
+        public function setUp(): void
         {
             parent::setUp();
             $this->backend->ensureTableExistsForCache('a');

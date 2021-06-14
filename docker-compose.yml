@@ -21,15 +21,12 @@ services:
     ports:
       - "11212:11211"
 
-  php71:
-    volumes: [ ".:/cachet" ]
-    build: { context: "test/", dockerfile: Dockerfile.php71 }
-  php72:
-    volumes: [ ".:/cachet" ]
-    build: { context: "test/", dockerfile: Dockerfile.php72 }
   php73:
     volumes: [ ".:/cachet" ]
     build: { context: "test/", dockerfile: Dockerfile.php73 }
-  php8:
+  php74:
     volumes: [ ".:/cachet" ]
-    build: { context: "test/", dockerfile: Dockerfile.php8 }
+    build: { context: "test/", dockerfile: Dockerfile.php74 }
+  php80:
+    volumes: [ ".:/cachet" ]
+    build: { context: "test/", dockerfile: Dockerfile.php80 }

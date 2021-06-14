@@ -4,7 +4,7 @@ namespace Cachet\Test\Dependency;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class CompositeTest extends \PHPUnit_Framework_TestCase
+class CompositeTest extends \PHPUnit\Framework\TestCase
 {
     public function testAllModeValid()
     {

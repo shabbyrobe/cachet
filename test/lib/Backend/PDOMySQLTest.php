@@ -29,7 +29,7 @@ if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLTest')) {
             return $this->backend;
         }
         
-        public function setUp()
+        public function setUp(): void
         {
             $this->backend = null; 
             $this->backend = $this->getBackend();

@@ -13,7 +13,7 @@ class FileTest extends \Cachet\Test\BackendTestCase
     use \Cachet\Test\IteratorBackendTest;
     use \Cachet\Test\IteratorBackendYieldMemoryTest;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->path = sys_get_temp_dir()."/".uniqid('', true);
         mkdir($this->path);
@@ -24,7 +24,7 @@ class FileTest extends \Cachet\Test\BackendTestCase
         return new Backend\File($this->path);
     }
     
-    public function tearDown()
+    public function tearDown(): void
     {
         $flags = \FilesystemIterator::KEY_AS_PATHNAME
             | \FilesystemIterator::CURRENT_AS_FILEINFO 

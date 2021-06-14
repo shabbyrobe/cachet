@@ -39,7 +39,7 @@ else {
          */
         function testDecrementByWhenUnset($initial, $by)
         {
-            $this->setExpectedException("OutOfBoundsException");
+            $this->expectException("OutOfBoundsException");
             $this->getCounter()->decrement('value', 1);
         }
     }

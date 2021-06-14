@@ -35,7 +35,7 @@ if (file_exists($cachetConfigFile)) {
     }
 }
 
-abstract class CachetTestCase extends \PHPUnit_Framework_TestCase
+abstract class CachetTestCase extends \PHPUnit\Framework\TestCase
 {
     public function dataValidValues()
     {
@@ -60,7 +60,7 @@ abstract class CachetTestCase extends \PHPUnit_Framework_TestCase
 function skip_test($namespace, $class, $message)
 {
     eval(
-        "namespace $namespace { class $class extends \PHPUnit_Framework_TestCase { ".
+        "namespace $namespace { class $class extends \PHPUnit\Framework\TestCase { ".
         "function testDummy() { ".
         "\$this->markTestSkipped(\"".addslashes($message)."\"); ".
         "} } }"

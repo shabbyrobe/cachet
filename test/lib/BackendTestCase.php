@@ -61,7 +61,8 @@ abstract class BackendTestCase extends \CachetTestCase
         $backend = $this->getBackend();
         $key = 'invalid';
         $value = function() {};
-        $this->setExpectedException('Exception', 'Serialization of \'Closure\' is not allowed');
+        $this->expectException('Exception');
+        $this->expectExceptionMessage('Serialization of \'Closure\' is not allowed');
         $backend->set(new \Cachet\Item('cache1', $key, $value));
     }
 

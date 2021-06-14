@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test\Dependency;
 
-class TimeTest extends \PHPUnit_Framework_TestCase
+class TimeTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @dataProvider dataForValid

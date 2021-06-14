@@ -2,7 +2,7 @@
 namespace Cachet\Test;
 
 if (!extension_loaded('apc') && !extension_loaded('apcu')) {
-    class SessionHandlerAcceptanceTest extends \PHPUnit_Framework_TestCase
+    class SessionHandlerAcceptanceTest extends \PHPUnit\Framework\TestCase
     {
         public function testDummy()
         {
@@ -11,11 +11,11 @@ if (!extension_loaded('apc') && !extension_loaded('apcu')) {
     }
 }
 else {
-    class SessionHandlerAcceptanceTest extends \PHPUnit_Framework_TestCase
+    class SessionHandlerAcceptanceTest extends \PHPUnit\Framework\TestCase
     {
         public $url = "http://localhost:1999/sessionhandler/";
 
-        public function setUp()
+        public function setUp(): void
         {
             $apcExtension = extension_loaded('apcu') ? 'apcu' : 'apc';
             $iniOpts = "-d ".implode(" -d ", [
@@ -54,7 +54,7 @@ else {
             $this->p = $p;
         }
 
-        public function tearDown()
+        public function tearDown(): void
         {
             proc_terminate($this->p);
         }

@@ -1,6 +1,13 @@
 Significant Changes
 ===================
 
+v4.0.0
+------
+
+- PHP 8.0 supported
+- EOL PHP versions (5.x, 7.0, 7.1, 7.2) no longer supported
+
+
 v3.0.0
 ------
 

@@ -4,7 +4,7 @@ namespace Cachet\Test;
 use Cachet\Dependency;
 use Cachet\Item;
 
-class ItemTest extends \PHPUnit_Framework_TestCase
+class ItemTest extends \PHPUnit\Framework\TestCase
 {
     public function testCompactNoDependency()
     {

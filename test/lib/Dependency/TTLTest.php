@@ -1,7 +1,7 @@
 <?php
 namespace Cachet\Test\Dependency;
 
-class TTLTest extends \PHPUnit_Framework_TestCase
+class TTLTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @dataProvider dataForValid

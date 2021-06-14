@@ -14,7 +14,7 @@ if (pdo_mysql_tests_valid(__NAMESPACE__, 'PDOMySQLTest')) {
             return $counter;
         }
 
-        public function setUp()
+        public function setUp(): void
         {
             $counter = $this->getCounter();
             $counter->connector->connect()->exec("DROP TABLE IF EXISTS `{$counter->tableName}`");

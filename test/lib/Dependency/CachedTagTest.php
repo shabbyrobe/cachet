@@ -3,9 +3,9 @@ namespace Cachet\Test\Dependency;
 
 use Cachet\Dependency\CachedTag;
 
-class CachedTagTest extends \PHPUnit_Framework_TestCase
+class CachedTagTest extends \PHPUnit\Framework\TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         $this->backend = new \Cachet\Backend\Memory();
         $this->mainCache = new \Cachet\Cache('main', $this->backend);

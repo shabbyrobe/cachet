@@ -1,3 +1,4 @@
 .cachettestrc
 dump.rdb
 vendor
+phpunit.result.cache

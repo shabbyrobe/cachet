@@ -20,7 +20,7 @@ else {
     {
         use \Cachet\Test\IteratorBackendTest;
 
-        public function setUp()
+        public function setUp(): void
         {
             $backend = $this->getBackend();
             $backend->connector->connect()->flush();

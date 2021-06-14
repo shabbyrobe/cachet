@@ -18,7 +18,7 @@ else {
      */
     class MemcacheTest extends \Cachet\Test\BackendTestCase
     {
-        public function setUp()
+        public function setUp(): void
         {
             $backend = $this->getBackend();
             $backend->connector->connect()->flush();
@@ -38,14 +38,14 @@ else {
         public function testFlush()
         {
             $backend = $this->getBackend();
-            $this->setExpectedException('RuntimeException');
+            $this->expectException('RuntimeException');
             $backend->flush('cache');
         }
 
         public function testFlushEmpty()
         {
             $backend = $this->getBackend();
-            $this->setExpectedException('RuntimeException');
+            $this->expectException('RuntimeException');
             $backend->flush('cache');
         }
 
