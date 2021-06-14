@@ -1,18 +1,19 @@
 Cachet - Pluggable Caching for PHP
 ==================================
 
-.. image:: https://travis-ci.org/shabbyrobe/cachet.svg?branch=master
-       :target: https://travis-ci.org/shabbyrobe/cachet
+.. warning::
 
-::
+    This library is deprecated and will no longer be supported beyond the
+    current version. The PHP landscape was very different when this was
+    created, and it is no longer a suitable choice for this task.
 
-    cachet |ˈkaʃeɪ|
-    noun
-      a flat capsule enclosing a dose of unpleasant-tasting medicine.
+    Please migrate to Symfony's cache module, or something similar:
+    https://packagist.org/packages/symfony/cache
+
 
 Features:
 
-- Supports PHP 5.6 and above (5.6 support will be dropped in 2019)
+- Supports PHP 7.3 and above
 - Swappable backends_
 - Support for Redis_, MySQL_, APCu_, Memcached_, SQLite_ and others
 - Composite backends_ for cascading_ and sharding_
@@ -33,7 +34,7 @@ Install
 
 **Cachet** can be installed using `Composer <http://getcomposer.org>`_:: 
 
-    composer require shabbyrobe/cachet:3.0.*
+    composer require shabbyrobe/cachet:4.0.*
 
 You can also download **Cachet** directly from the `GitHub
 Releases <https://github.com/shabbyrobe/cachet/releases>`_ page.
