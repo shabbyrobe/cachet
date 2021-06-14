@@ -18,7 +18,7 @@ until nc -z localhost 11212; do sleep 0.5; done
 
 setup_args=(
     -w /cachet 
-    -e CACHET_CONFIG=/cachet/test/docker-cachettestrc
+    -e "CACHET_CONFIG=/cachet/test/docker-cachettestrc"
 )
 run_args=(
     /bin/bash -c ./vendor/bin/phpunit

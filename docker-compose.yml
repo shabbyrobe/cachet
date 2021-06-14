@@ -30,3 +30,6 @@ services:
   php73:
     volumes: [ ".:/cachet" ]
     build: { context: "test/", dockerfile: Dockerfile.php73 }
+  php8:
+    volumes: [ ".:/cachet" ]
+    build: { context: "test/", dockerfile: Dockerfile.php8 }
